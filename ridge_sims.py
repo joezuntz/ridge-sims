@@ -234,9 +234,9 @@ def generate_shell_lens_sample(delta_i, window, shell_ngal, shell_bias, mask, rn
 
 
 def fiducial_sim_step2(lens_type="maglim", tomographic=True):
-    shell_cl_filename = "cls_150M_l10000.npy"
-    mask_filename = "desy3_gold_mask.npy"
-    g_ell_file = "g_ell_150M_l10000.pkl"
+    shell_cl_filename = "sim-data/cls_150M_l10000.npy"
+    mask_filename = "des-data/desy3_gold_mask.npy"
+    g_ell_file = "sim-data/g_ell_150M_l10000.pkl"
 
     if os.path.exists(g_ell_file):
         shell_cl = None
