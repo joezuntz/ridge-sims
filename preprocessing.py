@@ -49,12 +49,32 @@ def extract_nz(nz_fits_file, lens_output_file, source_output_file):
         lens_table = Table([lens_z] + nz_lens, names=["Z"] + [f"BIN{i}" for i in range(1, nbin_lens+1)])
         lens_table.write(lens_output_file, format='ascii.commented_header', overwrite=True)
 
-def extract_all_nz():
+def extract_source_nz(nz_fits_file, source_output_file):
+    source_extname = "nz_source"
+    nbin_source = 4
+    with fits.open(nz_fits_file) as f:
+        source_data = f[source_extname].data    
+        source_header = f[source_extname].header
+        source_z = source_data["Z_MID"]
+        nz_source = [source_data[f"BIN{i}"] for i in range(1, nbin_source+1)]
+        nz_ngal = [source_header[f'NGAL_{i}'] for i in range(1, nbin_source+1)]
+        nz_source_combined =  sum([nz_source[i] * nz_ngal[i] for i in range(nbin_source)])
 
+    cut = source_z < 2.0
+    source_z = source_z[cut]
+    nz_source_combined = nz_source_combined[cut]
+    with open(source_output_file, 'w') as f:
+        f.write("# z n(z)\n")
+        for z, nz in zip(source_z, nz_source_combined):
+            f.write(f"{z} {nz}\n")
+
+
+def extract_all_nz():
     # The source n(z) is the same in the two files so the overwrite doesn't matter here
     extract_nz(redmagic_nz_file, "redmagic_nz.txt", "source_nz.txt")
     extract_nz(maglim_nz_file, "maglim_nz.txt", "source_nz.txt")
 
 
 if __name__ == "__main__":
-    extract_all_nz()
+    # extract_all_nz()
+    extract_source_nz(maglim_nz_file, "source_nz_combined.txt")
