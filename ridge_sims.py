@@ -19,7 +19,7 @@ nside = 4096
 lmax = 10_000
 
 # from https://arxiv.org/pdf/2105.13546
-maglim_bias = [
+tomographic_maglim_bias = [
     1.40,
     1.60,
     1.82,
@@ -27,7 +27,7 @@ maglim_bias = [
     1.91,
     1.73,
 ]
-redmagic_bias = [
+tomographic_redmagic_bias = [
     1.74,
     1.82,
     1.92,
@@ -35,18 +35,43 @@ redmagic_bias = [
     2.32,
 ]
 
+combined_maglim_bias = np.mean(tomographic_maglim_bias)
+combined_redmagic_bias = np.mean(tomographic_redmagic_bias)
+
+tomographic_maglim_number_densities = [
+    0.15,
+    0.107,
+    0.109,
+    0.146,
+    0.106,
+    0.1,
+]
+
+maglim_combined_number_densities = sum(tomographic_maglim_number_densities)
+
+tomographic_redmagic_number_densities = [
+    0.022,
+    0.038,
+    0.058,
+    0.029,
+    0.025,
+]
+
+redmagic_combined_number_densities = sum(tomographic_redmagic_number_densities)
+
+
 # treat this as fixed; should be okay-ish
 sigma_e = 0.27
 
 # Number density per bin for DES (Giulia)
-source_number_densities = [
+tomographic_source_number_densities = [
     1.475584985490327, 
     1.479383426887689,
     1.483671693529899,
     1.461247850098986,
 ]
 
-combined_source_number_densities = sum(source_number_densities)
+combined_source_number_densities = sum(tomographic_source_number_densities)
 
 
 def fiducial_params():
@@ -77,6 +102,7 @@ def generate_shell_cl(windows, h, Omega_c, Omega_b, filename):
     # set up CAMB parameters for matter angular power spectrum
     # shells of 150 Mpc in comoving distance spacing
     print("Computing C_ell")
+    flush()
     # # compute the angular matter power spectra of the shells with CAMB
     c_ells = glass.ext.camb.matter_cls(pars, lmax, windows)
 
@@ -92,6 +118,8 @@ def load_mask(mask_file):
     # degrade mask to nside quality of simulation
     mask = healpy.reorder(mask, n2r = True)
     mask = healpy.ud_grade(mask, nside_out = nside)
+    print("Loaded mask")
+    flush()
     return mask
 
 
@@ -101,6 +129,7 @@ def generate_matter_fields(shell_cl, rng, g_ell_file=None):
     if g_ell_file is None or not os.path.exists(g_ell_file):
         shell_cl = glass.discretized_cls(shell_cl, nside=nside, lmax=lmax, ncorr=3)
         print("Discretized cl")
+        flush()
         with multiprocessing.Pool(8) as pool:
             # compute Gaussian spectra for lognormal fields from discretised spectra
             gls = glass.lognormal_gls(shell_cl, pool=pool)
@@ -111,12 +140,13 @@ def generate_matter_fields(shell_cl, rng, g_ell_file=None):
         with open(g_ell_file, "rb") as f:
             gls = pickle.load(f)
 
-    print("Generated lognormal c_ell")
+    print("Generated discretized c_ell")
+    flush()
 
     # generator for lognormal matter fields
     matter = glass.generate_lognormal(gls, nside, ncorr=3, rng=rng)
-    print("Generated lognormal fields")
-
+    print("Generated matter fields")
+    flush()
     return matter
 
 def shell_configuration(cosmo):
@@ -136,24 +166,6 @@ def fiducial_sim_step1():
     windows = shell_configuration(h, Omega_c, Omega_b)
     generate_shell_cl(windows, h, Omega_c, Omega_b, shell_cl_filename)
 
-def load_number_densities(lens_type, combined=True):
-    if combined:
-        source_data = np.loadtxt("des-data/combined_source_nz.txt").T
-    else:
-        source_data = np.loadtxt("des-data/source_nz.txt").T
-
-    source_z = source_data[0]
-    source_nz = source_data[1:]
-
-    if lens_type == "maglim":
-        lens_data = np.loadtxt("des-data/maglim_nz.txt").T
-    elif lens_type == "redmagic":
-        lens_data = np.loadtxt("des-data/redmagic_nz.txt").T
-    else:
-        raise ValueError("lens_type must be 'maglim' or 'redmagic'")
-    lens_z = lens_data[0]
-    lens_nz = lens_data[1:]
-    return source_z, source_nz, lens_z, lens_nz
 
 def generate_shell_source_sample(delta_i, kappa_map, g1_map, g2_map, window, shell_ngal, shell_bias, sigma_e, mask, rng):
     
@@ -244,79 +256,117 @@ def generate_shell_lens_sample(delta_i, window, shell_ngal, shell_bias, mask, rn
     return np.concatenate(catalog)
 
 
-def fiducial_sim_step2(lens_type="maglim", tomographic=True):
-    shell_cl_filename = "sim-data/cls_150M_l10000.npy"
-    mask_filename = "des-data/desy3_gold_mask.npy"
-    g_ell_file = "sim-data/g_ell_150M_l10000.pkl"
+class SampleInfo():
+    pass
 
+def load_sample_information(lens_type, combined=True):
+    source_data = np.loadtxt("des-data/source_nz.txt").T
+    source_number_densities = tomographic_source_number_densities
 
-    source_z, source_nz, lens_z, lens_nz = load_number_densities(lens_type, tomographic)
+    source_z = source_data[0]
+    source_nz = source_data[1:]
 
-    if os.path.exists(g_ell_file):
-        shell_cl = None
-    else:
-        shell_cl = np.load(shell_cl_filename)
-
-    print(f"Loaded shell c_ells")
-    mask = load_mask(mask_filename)
-    print("Loaded mask")
-    _, cosmo = fiducial_cosmology_objetcts()
-    flush()
-
-    rng = np.random.default_rng(seed=42)
-    matter = generate_matter_fields(shell_cl, rng, g_ell_file=g_ell_file)
-    print("Matter field generator ready")
+    if combined:
+        source_number_densities = [combined_source_number_densities]
+        source_nz = [tomographic_source_number_densities @ source_nz]
 
     if lens_type == "maglim":
-        lens_number_densities = [
-            0.15,
-            0.107,
-            0.109,
-            0.146,
-            0.106,
-            0.1,
-        ]
-        galaxy_bias = maglim_bias
+        lens_data = np.loadtxt("des-data/maglim_nz.txt").T
+    elif lens_type == "redmagic":
+        lens_data = np.loadtxt("des-data/redmagic_nz.txt").T
     else:
-        # redmagic
-        lens_number_densities = [
-            0.022,
-            0.038,
-            0.058,
-            0.029,
-            0.025,
-        ]
-        galaxy_bias = redmagic_bias
+        raise ValueError("lens_type must be 'maglim' or 'redmagic'")
 
-    flush()
-
-    # this will compute the convergence field iteratively
-    convergence = glass.MultiPlaneConvergence(cosmo)
-    print("Convergence object ready")
-
-    windows = shell_configuration(cosmo)
-    print(f"Loaded number densities - {len(source_nz)} source bins, {len(lens_nz)} lens bins")
-
-    # normalize the number densities
+    lens_z = lens_data[0]
+    lens_nz = lens_data[1:]
 
     nbin_source = len(source_nz)
     nbin_lens = len(lens_nz)
 
+    
+
+    if lens_type == "maglim":
+        if combined:
+            lens_number_densities = [maglim_combined_number_densities]
+            galaxy_bias = [np.mean(combined_maglim_bias)]
+            nbin_lens = 1
+            lens_nz = [tomographic_maglim_number_densities @ lens_nz]
+        else:
+            sample.lens_number_densities = tomographic_maglim_number_densities
+            sample.galaxy_bias = tomographic_maglim_bias
+    else:
+        if combined:
+            lens_number_densities = [redmagic_combined_number_densities]
+            galaxy_bias = np.mean(tomographic_redmagic_bias)
+            nbin_lens = 1
+            lens_nz = [tomographic_redmagic_number_densities @ lens_nz]
+        else:
+            lens_number_densities = tomographic_redmagic_number_densities
+            galaxy_bias = tomographic_redmagic_bias
+
+
     for i in range(nbin_source):
         source_nz[i] /= np.trapezoid(source_nz[i], source_z)
-        source_nz *= source_number_densities[i]
+        source_nz[i] *= source_number_densities[i]
     
     for i in range(nbin_lens):
         lens_nz[i] /= np.trapezoid(lens_nz[i], lens_z)
-        lens_nz *= lens_number_densities[i]
+        lens_nz[i] *= lens_number_densities[i]
+
+
+    sample = SampleInfo()
+    sample.nbin_source = nbin_source
+    sample.nbin_lens = nbin_lens
+    sample.source_z = source_z
+    sample.source_nz = source_nz
+    sample.lens_z = lens_z
+    sample.lens_nz = lens_nz
+    sample.lens_number_densities = lens_number_densities
+    sample.galaxy_bias = galaxy_bias
+    sample.source_number_densities = source_number_densities
+
+
+    return sample
+
+
+
+def fiducial_sim_step2(output_directory, lens_type="maglim", combined=True):
+    shell_cl_filename = "sim-data/cls_150M_l10000.npy"
+    mask_filename = "des-data/desy3_gold_mask.npy"
+    g_ell_file = "sim-data/g_ell_150M_l10000.pkl"
+    rng = np.random.default_rng(seed=42)
+
+    # Load the number density information
+    sample = load_sample_information(lens_type, combined)
+
+    # Load the Shell C_ell information.
+    # We don't need it if we already have the g_ell data that it
+    #is used to generate
+    if os.path.exists(g_ell_file):
+        shell_cl = None
+    else:
+        shell_cl = np.load(shell_cl_filename)
+        print(f"Loaded shell c_ells")
+
+    # Load the overall geographic mask, referred to as a "vis" mask in GLASS.
+    mask = load_mask(mask_filename)
+    _, cosmo = fiducial_cosmology_objetcts()
+
+    # Generate the iterator that produces the matter fields
+    matter = generate_matter_fields(shell_cl, rng, g_ell_file)
+
+    # this will compute the convergence field iteratively
+    convergence = glass.MultiPlaneConvergence(cosmo)
+    windows = shell_configuration(cosmo)
+
 
     # distribute the n(z) for this bin over the 
-    source_ngal_per_shell = [glass.partition(source_z, source_nz[b], windows) for b in range(nbin_source)]
-    lens_ngal_per_shell = [glass.partition(lens_z, lens_nz[b], windows) for b in range(nbin_lens)]
+    source_ngal_per_shell = [glass.partition(sample.source_z, sample.source_nz[b], windows) for b in range(sample.nbin_source)]
+    lens_ngal_per_shell = [glass.partition(sample.lens_z, sample.lens_nz[b], windows) for b in range(sample.nbin_lens)]
     print("Number densities ready")
 
-    source_catalogs = [[] for _ in range(nbin_source)]
-    lens_catalogs = [[] for _ in range(nbin_lens)]
+    source_catalogs = [[] for _ in range(sample.nbin_source)]
+    lens_catalogs = [[] for _ in range(sample.nbin_lens)]
 
     # simulate the matter fields in the main loop, and build up the catalogue
     for i, delta in tqdm.tqdm(enumerate(matter)):
@@ -328,7 +378,7 @@ def fiducial_sim_step2(lens_type="maglim", tomographic=True):
         kappa = convergence.kappa
         g1, g2 = glass.shear_from_convergence(kappa)
 
-        for j in range(nbin_source):
+        for j in range(sample.nbin_source):
             # ignore bias in the source sample
             bias = 1.0
             ngal = source_ngal_per_shell[j][i]
@@ -337,11 +387,11 @@ def fiducial_sim_step2(lens_type="maglim", tomographic=True):
                 rows = generate_shell_source_sample(delta, kappa, g1, g2, window, ngal, bias, sigma_e, mask, rng)
                 source_catalogs[j].append(rows)
         
-        for j in range(nbin_lens):
+        for j in range(sample.nbin_lens):
             ngal = lens_ngal_per_shell[j][i]
 
             # constant bias across the redshift bin
-            bias = galaxy_bias[j] 
+            bias = sample.galaxy_bias[j] 
 
             print(f"Shell {i}, bin {j}, lens ngal = {ngal}")
             if ngal != 0:
@@ -349,14 +399,14 @@ def fiducial_sim_step2(lens_type="maglim", tomographic=True):
                 lens_catalogs[j].append(rows)
         
 
-    for j in range(nbin_source):
+    for j in range(sample.nbin_source):
         source_catalog = np.concatenate(source_catalogs[j])
-        np.save(f"source_catalog_{j}.npy", source_catalog)
+        np.save(f"{output_directory}/source_catalog_{j}.npy", source_catalog)
     
-    for j in range(nbin_lens):
+    for j in range(sample.nbin_lens):
         lens_catalog = np.concatenate(lens_catalogs[j])
-        np.save(f"lens_catalog_{lens_type}_{j}.npy", lens_catalog)
+        np.save(f"{output_directory}/lens_catalog_{lens_type}_{j}.npy", lens_catalog)
 
 
 if __name__ == "__main__":
-    fiducial_sim_step2()
+    fiducial_sim_step2("sim1", lens_type="maglim", combined=True)
