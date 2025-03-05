@@ -41,6 +41,8 @@ source_number_densities = [
     1.461247850098986,
 ]
 
+combined_source_number_densities = sum(source_number_densities)
+
 
 def fiducial_params():
     h = 0.7
@@ -129,8 +131,11 @@ def fiducial_sim_step1():
     windows = shell_configuration(h, Omega_c, Omega_b)
     generate_shell_cl(windows, h, Omega_c, Omega_b, shell_cl_filename)
 
-def load_number_densities(lens_type, tomographic=False):
-    source_data = np.loadtxt("source_nz.txt").T
+def load_number_densities(lens_type, combined=True):
+    if combined:
+        source_data = np.loadtxt("combined_source_nz.txt").T
+    else:
+        source_data = np.loadtxt("source_nz.txt").T
     source_z = source_data[0]
     source_nz = source_data[1:]
 
@@ -238,6 +243,9 @@ def fiducial_sim_step2(lens_type="maglim", tomographic=True):
     mask_filename = "des-data/desy3_gold_mask.npy"
     g_ell_file = "sim-data/g_ell_150M_l10000.pkl"
 
+
+    source_z, source_nz, lens_z, lens_nz = load_number_densities(lens_type, tomographic)
+
     if os.path.exists(g_ell_file):
         shell_cl = None
     else:
@@ -280,8 +288,7 @@ def fiducial_sim_step2(lens_type="maglim", tomographic=True):
     print("Convergence object ready")
 
     windows = shell_configuration(cosmo)
-    source_z, source_nz, lens_z, lens_nz = load_number_densities(lens_type, tomographic)
-    print("Loaded number densities")
+    print(f"Loaded number densities - {len(source_nz)} source bins, {len(lens_nz)} lens bins")
 
     # normalize the number densities
 
