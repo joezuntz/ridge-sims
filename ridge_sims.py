@@ -7,7 +7,12 @@ import glass.ext.camb
 import healpy
 import multiprocessing
 import pickle
+import sys
+import tqdm
 
+def flush():
+    sys.stdout.flush()
+    sys.stderr.flush()
 
 # basic parameters of the simulation
 nside = 4096
@@ -133,16 +138,17 @@ def fiducial_sim_step1():
 
 def load_number_densities(lens_type, combined=True):
     if combined:
-        source_data = np.loadtxt("combined_source_nz.txt").T
+        source_data = np.loadtxt("des-data/combined_source_nz.txt").T
     else:
-        source_data = np.loadtxt("source_nz.txt").T
+        source_data = np.loadtxt("des-data/source_nz.txt").T
+
     source_z = source_data[0]
     source_nz = source_data[1:]
 
     if lens_type == "maglim":
-        lens_data = np.loadtxt("maglim_nz.txt").T
+        lens_data = np.loadtxt("des-data/maglim_nz.txt").T
     elif lens_type == "redmagic":
-        lens_data = np.loadtxt("redmagic_nz.txt").T
+        lens_data = np.loadtxt("des-data/redmagic_nz.txt").T
     else:
         raise ValueError("lens_type must be 'maglim' or 'redmagic'")
     lens_z = lens_data[0]
@@ -255,7 +261,7 @@ def fiducial_sim_step2(lens_type="maglim", tomographic=True):
     mask = load_mask(mask_filename)
     print("Loaded mask")
     _, cosmo = fiducial_cosmology_objetcts()
-
+    flush()
 
     rng = np.random.default_rng(seed=42)
     matter = generate_matter_fields(shell_cl, rng, g_ell_file=g_ell_file)
@@ -282,6 +288,7 @@ def fiducial_sim_step2(lens_type="maglim", tomographic=True):
         ]
         galaxy_bias = redmagic_bias
 
+    flush()
 
     # this will compute the convergence field iteratively
     convergence = glass.MultiPlaneConvergence(cosmo)
@@ -312,8 +319,9 @@ def fiducial_sim_step2(lens_type="maglim", tomographic=True):
     lens_catalogs = [[] for _ in range(nbin_lens)]
 
     # simulate the matter fields in the main loop, and build up the catalogue
-    for i, delta in enumerate(matter):
+    for i, delta in tqdm.tqdm(enumerate(matter)):
         print(f"Processing shell {i} / {len(windows)}")
+        flush()
         window = windows[i]
 
         convergence.add_window(delta, window)
