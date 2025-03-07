@@ -139,7 +139,9 @@ def estimate_lens_nz_with_cut(input_file, zmax, output_file):
     weight = weight[cut]
 
     dz = 0.01
-    bins = np.arange(0, zmax+dz/2, dz)
+    # we go up to well above the max z here because
+    # there can be catastrophic outliers sometimes
+    bins = np.arange(0, 3.005, dz)
 
     if z_mc.ndim == 2:
         # the redmagic sample has multiple redshift sample draws
