@@ -79,17 +79,22 @@ def extract_source_samples(index_file, metacal_file, shear_output_file):
 def extract_maglim_sample(index_file, lens_file, dnf_file, maglim_output_file):
     with h5py.File(index_file, 'r') as f:
         sel = f["/index/maglim/select"][:]
+    print("Read maglim index")
 
     with h5py.File(lens_file, "r") as f:
-        ra = f["/catalog/maglim/ra"][sel]
-        dec = f["/catalog/maglim/dec"][sel]
-        weight = f["/catalog/maglim/weight"][sel]
+        ra = f["/catalog/maglim/ra"][:][sel]
+        dec = f["/catalog/maglim/dec"][:][sel]
+        weight = f["/catalog/maglim/weight"][:][sel]
+
+    print("Read maglim sample")
     
     with h5py.File(dnf_file, "r") as f:
         # used for estimating the ensemble
-        z_mc = f["/catalog/unsheared/zmc_sof"][sel]
+        z_mc = f["/catalog/unsheared/zmc_sof"][:][sel]
         # used for the cut
-        z_mean = f["/catalog/unsheared/zmean_sof"][sel]
+        z_mean = f["/catalog/unsheared/zmean_sof"][:][sel]
+
+    print("Read maglim redshifts")
 
     with h5py.File(maglim_output_file, "w") as f:
         f.create_dataset("ra", data=ra)
@@ -98,23 +103,23 @@ def extract_maglim_sample(index_file, lens_file, dnf_file, maglim_output_file):
         f.create_dataset("z_sample", data=z_mc)
         f.create_dataset("z", data=z_mean)
 
+    print("Saved maglim info")
+
 
 def extract_redmagic_sample(index_file, lens_file, redmagic_output_file):
 
     with h5py.File(index_file, 'r') as f:
         sel = f["/index/redmagic/combined_sample_fid/select"][:]
 
-    print("Read index")
+    print("Read redmagic index")
 
     with h5py.File(lens_file, "r") as f:
-        ra = f["/catalog/redmagic/combined_sample_fid/ra"][sel]
-        dec = f["/catalog/redmagic/combined_sample_fid/dec"][sel]
-        print("Read RA and Dec")
-        weight = f["/catalog/redmagic/combined_sample_fid/weight"][sel]
-        print("Read weight")
-        z = f["/catalog/redmagic/combined_sample_fid/zredmagic"][sel]
-        z_sample = f["/catalog/redmagic/combined_sample_fid/zredmagic_samp"][sel]
-        print("Read redshifts")
+        ra = f["/catalog/redmagic/combined_sample_fid/ra"][:][sel]
+        dec = f["/catalog/redmagic/combined_sample_fid/dec"][:][sel]
+        weight = f["/catalog/redmagic/combined_sample_fid/weight"][:][sel]
+        z = f["/catalog/redmagic/combined_sample_fid/zredmagic"][:][sel]
+        z_sample = f["/catalog/redmagic/combined_sample_fid/zredmagic_samp"][:][sel]
+    print("Read redmagic sample")
 
     with h5py.File(redmagic_output_file, "w") as f:
         f.create_dataset("ra", data=ra)
@@ -215,7 +220,7 @@ if __name__ == "__main__":
     shear_output_file = "des-data/ridge-shear-sample.h5"
     maglim_output_file = "des-data/ridge-maglim-sample.h5"
     redmagic_output_file = "des-data/ridge-redmagic-sample.h5"
-    extract_source_samples(index_file, metacal_file, shear_output_file)
+    # extract_source_samples(index_file, metacal_file, shear_output_file)
     extract_maglim_sample(index_file, lens_file, dnf_file, maglim_output_file)
     extract_redmagic_sample(index_file, lens_file, redmagic_output_file)
 
