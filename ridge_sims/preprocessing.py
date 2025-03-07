@@ -144,7 +144,7 @@ def estimate_lens_nz_with_cut(input_file, zmax, output_file):
     if z_mc.ndim == 2:
         # the redmagic sample has multiple redshift sample draws
         counts = 0
-        nsamp = z_mc.ndim[1]
+        nsamp = z_mc.shape[1]
         for i in range(nsamp):
             counts_i, edges = np.histogram(z_mc[:, i], weights=weight, bins=bins)
             counts += counts_i / nsamp
