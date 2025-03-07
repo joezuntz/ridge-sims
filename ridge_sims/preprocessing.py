@@ -139,7 +139,17 @@ def estimate_lens_nz_with_cut(input_file, zmax, output_file):
     weight = weight[cut]
 
     dz = 0.01
-    counts, edges = np.histogram(z_mc, weights=weight, bins=np.arange(0, zmax+dz/2, dz))
+    bins = np.arange(0, zmax+dz/2, dz)
+
+    if z_mc.ndim == 2:
+        # the redmagic sample has multiple redshift sample draws
+        counts = 0
+        nsamp = z_mc.ndim[1]
+        for i in range(nsamp):
+            counts_i, edges = np.histogram(z_mc[:, i], weights=weight, bins=bins)
+            counts += counts_i / nsamp
+    else:
+        counts, edges = np.histogram(z_mc, weights=weight, bins=bins)
     mids = 0.5 * (edges[1:] + edges[:-1])
     np.savetxt(output_file, np.transpose([mids, counts]), header="z n_z")
 
