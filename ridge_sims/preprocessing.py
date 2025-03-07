@@ -9,6 +9,7 @@ maglim_nz_file = "2pt_NG_final_2ptunblind_02_26_21_wnz_maglim_covupdate.fits"
 index_file = "des-data/DESY3_indexcat.h5"
 metacal_file = "des-data/DESY3_metacal_v03-004.h5"
 lens_file = "des-data/DESY3_maglim_redmagic_v0.5.1.h5"
+dnf_file = "des-data/DESY3_GOLD_2_2.1_DNF.h5"
 
 
 def calibrate_shears(index_file, metacal_file):
@@ -57,10 +58,13 @@ def extract_source_samples(index_file, metacal_file, shear_output_file):
     # calibrate it (R and S), and save it.
 
     sel, e1, e2 = calibrate_shears(index_file, metacal_file)
-    with h5py.File(index_file, 'r') as f:
-        ra = f['/index/metacal/ra'][:][sel]
-        dec = f['/index/metacal/dec'][:][sel]
-        weight = f['/index/metacal/weight'][:][sel]
+    print("Calibrated shears")
+    with h5py.File(metacal_file, 'r') as f:
+        ra = f['/catalog/unsheared/ra'][:][sel]
+        dec = f['/catalog/unsheared/dec'][:][sel]
+        weight = f['/catalog/unsheared/weight'][:][sel]
+
+    print("Read source sample")
 
     with h5py.File(shear_output_file, "w") as f:
         f.create_dataset("ra", data=ra)
@@ -100,12 +104,17 @@ def extract_redmagic_sample(index_file, lens_file, redmagic_output_file):
     with h5py.File(index_file, 'r') as f:
         sel = f["/index/redmagic/combined_sample_fid/select"][:]
 
+    print("Read index")
+
     with h5py.File(lens_file, "r") as f:
         ra = f["/catalog/redmagic/combined_sample_fid/ra"][sel]
         dec = f["/catalog/redmagic/combined_sample_fid/dec"][sel]
+        print("Read RA and Dec")
         weight = f["/catalog/redmagic/combined_sample_fid/weight"][sel]
+        print("Read weight")
         z = f["/catalog/redmagic/combined_sample_fid/zredmagic"][sel]
         z_sample = f["/catalog/redmagic/combined_sample_fid/zredmagic_samp"][sel]
+        print("Read redshifts")
 
     with h5py.File(redmagic_output_file, "w") as f:
         f.create_dataset("ra", data=ra)
@@ -207,6 +216,6 @@ if __name__ == "__main__":
     maglim_output_file = "des-data/ridge-maglim-sample.h5"
     redmagic_output_file = "des-data/ridge-redmagic-sample.h5"
     extract_source_samples(index_file, metacal_file, shear_output_file)
-    extract_maglim_sample(index_file, lens_file, metacal_file, maglim_output_file)
+    extract_maglim_sample(index_file, lens_file, dnf_file, maglim_output_file)
     extract_redmagic_sample(index_file, lens_file, redmagic_output_file)
 
