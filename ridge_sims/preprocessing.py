@@ -3,9 +3,13 @@ import h5py
 from astropy.io import fits
 from astropy.table import Table
 
-gold_mask_file = "DESY3_GOLD_2_2.1.h5"
+gold_mask_file = "des-data/DESY3_GOLD_2_2.1.h5"
 redmagic_nz_file = "2pt_NG_final_2ptunblind_02_24_21_wnz_covupdate.v2.fits"
 maglim_nz_file = "2pt_NG_final_2ptunblind_02_26_21_wnz_maglim_covupdate.fits"
+index_file = "des-data/DESY3_indexcat.h5"
+metacal_file = "des-data/DESY3_metacal_v03-004.h5"
+lens_file = "des-data/DESY3_maglim_redmagic_v0.5.1.h5"
+
 
 def calibrate_shears(index_file, metacal_file):
     delta_gamma = 0.02
@@ -198,4 +202,11 @@ def extract_all_nz():
 
 if __name__ == "__main__":
     # extract_all_nz()
-    extract_source_nz(maglim_nz_file, "source_nz_combined.txt")
+    # extract_source_nz(maglim_nz_file, "source_nz_combined.txt")
+    shear_output_file = "des-data/ridge-shear-sample.h5"
+    maglim_output_file = "des-data/ridge-maglim-sample.h5"
+    redmagic_output_file = "des-data/ridge-redmagic-sample.h5"
+    extract_source_samples(index_file, metacal_file, shear_output_file)
+    extract_maglim_sample(index_file, lens_file, metacal_file, maglim_output_file)
+    extract_redmagic_sample(index_file, lens_file, redmagic_output_file)
+
