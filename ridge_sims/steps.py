@@ -73,19 +73,3 @@ def step3(config):
     _, cosmo = get_parameter_objects(config.h, config.Omega_c, config.Omega_b)
 
     simulate_catalogs(gls, rng, cosmo, sample, mask, config.nside, config.source_cat_file, config.lens_cat_file, config.zmax, config.dx)
-
-
-def fiducial_config():
-    config = Config()
-    config.sim_dir = "sim-fiducial"
-    config.set_fiducial_cosmology()
-    config.set_file_names()
-    config.lens_type = "maglim"
-    config.lmax = 10_000
-    config.combined = True
-    config.zmax = 3.0
-    config.dx = 150.0
-    config.nside = 4096
-    config.nprocess = 1
-
-    return config

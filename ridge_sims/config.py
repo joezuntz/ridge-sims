@@ -1,10 +1,6 @@
 import yaml
-
-def fiducial_params():
-    h = 0.7
-    Omega_c = 0.25
-    Omega_b = 0.05
-    return h, Omega_c, Omega_b
+import scipy.stats.qmc
+import os
 
 
 class Config(dict):
@@ -31,4 +27,82 @@ class Config(dict):
     def to_yaml(self, filename):
         with open(filename, "w") as f:
             yaml.dump(self, f)
+
+    def save_config(self):
+        os.makedirs(self.sim_dir, exist_ok=True)
+        filename = f"{self.sim_dir}/config.yaml"
+        with open(filename, "w") as f:
+            yaml.dump(self, f)
+
+
+
+def fiducial_params():
+    h = 0.7
+    Omega_c = 0.25
+    Omega_b = 0.05
+    return h, Omega_c, Omega_b
+
+
+
+def fiducial_config():
+    config = Config()
+    config.sim_dir = "sim-fiducial"
+    config.set_fiducial_cosmology()
+    config.set_file_names()
+    config.lens_type = "maglim"
+    config.lmax = 10_000
+    config.combined = True
+    config.zmax = 3.0
+    config.dx = 150.0
+    config.nside = 4096
+    config.nprocess = 1
+    config.save_config()
+    return config
+
+def latin_hypercube_points(n, bounds=None):
+    """
+    Iterate through Latin Hypercube samples 
+    """
+    if bounds is None:
+        bounds = [
+            (0.5, 0.9), # h
+            (0.1, 0.4), # Omega_c
+            (0.03, 0.04), # Omega_b
+        ]
+    sampler = scipy.stats.qmc.LatinHypercube(len(bounds))
+    for sample in sampler.random(n):
+        x = [b[0] + s * (b[1] - b[0]) for s, b in zip(sample, bounds)]
+        yield x
+
+def latin_hypercube_configurations(n):
+    for i, params in enumerate(latin_hypercube_points(n)):
+        config = Config()
+        config.sim_dir = f"lhc/sim-i{i}"
+        config.h, config.Omega_c, config.Omega_b = params
+        config.set_file_names()
+        config.lens_type = "maglim"
+        config.lmax = 10_000
+        config.combined = True
+        config.zmax = 3.0
+        config.dx = 150.0
+        config.nside = 4096
+        config.nprocess = 1
+        yield config
+
+
+def fiducial_config():
+    config = Config()
+    config.sim_dir = "sim-fiducial"
+    config.set_fiducial_cosmology()
+    config.set_file_names()
+    config.lens_type = "maglim"
+    config.lmax = 10_000
+    config.combined = True
+    config.zmax = 3.0
+    config.dx = 150.0
+    config.nside = 4096
+    config.nprocess = 1
+
+    return config
+
 

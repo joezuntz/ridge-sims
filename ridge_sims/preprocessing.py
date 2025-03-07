@@ -7,6 +7,127 @@ gold_mask_file = "DESY3_GOLD_2_2.1.h5"
 redmagic_nz_file = "2pt_NG_final_2ptunblind_02_24_21_wnz_covupdate.v2.fits"
 maglim_nz_file = "2pt_NG_final_2ptunblind_02_26_21_wnz_maglim_covupdate.fits"
 
+def calibrate_shears(index_file, metacal_file):
+    delta_gamma = 0.02
+
+    with h5py.File(index_file, 'r') as f:
+        # for the selection bias calculation.
+        # These are index arrays into the full set.
+        s00 = f["/index/metacal/select"][:]
+        s1m = f["/index/metacal/select_1m"][:]
+        s1p = f["/index/metacal/select_1p"][:]
+        s2m = f["/index/metacal/select_2m"][:]
+        s2p = f["/index/metacal/select_2p"][:]
+
+
+    with h5py.File(metacal_file, 'r') as f:
+        # The main response term is just the mean of the Rij columns
+        # selected by the s00
+        R11 = f['catalog/unsheared/R11'][:][s00].mean()
+        R22 = f['catalog/unsheared/R22'][:][s00].mean()
+        R12 = f['catalog/unsheared/R12'][:][s00].mean()
+        R21 = f['catalog/unsheared/R21'][:][s00].mean()
+        R_gamma = np.array([[R11, R12], [R21, R22]])
+
+        e1 = f['catalog/unsheared/e_1'][:]
+        e2 = f['catalog/unsheared/e_2'][:]
+
+
+    S11 = (e1[s1p].mean() - e1[s1m].mean()) / delta_gamma
+    S22 = (e2[s2p].mean() - e2[s2m].mean()) / delta_gamma
+    S12 = (e1[s2p].mean() - e1[s2m].mean()) / delta_gamma
+    S21 = (e2[s1p].mean() - e2[s1m].mean()) / delta_gamma
+    R_S = np.array([[S11, S12], [S21, S22]])
+
+    R = R_gamma + R_S
+
+    R_inv = np.linalg.inv(R)
+    e1, e2 = R_inv @ [e1, e2]
+
+    return s00, e1, e2
+
+
+
+def extract_source_samples(index_file, metacal_file, shear_output_file):
+    # 1 load the metacal sample, apply the /index/metacal/select selection,
+    # calibrate it (R and S), and save it.
+
+    sel, e1, e2 = calibrate_shears(index_file, metacal_file)
+    with h5py.File(index_file, 'r') as f:
+        ra = f['/index/metacal/ra'][:][sel]
+        dec = f['/index/metacal/dec'][:][sel]
+        weight = f['/index/metacal/weight'][:][sel]
+
+    with h5py.File(shear_output_file, "w") as f:
+        f.create_dataset("ra", data=ra)
+        f.create_dataset("dec", data=dec)
+        f.create_dataset("e1", data=e1)
+        f.create_dataset("e2", data=e2)
+        f.create_dataset("weight", data=weight)
+    
+    # we can just use the source n(z) file for this since it should match,
+    # as we are not doing any additional cuts, so no need to extract it from anywhere
+
+def extract_maglim_sample(index_file, lens_file, dnf_file, maglim_output_file):
+    with h5py.File(index_file, 'r') as f:
+        sel = f["/index/maglim/select"][:]
+
+    with h5py.File(lens_file, "r") as f:
+        ra = f["/catalog/maglim/ra"][sel]
+        dec = f["/catalog/maglim/dec"][sel]
+        weight = f["/catalog/maglim/weight"][sel]
+    
+    with h5py.File(dnf_file, "r") as f:
+        # used for estimating the ensemble
+        z_mc = f["/catalog/unsheared/zmc_sof"][sel]
+        # used for the cut
+        z_mean = f["/catalog/unsheared/zmean_sof"][sel]
+
+    with h5py.File(maglim_output_file, "w") as f:
+        f.create_dataset("ra", data=ra)
+        f.create_dataset("dec", data=dec)
+        f.create_dataset("weight", data=weight)
+        f.create_dataset("z_sample", data=z_mc)
+        f.create_dataset("z", data=z_mean)
+
+
+def extract_redmagic_sample(index_file, lens_file, redmagic_output_file):
+
+    with h5py.File(index_file, 'r') as f:
+        sel = f["/index/redmagic/combined_sample_fid/select"][:]
+
+    with h5py.File(lens_file, "r") as f:
+        ra = f["/catalog/redmagic/combined_sample_fid/ra"][sel]
+        dec = f["/catalog/redmagic/combined_sample_fid/dec"][sel]
+        weight = f["/catalog/redmagic/combined_sample_fid/weight"][sel]
+        z = f["/catalog/redmagic/combined_sample_fid/zredmagic"][sel]
+        z_sample = f["/catalog/redmagic/combined_sample_fid/zredmagic_samp"][sel]
+
+    with h5py.File(redmagic_output_file, "w") as f:
+        f.create_dataset("ra", data=ra)
+        f.create_dataset("dec", data=dec)
+        f.create_dataset("weight", data=weight)
+        f.create_dataset("z_sample", data=z_sample)
+        f.create_dataset("z", data=z)
+
+def estimate_lens_nz_with_cut(input_file, zmax, output_file):
+    with h5py.File(input_file) as f:
+        z = f["/catalog/unsheared/z"][:]
+        weight = f["/catalog/unsheared/weight"][:]
+        z_mc = f["/catalog/unsheared/zmc"][:]
+
+    cut = z < zmax
+    z_mc = z_mc[cut]
+    weight = weight[cut]
+
+    dz = 0.01
+    counts, edges = np.histogram(z_mc, weights=weight, bins=np.arange(0, zmax+dz/2, dz))
+    mids = 0.5 * (edges[1:] + edges[:-1])
+    np.savetxt(output_file, np.transpose([mids, counts]), header="z n_z")
+
+
+
+
 def extract_des_mask_from_gold(mask_file):
     """
     This is a one-off pre-run step to pull
