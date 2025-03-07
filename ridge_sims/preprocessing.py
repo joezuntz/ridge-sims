@@ -130,9 +130,9 @@ def extract_redmagic_sample(index_file, lens_file, redmagic_output_file):
 
 def estimate_lens_nz_with_cut(input_file, zmax, output_file):
     with h5py.File(input_file) as f:
-        z = f["/catalog/unsheared/z"][:]
-        weight = f["/catalog/unsheared/weight"][:]
-        z_mc = f["/catalog/unsheared/zmc"][:]
+        z = f["z"][:]
+        z_mc = f["z_sample"][:]   
+        weight = f["weight"][:]
 
     cut = z < zmax
     z_mc = z_mc[cut]
@@ -220,7 +220,13 @@ if __name__ == "__main__":
     shear_output_file = "des-data/ridge-shear-sample.h5"
     maglim_output_file = "des-data/ridge-maglim-sample.h5"
     redmagic_output_file = "des-data/ridge-redmagic-sample.h5"
+    zmax = 0.9
+    maglim_nz_file = "des-data/maglim_nz_zcut_0.9.txt"
+    redmagic_nz_file = "des-data/redmagic_nz_zcut_0.9.txt"
     # extract_source_samples(index_file, metacal_file, shear_output_file)
-    extract_maglim_sample(index_file, lens_file, dnf_file, maglim_output_file)
-    extract_redmagic_sample(index_file, lens_file, redmagic_output_file)
+    # extract_maglim_sample(index_file, lens_file, dnf_file, maglim_output_file)
+    # extract_redmagic_sample(index_file, lens_file, redmagic_output_file)
+
+    estimate_lens_nz_with_cut(maglim_output_file, zmax, maglim_nz_file)
+    estimate_lens_nz_with_cut(redmagic_output_file, zmax, redmagic_nz_file)
 
