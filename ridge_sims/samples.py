@@ -6,9 +6,14 @@ class SampleInfo(SimpleNamespace):
     pass
 
 mask_filename = "des-data/desy3_gold_mask.npy"
+
 source_nz_filename = "des-data/source_nz.txt"
-maglim_nz_filename = "des-data/maglim_nz.txt"
-redmagic_nz_filename = "des-data/redmagic_nz.txt"
+tomographic_maglim_nz_filename = "des-data/maglim_nz.txt"
+tomographic_redmagic_nz_filename = "des-data/redmagic_nz.txt"
+
+combined_maglim_nz_filename = "des-data/maglim_nz_zcut_0.9.txt"
+combined_redmagic_nz_filename = "des-data/redmagic_nz_zcut_0.9.txt"
+
 
 # from https://arxiv.org/pdf/2105.13546
 tomographic_maglim_bias = [
@@ -101,38 +106,31 @@ def load_sample_information(lens_type, combined=True):
         source_number_densities = tomographic_source_number_densities
         sigma_e = tomographic_sigma_e
 
-    if lens_type == "maglim":
-        lens_data = np.loadtxt(maglim_nz_filename).T
-    elif lens_type == "redmagic":
-        lens_data = np.loadtxt(redmagic_nz_filename).T
-    else:
-        raise ValueError("lens_type must be 'maglim' or 'redmagic'")
-
-    lens_z = lens_data[0]
-    lens_nz = lens_data[1:]
-
-    nbin_source = len(source_nz)
-    nbin_lens = len(lens_nz)
 
     if lens_type == "maglim":
         if combined:
             lens_number_densities = [maglim_combined_number_densities]
             galaxy_bias = [np.mean(combined_maglim_bias)]
-            nbin_lens = 1
-            lens_nz = [tomographic_maglim_number_densities @ lens_nz]
+            lens_data = np.loadtxt(combined_maglim_nz_filename).T
         else:
             sample.lens_number_densities = tomographic_maglim_number_densities
             sample.galaxy_bias = tomographic_maglim_bias
+            lens_data = np.loadtxt(tomographic_maglim_nz_filename).T
+            
     else:
         if combined:
             lens_number_densities = [redmagic_combined_number_densities]
             galaxy_bias = np.mean(tomographic_redmagic_bias)
-            nbin_lens = 1
-            lens_nz = [tomographic_redmagic_number_densities @ lens_nz]
+            lens_data = np.loadtxt(combined_redmagic_nz_filename).T
         else:
             lens_number_densities = tomographic_redmagic_number_densities
             galaxy_bias = tomographic_redmagic_bias
+            lens_data = np.loadtxt(tomographic_redmagic_nz_filename).T
 
+    lens_z = lens_data[0]
+    lens_nz = lens_data[1:]
+    nbin_lens = len(lens_nz)
+    nbin_source = len(source_nz)
 
     for i in range(nbin_source):
         source_nz[i] /= np.trapezoid(source_nz[i], source_z)
