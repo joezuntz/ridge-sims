@@ -2,6 +2,8 @@ import numpy as np
 import h5py
 from astropy.io import fits
 from astropy.table import Table
+from scipy.interpolate import make_smoothing_spline
+
 
 gold_mask_file = "des-data/DESY3_GOLD_2_2.1.h5"
 redmagic_nz_file = "2pt_NG_final_2ptunblind_02_24_21_wnz_covupdate.v2.fits"
@@ -155,6 +157,31 @@ def estimate_lens_nz_with_cut(input_file, zmax, output_file):
     mids = 0.5 * (edges[1:] + edges[:-1])
     np.savetxt(output_file, np.transpose([mids, counts]), header="z n_z")
 
+def estimate_smooth_source_nz(index_file, metacal_file, dnf_file, output_file):
+
+    with h5py.File(index_file, 'r') as f:
+        # for the selection bias calculation.
+        # These are index arrays into the full set.
+        sel = f["/index/metacal/select"][:]
+
+    with h5py.File(metacal_file, 'r') as f:
+        weight = f['/catalog/unsheared/weight'][:][sel]
+
+    with h5py.File(dnf_file, "r") as f:
+        # used for estimating the ensemble
+        z_mc = f["/catalog/unsheared/zmc_sof"][:][sel]
+
+    dz = 0.01
+    bins = np.arange(0, 3.005, dz)
+    counts, edges = np.histogram(z_mc, weights=weight, bins=bins, density=True)
+
+    mids = 0.5 * (edges[1:] + edges[:-1])
+
+    # smoothing
+    s = make_smoothing_spline(mids, counts)
+    smooth_nz = s(mids)
+
+    np.savetxt(output_file, np.transpose([mids, smooth_nz]), header="z n_z")
 
 
 
@@ -235,10 +262,12 @@ if __name__ == "__main__":
     zmax = 0.9
     maglim_nz_file = "des-data/maglim_nz_zcut_0.9.txt"
     redmagic_nz_file = "des-data/redmagic_nz_zcut_0.9.txt"
+    source_nz_file = "des-data/source_nz_smooth.txt"
     # extract_source_samples(index_file, metacal_file, shear_output_file)
     # extract_maglim_sample(index_file, lens_file, dnf_file, maglim_output_file)
     # extract_redmagic_sample(index_file, lens_file, redmagic_output_file)
 
-    estimate_lens_nz_with_cut(maglim_output_file, zmax, maglim_nz_file)
-    estimate_lens_nz_with_cut(redmagic_output_file, zmax, redmagic_nz_file)
+    # estimate_lens_nz_with_cut(maglim_output_file, zmax, maglim_nz_file)
+    # estimate_lens_nz_with_cut(redmagic_output_file, zmax, redmagic_nz_file)
 
+    estimate_smooth_source_nz(index_file, metacal_file, dnf_file, source_nz_file)

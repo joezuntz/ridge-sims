@@ -7,7 +7,7 @@ class SampleInfo(SimpleNamespace):
 
 mask_filename = "des-data/desy3_gold_mask.npy"
 
-source_nz_filename = "des-data/source_nz.txt"
+source_nz_filename = "des-data/source_nz_smooth.txt"
 tomographic_maglim_nz_filename = "des-data/maglim_nz.txt"
 tomographic_redmagic_nz_filename = "des-data/redmagic_nz.txt"
 

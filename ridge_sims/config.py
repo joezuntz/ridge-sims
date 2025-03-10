@@ -43,22 +43,6 @@ def fiducial_params():
     return h, Omega_c, Omega_b
 
 
-
-def fiducial_config():
-    config = Config()
-    config.sim_dir = "sim-fiducial"
-    config.set_fiducial_cosmology()
-    config.set_file_names()
-    config.lens_type = "maglim"
-    config.lmax = 10_000
-    config.combined = True
-    config.zmax = 3.0
-    config.dx = 150.0
-    config.nside = 4096
-    config.nprocess = 1
-    config.save_config()
-    return config
-
 def latin_hypercube_points(n, bounds=None):
     """
     Iterate through Latin Hypercube samples 
@@ -102,7 +86,7 @@ def fiducial_config():
     config.dx = 150.0
     config.nside = 4096
     config.nprocess = 1
-
+    config.save_config()
     return config
 
 

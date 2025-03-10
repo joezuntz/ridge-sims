@@ -57,8 +57,6 @@ def generate_shell_source_sample(delta_i, kappa_map, g1_map, g2_map, window, she
         ("RA", float),
         ("DEC", float),
         ("Z_TRUE", float),
-        ("PHZ", float),
-        ("ZBIN", int),
         ("G1", float),
         ("G2", float),
     ]
@@ -110,7 +108,6 @@ def generate_shell_lens_sample(delta_i, window, shell_ngal, shell_bias, mask, rn
         ("RA", float),
         ("DEC", float),
         ("Z_TRUE", float),
-        ("ZBIN", int),
     ]
 
     catalog = []
