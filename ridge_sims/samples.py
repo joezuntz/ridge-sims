@@ -100,7 +100,6 @@ def load_sample_information(lens_type, combined=True):
 
     if combined:
         source_number_densities = [combined_source_number_densities]
-        source_nz = [tomographic_source_number_densities @ source_nz]
         sigma_e = combined_sigma_e
     else:
         source_number_densities = tomographic_source_number_densities
