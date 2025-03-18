@@ -5,8 +5,9 @@ import pyccl
 import treecorr
 import ridge_sims.config
 import ridge_sims.samples
-import tqdm
-
+import multiprocessing
+import functools
+import os
 
 def make_count_map(nside, cat):
     npix = healpy.nside2npix(nside)
@@ -16,7 +17,7 @@ def make_count_map(nside, cat):
 
 def get_density(cat):
     nside = 512
-    m = make_count_map(cat)
+    m = make_count_map(nside, cat)
     m = healpy.ud_grade(m, nside, power=-2)
     npix_hit = (m>0).sum()
     nsqdeg_per_pixel = healpy.nside2pixarea(nside, degrees=True)
@@ -30,6 +31,7 @@ def make_maps(l0, s0):
     nside = 512
     lmap = make_count_map(nside, l0)
     smap = make_count_map(nside, s0)
+    print("Made count maps")
     healpy.mollview(lmap,  title="Lens count")
     plt.savefig("./sim-fiducial/lens_count.png")
     plt.close()
@@ -55,38 +57,51 @@ def redshift_histograms(l0, s0):
     plt.xlabel('Redshift')
     plt.ylabel('Count')
     plt.title('Redshift distribution')
-    plt.savefig('./sim-fiducial/redshift_histogram.png') 
+    plt.savefig('./sim-fiducial/redshift_histogram.png')
+    plt.close()
+    print("plotted z hists")
 
+def gen_random(i, n, mask, nside):
+    ra = np.random.uniform(0, 360, n)
+    dec = np.rad2deg(np.arcsin(np.random.uniform(-1, 1, n)))
+    pix = healpy.ang2pix(nside, ra, dec, lonlat=True)
+    # get mask value of pixel                                                                                                                                                          
+    mask_value = mask[pix]
+    # keep only points in mask                                                                                                                                                         
+    ra = ra[mask_value > 0]
+    dec = dec[mask_value > 0]
+    print("Generated random sample ", i)
+    return (ra, dec)
 
 def random_points_in_mask(nside, density_sqarcmin=10, thin=10):
-    mask = ridge_sims.samples.load_mask(nside)
-    # hugely lazy way to do this for a small sky fraction!
-    nsqarcmin_sky = 41252.96125 * 60 * 60
-    ntot = int(nsqarcmin_sky * density_sqarcmin)
-    print(ntot)
-    npix = len(mask)
-    nside = healpy.npix2nside(npix)
-    chunks = 10
-    n = ntot // chunks
-    ras = []
-    decs = []
-    for i in tqdm.tqdm(range(chunks)):
-        # just get random points over whole sky
-        ra = np.random.uniform(0, 360, n)
-        dec = np.rad2deg(np.arcsin(np.random.uniform(-1, 1, n)))
-        # get healpix pixel of point
-        pix = healpy.ang2pix(nside, ra, dec, lonlat=True)
-        # get mask value of pixel
-        mask_value = mask[pix]
-        # keep only points in mask
-        ra = ra[mask_value > 0]
-        dec = dec[mask_value > 0]
-        ras.append(ra)
-        decs.append(dec)
+    filename = "sim-fiducial/randoms.npy"
+    if os.path.exists(filename):
+        ra, dec = np.load(filename)
+    else:
+        mask = ridge_sims.samples.load_mask(nside)
+        print("Loaded mask")
+        # hugely lazy way to do this for a small sky fraction!
+        nsqarcmin_sky = 41252.96125 * 60 * 60
+        ntot = int(nsqarcmin_sky * density_sqarcmin)
+        print(ntot)
+        npix = len(mask)
+        nside = healpy.npix2nside(npix)
+        chunks = 10
+        n = ntot // chunks
+        index = list(range(chunks))
+        gen = functools.partial(gen_random, n=n, mask=mask, nside=nside)
+        with multiprocessing.Pool(chunks) as pool:
+            radecs = pool.map(gen, index)
 
-    ra = np.concatenate(ras)
-    dec = np.concatenate(decs)
+        ra = [radec[0] for radec in radecs]
+        dec = [radec[1] for radec in radecs]
+        del radecs
 
+        ra = np.concatenate(ra)
+        dec = np.concatenate(dec)
+
+        np.save(filename, [ra, dec])
+        print("Saving random cat")
     rcat = {"RA": ra, "DEC": dec}
     rsub = {"RA": ra[::thin], "DEC": dec[::thin]}
     return rcat, rsub
@@ -107,6 +122,7 @@ def measure_xi(cat):
         "bin_slop": 0.1,
         "sep_units": "arcmin",
         "verbose": 2,
+        "flip_g2": True,
     }
     gg = treecorr.GGCorrelation(config)
     gg.process(c)
@@ -180,6 +196,7 @@ def measure_gammat(scat, lcat, rancat):
         "bin_slop": 0.1,
         "sep_units": "arcmin",
         "verbose": 2,
+        "flip_g2": True,
     }
     ng = treecorr.NGCorrelation(config)
     rg = treecorr.NGCorrelation(config)
@@ -253,7 +270,7 @@ def plot_w(l0, randoms, randoms_sub, theta_theory, w_theory):
     wtheta = measure_w(l0, randoms, randoms_sub)
     plt.figure()
     plt.errorbar(wtheta.meanr, wtheta.xi, wtheta.varxi**0.5, fmt='.', label='Measured w(theta)')
-    plt.plot(theta_theory, w_theory, label='Theor w(theta)')
+    plt.plot(theta_theory, w_theory, label='Theory w(theta)')
     plt.yscale('log')
     plt.xscale('log')
     plt.legend()
@@ -276,11 +293,13 @@ def plot_ggl(s0, l0, rancat, theta_theory, gammat_theory):
     
 
 def correlation_functions(l0, s0):
-    mask = ridge_sims.samples.load_mask(nside=512)
+    nside = 512
     theta_theory, xip_theory, xim_theory, w_theory, gammat_theory = get_expected_xi()
-    rancat, rancat_sub = random_points_in_mask(mask, density_sqarcmin=10)
+    print("Got theory")
+    rancat, rancat_sub = random_points_in_mask(nside, density_sqarcmin=10)
+    print("Got randoms")
 
-    plot_shear(theta_theory, xip_theory, xim_theory)
+    plot_shear(s0, theta_theory, xip_theory, xim_theory)
     plot_w(l0, rancat, rancat_sub, theta_theory, w_theory)
     plot_ggl(s0, l0, rancat, theta_theory, gammat_theory)
 
@@ -288,7 +307,10 @@ def correlation_functions(l0, s0):
 
 if __name__ == "__main__":
     l0 = np.load("./sim-fiducial/lens_catalog_0.npy")
+    print("Loaded lens sample")
     s0 = np.load("./sim-fiducial/source_catalog_0.npy")
-    catalog_checks(l0, s0)
-    make_maps(l0, s0)
+    print("Loaded shear sample")
+    #catalog_checks(l0, s0)
+    #redshift_histograms(l0, s0)
+    #make_maps(l0, s0)
     correlation_functions(l0, s0)
