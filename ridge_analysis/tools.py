@@ -239,18 +239,20 @@ def load_filtered_background(background_file):
     return ra, dec, g1, g2, weight
 
 
+
+
 def process_shear(filament_file, bg_data, output_shear_file, k=1, num_bins=20):
-    """Processes shear transformation, bins the results, and saves the final output."""
+    """Optimized function to compute shear transformation and bin the results efficiently with minimal memory usage."""
     start_time = time.time()
 
     # Load filament data
     with h5py.File(filament_file, "r") as hdf:
         dataset = hdf["data"]
-        ra_values = dataset["RA"][:]
-        dec_values = dataset["DEC"][:]
-        labels = dataset["Filament_Label"][:]
+        ra_values = dataset["RA"][:]  # Right Ascension of filament points
+        dec_values = dataset["DEC"][:]  # Declination of filament points
+        labels = dataset["Filament_Label"][:]  # Labels identifying different filaments
 
-    unique_labels = np.unique(labels)
+    unique_labels = np.unique(labels)  # Get unique filament segment labels
 
     # Load background data
     with h5py.File(bg_data, "r") as file:
@@ -261,318 +263,62 @@ def process_shear(filament_file, bg_data, output_shear_file, k=1, num_bins=20):
         g2_values = background_group["g2"][:]
         weights = background_group["weight"][:]
 
-    # Filter valid background points
+    # Filter valid background points to remove NaNs or infinite values
     valid_mask = np.isfinite(bg_ra) & np.isfinite(bg_dec) & np.isfinite(g1_values) & np.isfinite(g2_values) & np.isfinite(weights)
     bg_ra, bg_dec, g1_values, g2_values, weights = bg_ra[valid_mask], bg_dec[valid_mask], g1_values[valid_mask], g2_values[valid_mask], weights[valid_mask]
-
-    # Convert background RA/DEC to radians
-    bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
-
-    # Build NearestNeighbors for each filament label
-    filament_trees = {
-        label: NearestNeighbors(n_neighbors=k+1, metric="haversine").fit(
-            np.radians(np.column_stack((ra_values[labels == label], dec_values[labels == label])))
-        )
-        for label in unique_labels
-    }
-
-    g_plus_values, g_cross_values, real_distances, all_weights = [], [], [], []
-
-    for i in range(len(bg_ra)):
-        bg_ra_val, bg_dec_val, g1, g2, weight = bg_ra[i], bg_dec[i], g1_values[i], g2_values[i], weights[i]
-        min_dist, matched_filament_point = np.inf, None
-
-        bg_coord = np.radians([bg_ra_val, bg_dec_val]).reshape(1, -1)  # Convert to radians
-
-        for label, nbrs in filament_trees.items():
-            distances, indices = nbrs.kneighbors(bg_coord)
-
-            dist, idx = distances[0][:k], indices[0][:k]  
-
-            for d, i in zip(dist, idx):
-                if d < min_dist:
-                    min_dist = d
-                    matched_filament_point = np.column_stack((ra_values[labels == label], dec_values[labels == label]))[i]  
-
-        if matched_filament_point is not None:
-            delta_ra = matched_filament_point[0] - bg_ra_val
-            delta_dec = matched_filament_point[1] - bg_dec_val
-            phi = np.arctan2(delta_dec, delta_ra * np.cos(np.radians(bg_dec_val)))
-
-            g_plus_values.append(-g1 * np.cos(2 * phi) + g2 * np.sin(2 * phi))
-            g_cross_values.append(g1 * np.sin(2 * phi) - g2 * np.cos(2 * phi))
-            real_distances.append(min_dist)
-            all_weights.append(weight)
-
-    # Binning Process
-    if len(real_distances) > 0:
-        real_distances = np.array(real_distances)
-        g_plus_values = np.array(g_plus_values)
-        g_cross_values = np.array(g_cross_values)
-        all_weights = np.array(all_weights)
-
-        bins = np.linspace(0, np.max(real_distances) * 1.05, num_bins + 1)  
-        bin_indices = np.digitize(real_distances, bins) - 1  
-
-        bin_sums_plus = np.zeros(num_bins)
-        bin_sums_cross = np.zeros(num_bins)
-        bin_weighted_distances = np.zeros(num_bins)
-        bin_weights = np.zeros(num_bins)
-        bin_counts = np.zeros(num_bins)
-
-        valid_bins = (bin_indices >= 0) & (bin_indices < num_bins)
-
-        np.add.at(bin_sums_plus, bin_indices[valid_bins], all_weights[valid_bins] * g_plus_values[valid_bins])
-        np.add.at(bin_sums_cross, bin_indices[valid_bins], all_weights[valid_bins] * g_cross_values[valid_bins])
-        np.add.at(bin_weighted_distances, bin_indices[valid_bins], all_weights[valid_bins] * real_distances[valid_bins])
-        np.add.at(bin_weights, bin_indices[valid_bins], all_weights[valid_bins])
-        np.add.at(bin_counts, bin_indices[valid_bins], 1)
-
-        weighted_g_plus = np.divide(bin_sums_plus, bin_weights, out=np.zeros_like(bin_sums_plus), where=bin_weights > 0)
-        weighted_g_cross = np.divide(bin_sums_cross, bin_weights, out=np.zeros_like(bin_sums_cross), where=bin_weights > 0)
-        weighted_real_distances = np.divide(bin_weighted_distances, bin_weights, out=np.zeros_like(bin_weighted_distances), where=bin_weights > 0)
-
-        bin_centers = 0.5 * (bins[:-1] + bins[1:])
-
-        output_data = np.column_stack((bin_centers, weighted_real_distances, weighted_g_plus, weighted_g_cross, bin_counts, bin_weights))
-        np.savetxt(output_shear_file, output_data, delimiter=",", header="Bin_Center,Weighted_Real_Distance,Weighted_g_plus,Weighted_g_cross,Counts,bin_weight", comments='')
-
-    print(f"Shear processing completed in {time.time() - start_time:.2f} seconds.")
-
-########### Debugging options for Process_shear
-
-
-
-def process_shear1(filament_file, bg_data, output_shear_file, k=1, num_bins=20):
-    """Processes shear transformation, bins the results, and saves the final output."""
-    start_time = time.time()
-
-    # Load filament data
-    with h5py.File(filament_file, "r") as hdf:
-        dataset = hdf["data"]
-        ra_values = dataset["RA"][:]
-        dec_values = dataset["DEC"][:]
-        labels = dataset["Filament_Label"][:]
-
-    unique_labels = np.unique(labels)
-
-    # Load background data
-    with h5py.File(bg_data, "r") as file:
-        background_group = file["background"]
-        bg_ra = background_group["ra"][:]
-        bg_dec = background_group["dec"][:]
-        g1_values = background_group["g1"][:]
-        g2_values = background_group["g2"][:]
-        weights = background_group["weight"][:]
-
-    # Filter valid background points
-    valid_mask = np.isfinite(bg_ra) & np.isfinite(bg_dec) & np.isfinite(g1_values) & np.isfinite(g2_values) & np.isfinite(weights)
-    bg_ra, bg_dec, g1_values, g2_values, weights = bg_ra[valid_mask], bg_dec[valid_mask], g1_values[valid_mask], g2_values[valid_mask], weights[valid_mask]
-
-    # Convert background RA/DEC to radians
-    bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
-
-    # Create BallTree models for each filament segment (only if label has enough points)
-    filament_trees = {
-        label: BallTree(np.radians(np.column_stack((ra_values[labels == label], dec_values[labels == label]))), metric="haversine")
-        for label in unique_labels if np.sum(labels == label) > k
-    }
-
-    # Pre-allocate arrays
-    num_bg = len(bg_ra)
-    g_plus_values = np.zeros(num_bg)
-    g_cross_values = np.zeros(num_bg)
-    real_distances = np.full(num_bg, np.inf)
-
-    # Find nearest filament segment for each background point
-    for i, bg_coord in enumerate(bg_coords):
-        bg_coord = bg_coord.reshape(1, -1)  # Ensure it's a 2D array for BallTree
-
-        min_dist = np.inf
-        matched_filament_point = None
-
-        for label, nbrs in filament_trees.items():
-            distances, indices = nbrs.query(bg_coord, k=1)  # Use query instead of kneighbors
-            dist, idx = distances[0, 0], indices[0, 0]
-
-            if dist < min_dist:
-                min_dist = dist
-                matched_filament_point = np.radians([
-                    ra_values[labels == label][idx],
-                    dec_values[labels == label][idx]
-                ])
-
-        if matched_filament_point is not None:
-            delta_ra = matched_filament_point[0] - bg_coord[0, 0]
-            delta_dec = matched_filament_point[1] - bg_coord[0, 1]
-            phi = np.arctan2(delta_dec, delta_ra * np.cos(bg_coord[0, 1]))
-
-            g_plus_values[i] = -g1_values[i] * np.cos(2 * phi) + g2_values[i] * np.sin(2 * phi)
-            g_cross_values[i] = g1_values[i] * np.sin(2 * phi) - g2_values[i] * np.cos(2 * phi)
-            real_distances[i] = min_dist
-
-    # Binning Process
-    valid = real_distances < np.inf
-    if np.any(valid):
-        bins = np.linspace(0, np.max(real_distances[valid]) * 1.05, num_bins + 1)
-        bin_indices = np.digitize(real_distances[valid], bins) - 1
-
-        bin_sums_plus = np.zeros(num_bins)
-        bin_sums_cross = np.zeros(num_bins)
-        bin_weighted_distances = np.zeros(num_bins)
-        bin_weights = np.zeros(num_bins)
-        bin_counts = np.zeros(num_bins)
-
-        np.add.at(bin_sums_plus, bin_indices, weights[valid] * g_plus_values[valid])
-        np.add.at(bin_sums_cross, bin_indices, weights[valid] * g_cross_values[valid])
-        np.add.at(bin_weighted_distances, bin_indices, weights[valid] * real_distances[valid])
-        np.add.at(bin_weights, bin_indices, weights[valid])
-        np.add.at(bin_counts, bin_indices, 1)
-
-        weighted_g_plus = np.divide(bin_sums_plus, bin_weights, out=np.zeros_like(bin_sums_plus), where=bin_weights > 0)
-        weighted_g_cross = np.divide(bin_sums_cross, bin_weights, out=np.zeros_like(bin_sums_cross), where=bin_weights > 0)
-        weighted_real_distances = np.divide(bin_weighted_distances, bin_weights, out=np.zeros_like(bin_weighted_distances), where=bin_weights > 0)
-
-        bin_centers = 0.5 * (bins[:-1] + bins[1:])
-
-        output_data = np.column_stack((bin_centers, weighted_real_distances, weighted_g_plus, weighted_g_cross, bin_counts, bin_weights))
-        np.savetxt(output_shear_file, output_data, delimiter=",", header="Bin_Center,Weighted_Real_Distance,Weighted_g_plus,Weighted_g_cross,Counts,bin_weight", comments='')
-
-    print(f"Shear processing completed in {time.time() - start_time:.2f} seconds.")
-
-
-
-def process_shear2(filament_file, bg_data, output_shear_file, k=1, num_bins=20):
-    """Processes shear transformation, bins the results, and saves the final output with debug logging."""
-    start_time = time.time()
-    print("\n=== Starting shear processing ===")
-
-    # Load filament data
-    try:
-        with h5py.File(filament_file, "r") as hdf:
-            dataset = hdf["data"]
-            ra_values = dataset["RA"][:]
-            dec_values = dataset["DEC"][:]
-            labels = dataset["Filament_Label"][:]
-
-        unique_labels = np.unique(labels)
-        print(f"Loaded filament data: {len(ra_values)} points, {len(unique_labels)} unique filaments.")
-
-    except Exception as e:
-        raise ValueError(f"Error loading filament file: {e}")
-
-    # Load background data
-    try:
-        with h5py.File(bg_data, "r") as file:
-            background_group = file["background"]
-            bg_ra = background_group["ra"][:]
-            bg_dec = background_group["dec"][:]
-            g1_values = background_group["g1"][:]
-            g2_values = background_group["g2"][:]
-            weights = background_group["weight"][:]
-
-        print(f"Loaded background data: {len(bg_ra)} points.")
-
-    except Exception as e:
-        raise ValueError(f"Error loading background file: {e}")
-
-    # Filter valid background points
-    valid_mask = np.isfinite(bg_ra) & np.isfinite(bg_dec) & np.isfinite(g1_values) & np.isfinite(g2_values) & np.isfinite(weights)
-    bg_ra, bg_dec, g1_values, g2_values, weights = bg_ra[valid_mask], bg_dec[valid_mask], g1_values[valid_mask], g2_values[valid_mask], weights[valid_mask]
-    print(f"Valid background points after filtering: {len(bg_ra)}")
-
-    if len(bg_ra) == 0:
-        raise ValueError("No valid background points found after filtering. Check background data.")
-
-    # Convert background RA/DEC to radians
-    bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
-
-    # Build NearestNeighbors for each filament label
-    print("Building nearest neighbor trees for filaments...")
-    filament_trees = {
-        label: NearestNeighbors(n_neighbors=k+1, metric="haversine").fit(
-            np.radians(np.column_stack((ra_values[labels == label], dec_values[labels == label])))
-        )
-        for label in unique_labels
-    }
-    print("Nearest neighbor trees built.")
-
-    g_plus_values, g_cross_values, real_distances, all_weights = [], [], [], []
-
-    print(f"Processing {len(bg_ra)} background points for shear transformation...")
-    for i in range(len(bg_ra)):
-        if i % 1000 == 0:
-            print(f"Processing background point {i}/{len(bg_ra)}")
-
-        bg_ra_val, bg_dec_val, g1, g2, weight = bg_ra[i], bg_dec[i], g1_values[i], g2_values[i], weights[i]
-        min_dist, matched_filament_point = np.inf, None
-
-        bg_coord = np.radians([bg_ra_val, bg_dec_val]).reshape(1, -1)  # Convert to radians
-
-        # Find nearest filament segment
-        for label, nbrs in filament_trees.items():
-            distances, indices = nbrs.kneighbors(bg_coord)
-
-            dist, idx = distances[0][:k], indices[0][:k]  
-
-            for d, i in zip(dist, idx):
-                if d < min_dist:
-                    min_dist = d
-                    matched_filament_point = np.column_stack((ra_values[labels == label], dec_values[labels == label]))[i]  
-
-        if matched_filament_point is not None:
-            delta_ra = matched_filament_point[0] - bg_ra_val
-            delta_dec = matched_filament_point[1] - bg_dec_val
-            phi = np.arctan2(delta_dec, delta_ra * np.cos(np.radians(bg_dec_val)))
-
-            g_plus_values.append(-g1 * np.cos(2 * phi) + g2 * np.sin(2 * phi))
-            g_cross_values.append(g1 * np.sin(2 * phi) - g2 * np.cos(2 * phi))
-            real_distances.append(min_dist)
-            all_weights.append(weight)
-
-    print(f"Shear transformation completed. Processed {len(g_plus_values)} valid shear values.")
-
-    # Binning Process
-    if len(real_distances) > 0:
-        real_distances = np.array(real_distances)
-        g_plus_values = np.array(g_plus_values)
-        g_cross_values = np.array(g_cross_values)
-        all_weights = np.array(all_weights)
-
-        bins = np.linspace(0, np.max(real_distances) * 1.05, num_bins + 1)
-        bin_indices = np.digitize(real_distances, bins) - 1  
-
-        bin_sums_plus = np.zeros(num_bins)
-        bin_sums_cross = np.zeros(num_bins)
-        bin_weighted_distances = np.zeros(num_bins)
-        bin_weights = np.zeros(num_bins)
-        bin_counts = np.zeros(num_bins)
-
-        valid_bins = (bin_indices >= 0) & (bin_indices < num_bins)
-
-        np.add.at(bin_sums_plus, bin_indices[valid_bins], all_weights[valid_bins] * g_plus_values[valid_bins])
-        np.add.at(bin_sums_cross, bin_indices[valid_bins], all_weights[valid_bins] * g_cross_values[valid_bins])
-        np.add.at(bin_weighted_distances, bin_indices[valid_bins], all_weights[valid_bins] * real_distances[valid_bins])
-        np.add.at(bin_weights, bin_indices[valid_bins], all_weights[valid_bins])
-        np.add.at(bin_counts, bin_indices[valid_bins], 1)
-
-        weighted_g_plus = np.divide(bin_sums_plus, bin_weights, out=np.zeros_like(bin_sums_plus), where=bin_weights > 0)
-        weighted_g_cross = np.divide(bin_sums_cross, bin_weights, out=np.zeros_like(bin_sums_cross), where=bin_weights > 0)
-        weighted_real_distances = np.divide(bin_weighted_distances, bin_weights, out=np.zeros_like(bin_weighted_distances), where=bin_weights > 0)
-
-        bin_centers = 0.5 * (bins[:-1] + bins[1:])
-
-        output_data = np.column_stack((bin_centers, weighted_real_distances, weighted_g_plus, weighted_g_cross, bin_counts, bin_weights))
-        np.savetxt(output_shear_file, output_data, delimiter=",", header="Bin_Center,Weighted_Real_Distance,Weighted_g_plus,Weighted_g_cross,Counts,bin_weight", comments='')
-
-        print(f"Shear data saved to {output_shear_file}.")
-    else:
-        print("Warning: No valid shear data to save!")
-
-    print(f"Shear processing completed in {time.time() - start_time:.2f} seconds.")
-
-
     
+    bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))  # Convert background coordinates to radians
 
+    # Define bin edges
+    max_distance = 0
+    bin_sums_plus = np.zeros(num_bins)
+    bin_sums_cross = np.zeros(num_bins)
+    bin_weighted_distances = np.zeros(num_bins)
+    bin_weights = np.zeros(num_bins)
+    bin_counts = np.zeros(num_bins)
 
+    # Process each filament separately 
+    for label in unique_labels:
+        filament_mask = labels == label  # Select points belonging to the current filament
+        filament_coords = np.radians(np.column_stack((ra_values[filament_mask], dec_values[filament_mask])))
+        
+        # Fit NearestNeighbors model for this filament
+        nbrs = NearestNeighbors(n_neighbors=1, metric="haversine").fit(filament_coords)
+        distances, indices = nbrs.kneighbors(bg_coords)  # Find closest filament point for each background point
+        
+        matched_filament_points = filament_coords[indices[:, 0]]  # Store matched filament points
+        
+        # Compute angular separation
+        delta_ra = matched_filament_points[:, 0] - bg_coords[:, 0]
+        delta_dec = matched_filament_points[:, 1] - bg_coords[:, 1]
+        phi = np.arctan2(delta_dec, delta_ra * np.cos(bg_coords[:, 1]))
+        
+        # Compute shear components
+        g_plus = -g1_values * np.cos(2 * phi) + g2_values * np.sin(2 * phi)
+        g_cross = g1_values * np.sin(2 * phi) - g2_values * np.cos(2 * phi)
+        
+        max_distance = max(max_distance, np.max(distances))  # Update max distance for binning
+        
+        # Perform binning dynamically
+        bins = np.linspace(0, max_distance * 1.05, num_bins + 1)  # Dynamic bin update
+        bin_indices = np.digitize(distances[:, 0], bins) - 1  # Assign distances to bins
+        valid_bins = (bin_indices >= 0) & (bin_indices < num_bins)
 
+        np.add.at(bin_sums_plus, bin_indices[valid_bins], weights[valid_bins] * g_plus[valid_bins])
+        np.add.at(bin_sums_cross, bin_indices[valid_bins], weights[valid_bins] * g_cross[valid_bins])
+        np.add.at(bin_weighted_distances, bin_indices[valid_bins], weights[valid_bins] * distances[valid_bins, 0])
+        np.add.at(bin_weights, bin_indices[valid_bins], weights[valid_bins])
+        np.add.at(bin_counts, bin_indices[valid_bins], 1)
+
+    # Compute final bin averages
+    weighted_g_plus = np.divide(bin_sums_plus, bin_weights, out=np.zeros_like(bin_sums_plus), where=bin_weights > 0)
+    weighted_g_cross = np.divide(bin_sums_cross, bin_weights, out=np.zeros_like(bin_sums_cross), where=bin_weights > 0)
+    weighted_real_distances = np.divide(bin_weighted_distances, bin_weights, out=np.zeros_like(bin_weighted_distances), where=bin_weights > 0)
+    bin_centers = 0.5 * (bins[:-1] + bins[1:])  # Compute bin centers for plotting
+
+    output_data = np.column_stack((bin_centers, weighted_real_distances, weighted_g_plus, weighted_g_cross, bin_counts, bin_weights))
+    
+    # Save results to file
+    np.savetxt(output_shear_file, output_data, delimiter=",", header="Bin_Center,Weighted_Real_Distance,Weighted_g_plus,Weighted_g_cross,Counts,bin_weight", comments='')
+    
+    print(f"Shear processing completed in {time.time() - start_time:.2f} seconds.")
