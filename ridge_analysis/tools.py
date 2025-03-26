@@ -9,9 +9,6 @@ from scipy.sparse import coo_matrix
 from sklearn.cluster import DBSCAN
 from scipy.spatial import KDTree
 from sklearn.neighbors import NearestNeighbors
-from sklearn.neighbors import BallTree
-import dredge_mod 
-from dredge_mod import filaments
 import h5py
 import numpy as np
 
