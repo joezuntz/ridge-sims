@@ -212,17 +212,21 @@ def get_expected_xi():
     """
     Compute the theoretical correlation functions for the fiducial cosmology
     """
-    h, Omega_c, Omega_b = ridge_sims.config.fiducial_params()
+    h = ridge_sims.config.FIDUCIAL_PARAMS["h"]
+    Omega_m = ridge_sims.config.FIDUCIAL_PARAMS["Omega_m"]
+    Omega_b = ridge_sims.config.FIDUCIAL_PARAMS["Omega_b"]
+    sigma8 = ridge_sims.config.FIDUCIAL_PARAMS["sigma8"]
+    Omega_c = Omega_m - Omega_b
 
     # Should be specifying these in the config - do that!
     import camb
     cp = camb.set_params()
-    A_s = cp.InitPower.As
     n_s = cp.InitPower.ns
 
     sample_info = ridge_sims.samples.load_sample_information(lens_type="maglim")
 
-    cosmo = pyccl.Cosmology(Omega_c=Omega_c, Omega_b=Omega_b, h=h, A_s=A_s, n_s=n_s)
+
+    cosmo = pyccl.Cosmology(Omega_c=Omega_c, Omega_b=Omega_b, h=h, sigma8=sigma8, n_s=n_s)
     stracer = pyccl.WeakLensingTracer(
         cosmo,
         dndz=(sample_info.source_z, sample_info.source_nz[0]),

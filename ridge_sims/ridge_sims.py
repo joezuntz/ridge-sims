@@ -5,20 +5,39 @@ import glass.shells
 import glass.ext.camb
 import pickle
 import tqdm
+import h5py
 from .tools import flush
 
-def get_parameter_objects(h, Omega_c, Omega_b):
+def get_parameter_objects(h, Omega_m, Omega_b, sigma_8):
+    omch2 = (Omega_m - Omega_b) * (h ** 2)
+    ombh2 = Omega_b * (h ** 2)
+    As = 2.1e-9
+    H0 = 100 * h
     # get a CAMB parameter object and a glass Cosmology object
-    pars = camb.set_params(H0=100*h, omch2=Omega_c*h**2, ombh2=Omega_b*h**2,
+    pars = camb.set_params(H0=H0, omch2=omch2, ombh2=ombh2, As=As,
+                        NonLinear=camb.model.NonLinear_both, WantTransfer=True)
+    r = camb.get_results(pars)
+
+    # CAMB takes the primordial A_s parameter as its input,
+    # but we want to use the late-time sigma_8 parameter instead.
+    # So we run CAMB once to get the sigma_8 for a fiducial A_s,
+    # and then re-scale A_s
+    As *= sigma_8 ** 2 / r.get_sigma8_0() ** 2
+    print(sigma_8, r.get_sigma8_0(), As)
+
+    pars = camb.set_params(H0=H0, omch2=omch2, ombh2=ombh2, As=As,
                         NonLinear=camb.model.NonLinear_both)
+
     cosmo = Cosmology.from_camb(pars)
+
     return pars, cosmo
 
 
 
-def generate_shell_cl(windows, h, Omega_c, Omega_b, filename, lmax):
+
+def generate_shell_cl(windows, h, Omega_m, Omega_b, sigma8, filename, lmax):
     # set up CAMB parameters for matter angular power spectrum
-    pars, _ = get_parameter_objects(h, Omega_c, Omega_b)
+    pars, _ = get_parameter_objects(h, Omega_m, Omega_b, sigma8)
     c_ells = glass.ext.camb.matter_cls(pars, lmax, windows)
     np.save(filename, c_ells)
     return c_ells
@@ -194,14 +213,31 @@ def simulate_catalogs(gls, rng, cosmo, sample, mask, nside, source_cat_file, len
                 rows = generate_shell_lens_sample(delta, window, ngal, bias, mask, rng)
                 lens_catalogs[j].append(rows)
 
+    # Save all results, source and lens, combining together
+    # all the data for each bin
     for j in range(sample.nbin_source):
         source_catalog = np.concatenate(source_catalogs[j])
-        np.save(source_cat_file.format(j), source_catalog)
+        filename = source_cat_file.format(j)
+        save_structured_array_hdf5(source_catalog, filename)
 
     for j in range(sample.nbin_lens):
         lens_catalog = np.concatenate(lens_catalogs[j])
-        np.save(
-            lens_cat_file.format(j), lens_catalog
-        )
+        filename = lens_cat_file.format(j)
+        save_structured_array_hdf5(lens_catalog, filename)
 
 
+def save_structured_array_hdf5(data, filename):
+    """
+    Save a numpy array with named columns to an HDF5 file.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        The structured array to save.
+
+    filename : str
+        The name of the file to save to.
+    """
+    with h5py.File(filename, 'w') as f:
+        for name in data.dtype.names:
+            f.create_dataset(name, data=data[name])

@@ -2,20 +2,49 @@ import yaml
 import scipy.stats.qmc
 import os
 
+FIDUCIAL_PARAMS = dict(
+    h = 0.7,
+    Omega_m = 0.3,
+    Omega_b = 0.045,
+    sigma8 = 0.8,
+)
 
-class Config(dict):
-    def __getattr__(self, name):
-        try:
-            return self[name]
-        except KeyError:
-            return super().__getattr__(name)
+DEFAULT_NPROCESS = int(os.environ.get("RIDGE_NPROCESS", "1"))
 
-    def __setattr__(self, name, value):
-        self[name] = value
+class Config:
+    """
+    This object stores our configuration for the simulation.
+    """
+    def __init__(self,
+                 sim_dir="sim-fiducial",
+                 lens_type="maglim",
+                 lmax=10_000,
+                 combined=True,
+                 zmax=3.0,
+                 dx=150.0,
+                 nside=4096,
+                 nprocess=DEFAULT_NPROCESS,
+                 h=FIDUCIAL_PARAMS["h"],
+                 Omega_m=FIDUCIAL_PARAMS["Omega_m"],
+                 Omega_b=FIDUCIAL_PARAMS["Omega_b"],
+                 sigma8=FIDUCIAL_PARAMS["sigma8"],
+                 ):
+        self.sim_dir = sim_dir
+        self.lens_type = lens_type
+        self.lmax = lmax
+        self.combined = combined
+        self.zmax = zmax
+        self.dx = dx
+        self.nside = nside
+        self.nprocess = nprocess
+        self.h = h
+        self.Omega_m = Omega_m
+        self.Omega_b = Omega_b
+        self.sigma8 = sigma8
 
+        # Set file output output names based on sim_dir
+        self.set_file_names()
 
-    def set_fiducial_cosmology(self):
-        self.h, self.Omega_c, self.Omega_b = fiducial_params()
 
     def set_file_names(self):
         sim_dir = self.sim_dir
@@ -25,26 +54,21 @@ class Config(dict):
         self.lens_cat_file = f"{sim_dir}/lens_catalog_{{}}.npy"
 
     def from_yaml(self, filename):
-        with yaml.load(filename, "r") as f:
-            self.update(f)
+        with open(filename) as f:
+            d = yaml.safe_load(f)
+        self.__dict__.update(d)
 
     def to_yaml(self, filename):
         with open(filename, "w") as f:
-            yaml.dump(self, f)
+            yaml.dump(self.__dict__, f)
 
-    def save_config(self):
+    def save(self):
         os.makedirs(self.sim_dir, exist_ok=True)
         filename = f"{self.sim_dir}/config.yaml"
         with open(filename, "w") as f:
             yaml.dump(self, f)
 
 
-
-def fiducial_params():
-    h = 0.7
-    Omega_c = 0.25
-    Omega_b = 0.05
-    return h, Omega_c, Omega_b
 
 
 def latin_hypercube_points(n, bounds=None):
@@ -54,8 +78,9 @@ def latin_hypercube_points(n, bounds=None):
     if bounds is None:
         bounds = [
             (0.5, 0.9), # h
-            (0.1, 0.4), # Omega_c
-            (0.03, 0.04), # Omega_b
+            (0.15, 0.45), # Omega_m
+            # (0.02, 0.07), # Omega_b  #skip omega_b to start with
+            (0.7, 0.8), # sigma8
         ]
     sampler = scipy.stats.qmc.LatinHypercube(len(bounds))
     for sample in sampler.random(n):
@@ -64,33 +89,10 @@ def latin_hypercube_points(n, bounds=None):
 
 def latin_hypercube_configurations(n):
     for i, params in enumerate(latin_hypercube_points(n)):
-        config = Config()
-        config.sim_dir = f"lhc/sim-i{i}"
-        config.h, config.Omega_c, config.Omega_b = params
-        config.set_file_names()
-        config.lens_type = "maglim"
-        config.lmax = 10_000
-        config.combined = True
-        config.zmax = 3.0
-        config.dx = 150.0
-        config.nside = 4096
-        config.nprocess = 1
+        config = Config(
+            sim_dir = f"lhc/sim-i{i}",
+            h = params[0],
+            Omega_m = params[1],
+            sigma8 = params[2],
+        )
         yield config
-
-
-def fiducial_config():
-    config = Config()
-    config.sim_dir = "sim-fiducial"
-    config.set_fiducial_cosmology()
-    config.set_file_names()
-    config.lens_type = "maglim"
-    config.lmax = 10_000
-    config.combined = True
-    config.zmax = 3.0
-    config.dx = 150.0
-    config.nside = 4096
-    config.nprocess = 1
-    config.save_config()
-    return config
-
-

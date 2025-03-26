@@ -27,19 +27,23 @@ def step1(config):
         print(f"Found shell_cl file {config.shell_cl_file}, skipping step 1")
         return
 
-    _, cosmo = get_parameter_objects(config.h, config.Omega_c, config.Omega_b)
+    _, cosmo = get_parameter_objects(config.h, config.Omega_m, config.Omega_b, config.sigma8)
     windows = shell_configuration(cosmo, config.zmax, config.dx)
     return generate_shell_cl(
         windows,
         config.h,
-        config.Omega_c,
+        config.Omega_m,
         config.Omega_b,
+        config.sigma8,
         config.shell_cl_file,
         config.lmax,
     )
 
 
 def step2(config):
+    """
+    Generate the log-normal g_ell quantities
+    """
     if os.path.exists(config.g_ell_file):
         print(f"Found g_ell file {config.g_ell_file}, skipping step 2")
         return
@@ -58,18 +62,22 @@ def step2(config):
 
 def step3(config):
     """
-    Generates catalog files
+    Generate catalog files
     """
     rng = np.random.default_rng(seed=42)
 
     # Load the number density information
     sample = load_sample_information(config.lens_type, config.combined)
 
+    # Load the results of the previous step
     with open(config.g_ell_file, "rb") as f:
         gls = pickle.load(f)
 
     # Load the overall geographic mask, referred to as a "vis" mask in GLASS.
     mask = load_mask(config.nside)
-    _, cosmo = get_parameter_objects(config.h, config.Omega_c, config.Omega_b)
 
+    # Get the cosmology definition object
+    _, cosmo = get_parameter_objects(config.h, config.Omega_m, config.Omega_b, config.sigma8)
+
+    # Simulate the catalogs
     simulate_catalogs(gls, rng, cosmo, sample, mask, config.nside, config.source_cat_file, config.lens_cat_file, config.zmax, config.dx)
