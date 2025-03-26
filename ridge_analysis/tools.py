@@ -238,9 +238,11 @@ def load_filtered_background(background_file):
 
 
 
-def process_shear(filament_file, bg_data, output_shear_file, k=1, num_bins=20):
+def process_shear(filament_file, bg_data, output_shear_file, k=1, num_bins=20, comm=None):
     """Optimized function to compute shear transformation and bin the results efficiently with minimal memory usage."""
     start_time = time.time()
+
+
 
     # Load filament data
     with h5py.File(filament_file, "r") as hdf:
@@ -253,12 +255,27 @@ def process_shear(filament_file, bg_data, output_shear_file, k=1, num_bins=20):
 
     # Load background data
     with h5py.File(bg_data, "r") as file:
+
+        # If there are multiple processes we have to split up the data among them.
+        # We do that by creating a "slice" object, which is the equivalent to what
+        # is inside the square brackets when using numpy arrays.
+        if comm is None:
+            # This is the single-processor case, not using MPI.
+            # A slice object created with slice(None) is equivalent to [:] in NumPy.
+            s = slice(None)
+        else:
+            rows = dataset["RA"].size
+            # Make a slice that splits up the data among the processors.
+            row_per_process = rows // comm.size
+            s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
+
+        # Load data assigned ot this process
         background_group = file["background"]
-        bg_ra = background_group["ra"][:]
-        bg_dec = background_group["dec"][:]
-        g1_values = background_group["g1"][:]
-        g2_values = background_group["g2"][:]
-        weights = background_group["weight"][:]
+        bg_ra = background_group["ra"][s]
+        bg_dec = background_group["dec"][s]
+        g1_values = background_group["g1"][s]
+        g2_values = background_group["g2"][s]
+        weights = background_group["weight"][s]
 
     # Filter valid background points to remove NaNs or infinite values
     valid_mask = np.isfinite(bg_ra) & np.isfinite(bg_dec) & np.isfinite(g1_values) & np.isfinite(g2_values) & np.isfinite(weights)
@@ -307,6 +324,17 @@ def process_shear(filament_file, bg_data, output_shear_file, k=1, num_bins=20):
         np.add.at(bin_weights, bin_indices[valid_bins], weights[valid_bins])
         np.add.at(bin_counts, bin_indices[valid_bins], 1)
 
+    # Sum up the results from all the different processes.
+    # If comm is None then this doesn't do anything.
+    sum_in_place(bin_sums_plus, comm)
+    sum_in_place(bin_sums_cross, comm)
+    sum_in_place(bin_weighted_distances, comm)
+    sum_in_place(bin_weights, comm)
+    sum_in_place(bin_counts, comm)
+
+    if comm is not None and comm.rank != 0:
+        return
+
     # Compute final bin averages
     weighted_g_plus = np.divide(bin_sums_plus, bin_weights, out=np.zeros_like(bin_sums_plus), where=bin_weights > 0)
     weighted_g_cross = np.divide(bin_sums_cross, bin_weights, out=np.zeros_like(bin_sums_cross), where=bin_weights > 0)
@@ -319,3 +347,26 @@ def process_shear(filament_file, bg_data, output_shear_file, k=1, num_bins=20):
     np.savetxt(output_shear_file, output_data, delimiter=",", header="Bin_Center,Weighted_Real_Distance,Weighted_g_plus,Weighted_g_cross,Counts,bin_weight", comments='')
     
     print(f"Shear processing completed in {time.time() - start_time:.2f} seconds.")
+
+
+def sum_in_place(data, comm):
+    """
+    Use MPI to sum up the data from all the different processes in an array.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        The data to sum up.
+
+    comm : mpi4py.MPI.Comm
+        The MPI communicator to use. If None, this function does nothing.
+    """
+    if comm is None:
+        return
+
+    import mpi4py.MPI
+
+    if comm.Get_rank() == 0:
+        comm.Reduce(mpi4py.MPI.IN_PLACE, data)
+    else:
+        comm.Reduce(data, None)
