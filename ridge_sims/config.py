@@ -28,6 +28,7 @@ class Config:
                  Omega_m=FIDUCIAL_PARAMS["Omega_m"],
                  Omega_b=FIDUCIAL_PARAMS["Omega_b"],
                  sigma8=FIDUCIAL_PARAMS["sigma8"],
+                 seed=42,
                  ):
         self.sim_dir = sim_dir
         self.lens_type = lens_type
@@ -41,6 +42,7 @@ class Config:
         self.Omega_m = Omega_m
         self.Omega_b = Omega_b
         self.sigma8 = sigma8
+        self.seed = seed
 
         # Set file output output names based on sim_dir
         self.set_file_names()

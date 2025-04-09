@@ -64,7 +64,7 @@ def step3(config):
     """
     Generate catalog files
     """
-    rng = np.random.default_rng(seed=42)
+    rng = np.random.default_rng(seed=config.seed)
 
     # Load the number density information
     sample = load_sample_information(config.lens_type, config.combined)
