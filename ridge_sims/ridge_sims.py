@@ -51,7 +51,6 @@ def generate_lognormal_gls(shell_cl, g_ell_file, nside, lmax, pool=None):
     fields = [glass.grf.Lognormal(shift) for _ in range(n)]
     gls = glass.solve_gaussian_spectra(fields, shell_cl, pool=pool)
 
-    gls = glass.lognormal_gls(shell_cl)
     with open(g_ell_file, "wb") as f:
         pickle.dump(gls, f)
     

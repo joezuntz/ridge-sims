@@ -55,9 +55,13 @@ def step2(config):
         pool = multiprocessing.Pool(config.nprocess)
     else:   
         pool = None
+
     generate_lognormal_gls(shell_cl, config.g_ell_file, config.nside, config.lmax, pool=pool)
-    if config.parallel:
+
+    if config.nprocess > 1:
         pool.close()
+
+    print("Step 2 complete")
 
 
 def step3(config):
