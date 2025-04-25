@@ -25,10 +25,11 @@ if __name__ == "__main__":
             if not os.path.exists(fiducial_shell_cl_file):
                 print(f"Fiducial shell_cl file not found at {fiducial_shell_cl_file}. Running step 1.")
                 step1(config)
+                config.shell_cl_file = os.path.join(run_dir, "shell_cls.npy")  # Update path after running step 1
             else:
                 print(f"Fiducial shell_cl file found. Skipping step 1 for local run {run_id}.")
+                config.shell_cl_file = fiducial_shell_cl_file
 
-            config.shell_cl_file = fiducial_shell_cl_file
             step2(config)
             step3(config)
 
@@ -51,10 +52,11 @@ if __name__ == "__main__":
         if not os.path.exists(fiducial_shell_cl_file):
             print(f"Fiducial shell_cl file not found at {fiducial_shell_cl_file}. Running step 1.")
             step1(config)
+            config.shell_cl_file = os.path.join(run_dir, "shell_cls.npy")  # Update path after running step 1
         else:
             print(f"Fiducial shell_cl file found. Skipping step 1 for Slurm run {run_id}.")
+            config.shell_cl_file = fiducial_shell_cl_file
 
-        config.shell_cl_file = fiducial_shell_cl_file
         step2(config)
         step3(config)
 
