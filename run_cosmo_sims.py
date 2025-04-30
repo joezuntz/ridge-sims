@@ -1,11 +1,10 @@
-# run_different_cosmo_direct.py
+
 import os
 import numpy as np
 from ridge_sims.steps import step1, step2, step3
 from ridge_sims.config import Config
 
 if __name__ == "__main__":
-    num_processes = 4  # You can adjust this based on your local machine's resources
     base_sim_dir = "cosmo_direct_runs"
 
     def run_cosmology(i):
