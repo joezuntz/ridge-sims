@@ -5,12 +5,12 @@ import numpy as np
 import h5py
 import dredge_mod  # Assuming 'dredge_mod' contains your 'filaments' function
 
-base_sim_dir = "local_lhc_run"
+base_sim_dir = "lhc_run_sims"
 num_runs = 10
 
 def process_run(run_id):
     run_dir = os.path.join(base_sim_dir, f"run_{run_id}")
-    source_catalog_file = os.path.join(run_dir, "source_catalog_0.npy")
+    source_catalog_file = os.path.join(run_dir, "lens_catalog_0.npy")
     output_file = os.path.join(run_dir, f"filaments_run_{run_id}.hdf5")
 
     print(f"\n--- Processing Run {run_id} in directory: {run_dir} ---")
