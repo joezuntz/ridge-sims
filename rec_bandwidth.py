@@ -3,7 +3,7 @@
 import os
 import numpy as np
 import h5py
-import dredge_mod  # Assuming 'dredge_mod' contains your 'filaments' function
+import dredge_mod  
 
 base_sim_dir = "lhc_run_sims"
 num_runs = 10
