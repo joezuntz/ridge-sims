@@ -17,20 +17,22 @@ def get_bandwidth_for_run(run_id):
         with h5py.File(source_catalog_file, 'r') as f:
             ra = f["RA"][:]
             dec = f["DEC"][:]
-            coordinates = np.column_stack((dec, ra))
+            ra = (ra + 180) % 360
+        coordinates = np.column_stack((dec, ra))
 
-            dredge_mod.filaments(coordinates,
-                               neighbors=10,
-                               bandwidth=None,
-                               convergence=0.005,
-                               percentage=None,
-                               distance='haversine',
-                               n_process=0,
-                               mesh_size=None)
+        dredge_mod.filaments(coordinates,
+                            neighbors=10,
+                            bandwidth=None,
+                            convergence=0.005,
+                            percentage=None,
+                            distance='haversine',
+                            n_process=12,
+                            mesh_size=None)
 
-            bandwidth_used = dredge_mod.get_last_bandwidth() # Get the bandwidth
-            print(f"  Bandwidth chosen for Run {run_id}: {bandwidth_used}")
-            return run_id, bandwidth_used
+        # This function does not seem to exist in dredge_mod:
+        bandwidth_used = dredge_mod.get_last_bandwidth() # Get the bandwidth
+        print(f"  Bandwidth chosen for Run {run_id}: {bandwidth_used}")
+        return run_id, bandwidth_used
 
     except FileNotFoundError:
         print(f"  Error: Source catalog file not found at: {source_catalog_file}")
