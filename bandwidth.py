@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import h5py
-import dredge_mod  
+import dredge_mod
 
 base_sim_dir = "lhc_run_sims"
 num_runs = 10
@@ -19,16 +19,16 @@ def get_bandwidth_for_run(run_id):
             dec = f["DEC"][:]
             coordinates = np.column_stack((dec, ra))
 
-            dredge_mod.filaments(coordinates,
+            dredge_mod.filaments(coordinates, # Call filament
                                neighbors=10,
                                bandwidth=None,
                                convergence=0.005,
                                percentage=None,
                                distance='haversine',
-                               n_process=0,
+                               n_process=8,
                                mesh_size=None)
 
-            bandwidth_used = dredge_mod.get_last_bandwidth() # Get the bandwidth
+            bandwidth_used = dredge_mod.get_last_bandwidth() # Get bandwidth using the global function
             print(f"  Bandwidth chosen for Run {run_id}: {bandwidth_used}")
             return run_id, bandwidth_used
 
@@ -44,10 +44,9 @@ if __name__ == "__main__":
         run_id, bandwidth = get_bandwidth_for_run(run_id)
         if bandwidth is not None:
             all_bandwidths[run_id] = bandwidth
-        # We stop after recording the bandwidth for each run
 
     # Save all bandwidths to a single file in the base directory AFTER processing all runs
-    bandwidths_output_file = os.path.join(base_sim_dir, "all_bandwidths.hdf5")
+    bandwidths_output_file = os.path.join(base_sim_dir, "all_bandwidths_quick.hdf5")
     with h5py.File(bandwidths_output_file, 'w') as hf_bandwidths:
         for run_id, bw in all_bandwidths.items():
             hf_bandwidths.create_dataset(f'run_{run_id}', data=np.array([bw]))

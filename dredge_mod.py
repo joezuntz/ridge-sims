@@ -118,6 +118,16 @@ from statsmodels.nonparametric.kernel_density import KDEMultivariate
 from statsmodels.nonparametric.kernel_density import EstimatorSettings
 import multiprocessing as mp
 from functools import partial
+import numba
+from timeit import default_timer as timer
+from numba.core.errors import NumbaPerformanceWarning
+import warnings
+
+# Suppress Numba performance warnings
+warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
+
+_last_calculated_bandwidth = None # keep count of the bandwidth 
+
 
 def filaments(coordinates, 
               neighbors = 10, 
@@ -162,7 +172,8 @@ def filaments(coordinates,
         The distance function to be used, can be 'haversine' or 'euclidean'.
     
     n_process : int, defaults to 0
-        The number of cores to be used for multiprocess parallelization.
+        The number of cores to be used for multiprocess parallelization (for bandwidth)
+        and thread-level parallelization (for ridge updates).
     
     mesh_size : int, defaults to None
         The number of mesh points to be used to generate ridges.
@@ -191,10 +202,12 @@ def filaments(coordinates,
     if bandwidth is None:
         # Calculate an optimized bandwidth via cross-validation
         defaults = EstimatorSettings()
-        defaults.n_jobs = 8
+        defaults.n_jobs = n_process
         defaults.efficient = True
         density_estimate = KDEMultivariate(data = coordinates,var_type = 'cc',bw = 'cv_ml',defaults = defaults)
         bandwidth = np.mean(density_estimate.bw)
+        _last_calculated_bandwidth = np.mean(density_estimate.bw) # Global variable 
+        bandwidth_used = _last_calculated_bandwidth
         # Print the calculated optimized bandwidth
         print("Automatically computed bandwidth: %f\n" % bandwidth)
     # If not, calculate a KDE for the given data and distance
@@ -203,52 +216,33 @@ def filaments(coordinates,
                                metric = distance,
                                kernel = 'gaussian',
                                algorithm = 'ball_tree').fit(coordinates)
+   
     # Set a mesh size if none is provided by the user
     if mesh_size is None:
         mesh_size = int(np.min([1e5, np.max([5e4, len(coordinates)])]))
     # Create an evenly-spaced mesh in for the provided coordinates
-    mesh = mesh_generation(coordinates, mesh_size)
-    # Compute the threshold to omit mesh points in low-density areas
-    threshold, densities = threshold_function(mesh, density_estimate)
-    # Cut low-density mesh points from the set
-    ridges = mesh[densities > threshold, :]
+    ridges = mesh_generation(coordinates, mesh_size)
     # Intitialize the update change as larger than the convergence
-    update_change = np.multiply(2, convergence)
+    update_change = np.inf
     # Initialize the previous update change as zero
     previous_update = 0
     # Loop over the number of prescripted iterations
     iteration_number = 0
+
+    # Set parallelization for the updates
+    if n_process > 0:
+        numba.set_num_threads(n_process)
+    time_taken = 0
     #while not update_change < convergence:
     while not update_change < convergence:
         # Update the current iteration number
         iteration_number = iteration_number + 1
         # Print the current iteration number
-        print("Iteration %d ..." % iteration_number)
-        # Update the points in the mesh - multiprocess version
-        if n_process:
-            pool = mp.Pool(n_process)
-            parupd = partial(update_ridge, 
-                             coordinates = coordinates,
-                             bandwidth = bandwidth)
-            update_outputs = pool.map(parupd, ridges)
-            
-            updates = np.stack(np.asarray(update_outputs)[:, 1], axis = 0)
-            ridges = np.stack(np.asarray(update_outputs)[:, 0], axis = 0)
-            # Closes the threads to avoid inactive processes
-            pool.close()
-            pool.join()
-        # Udate the points in the mesh - sequential version
-        else:
-            # Create a list to store all update values
-            updates = []
-            # Loop over the number of points in the mesh
-            for i in range(ridges.shape[0]):
-                # Compute the update movements for each point
-                point_updates = update_function(ridges[i], coordinates, bandwidth)
-                # Add the update movement to the respective point
-                ridges[i] = ridges[i] + point_updates
-                # Store the change between updates to check convergence
-                updates.append(np.abs(np.mean(np.sum(point_updates))))
+        print(f"Iteration {iteration_number}  last update change: {update_change:.4f} target: {convergence:.4f} took {time_taken:.2f} seconds")
+        # Update the points in the mesh - threaded version
+        t = timer()
+        updates = numba_update(ridges, coordinates, bandwidth)
+        time_taken = timer() - t
         # Get the update change to check convergence
         update_average = np.mean(np.sum(updates))
         update_change = np.abs(previous_update - update_average)
@@ -264,6 +258,26 @@ def filaments(coordinates,
     # Return the iteratively updated mesh as the density ridges
     print("\nDone!")
     return ridges
+
+def get_last_bandwidth():
+    global _last_calculated_bandwidth
+    return _last_calculated_bandwidth
+
+
+@numba.jit(nopython=True, parallel=True)
+def numba_update(ridges, coordinates, bandwidth):
+    # Create a list to store all update values
+    updates = np.zeros(ridges.shape[0])
+    # Loop over the number of points in the mesh
+    for i in numba.prange(ridges.shape[0]):
+        # Compute the update movements for each point
+        point_updates = update_function(ridges[i], coordinates, bandwidth)
+        # Add the update movement to the respective point
+        ridges[i] = ridges[i] + point_updates
+        # Store the change between updates to check convergence
+        updates[i] = np.abs(np.sum(point_updates))
+    return updates
+
 
 def update_ridge(ridge, 
                  coordinates, 
@@ -392,6 +406,7 @@ def threshold_function(mesh,
     # Return the threshold for the provided mesh and density etimate
     return threshold, density_array
 
+@numba.jit(nopython=True)
 def update_function(point, 
                     coordinates, 
                     bandwidth):
@@ -443,6 +458,7 @@ def update_function(point,
     # Return the projections as the point updates
     return point_updates
 
+@numba.jit(nopython=True)
 def gaussian_kernel(values, 
                     bandwidth):
     """Calculate the Gaussian kernel evaluation of distance values.
@@ -475,6 +491,17 @@ def gaussian_kernel(values,
     # Return the computed kernel value
     return kernel_value
 
+@numba.jit(nopython=True)
+def mean1(a):
+    """Calculate the mean of a 2D array along axis 1"""
+    n1, n2 = a.shape
+    res = np.zeros(n1)
+    for i in range(n1):
+        res[i] = np.sum(a[i, :]) / n2
+    return res
+
+
+@numba.jit(nopython=True)
 def local_inv_cov(point, 
                   coordinates, 
                   bandwidth):
@@ -531,7 +558,8 @@ def local_inv_cov(point,
     # Get the number of data points and the dimensionality
     number_rows, number_columns = coordinates.shape 
     # Compute the gradient at the given point for the data
-    temp_5 = np.mean(np.multiply(covariance, mu.T), axis=1)
+    # temp_5 = np.mean(np.multiply(covariance, mu.T), axis=1)
+    temp_5 = mean1(np.multiply(covariance, mu.T))
     gradient = np.negative(temp_5)
     # Compute the loval inverse covariance for the inputs
     temp_6 = np.divide(np.negative(1), weight_average)
