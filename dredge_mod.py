@@ -126,9 +126,6 @@ import warnings
 # Suppress Numba performance warnings
 warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
 
-_last_calculated_bandwidth = None # keep count of the bandwidth 
-
-
 def filaments(coordinates, 
               neighbors = 10, 
               bandwidth = None, 
@@ -206,8 +203,6 @@ def filaments(coordinates,
         defaults.efficient = True
         density_estimate = KDEMultivariate(data = coordinates,var_type = 'cc',bw = 'cv_ml',defaults = defaults)
         bandwidth = np.mean(density_estimate.bw)
-        _last_calculated_bandwidth = np.mean(density_estimate.bw) # Global variable 
-        bandwidth_used = _last_calculated_bandwidth
         # Print the calculated optimized bandwidth
         print("Automatically computed bandwidth: %f\n" % bandwidth)
     # If not, calculate a KDE for the given data and distance
@@ -216,7 +211,6 @@ def filaments(coordinates,
                                metric = distance,
                                kernel = 'gaussian',
                                algorithm = 'ball_tree').fit(coordinates)
-   
     # Set a mesh size if none is provided by the user
     if mesh_size is None:
         mesh_size = int(np.min([1e5, np.max([5e4, len(coordinates)])]))
@@ -258,11 +252,6 @@ def filaments(coordinates,
     # Return the iteratively updated mesh as the density ridges
     print("\nDone!")
     return ridges
-
-def get_last_bandwidth():
-    global _last_calculated_bandwidth
-    return _last_calculated_bandwidth
-
 
 @numba.jit(nopython=True, parallel=True)
 def numba_update(ridges, coordinates, bandwidth):
