@@ -198,6 +198,9 @@ def filaments(coordinates,
                     mesh_size = mesh_size)
     print("Input parameters valid!\n")
     print("Preparing for iterations ...\n")
+	
+	global _last_calculated_bandwidth  # Declare it as global within the function
+	
     # Check whether no bandwidth is provided
     if bandwidth is None:
         # Calculate an optimized bandwidth via cross-validation
