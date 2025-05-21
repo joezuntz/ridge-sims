@@ -114,20 +114,45 @@ import sys
 import numpy as np
 import scipy as sp
 from sklearn.neighbors import KernelDensity as KDE
+from sklearn.neighbors import BallTree
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
 from statsmodels.nonparametric.kernel_density import EstimatorSettings
-import multiprocessing as mp
-from functools import partial
-import numba
 from timeit import default_timer as timer
+from numba import njit
+from tqdm import tqdm
+
 from numba.core.errors import NumbaPerformanceWarning
 import warnings
 
 # Suppress Numba performance warnings
 warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
 
+
 _last_calculated_bandwidth = None # keep count of the bandwidth 
 
+def make_tree(coordinates):
+    ra = coordinates[:, 0]
+    dec = coordinates[:, 1]
+    coordinates = np.radians(np.vstack((dec, ra)).T)
+    tree = BallTree(coordinates, metric='haversine')
+    return tree
+
+def query_tree(tree, point, n_neighbors=100):
+    # swap ra and dec and convert to radians to match the tree.
+    # NOTE: this is silly, should not convert back and forth
+    ra, dec = point
+    x = np.radians(np.array([[dec, ra]]))
+    # Convert the bandwidth to radians
+    # bandwidth = np.radians(bandwidth)
+    # Query the tree for the nearest neighbors
+    distances, indices = tree.query(x, k=n_neighbors, return_distance=True)
+    # indices, distances = tree.query_radius(x, r=bandwidth, return_distance=True)
+    # currently only doing this for one object so pull apart
+    indices = indices[0]
+    distances = distances[0]
+    # Convert the distances from radians to degrees
+    distances = np.degrees(distances)
+    return indices, distances
 
 def filaments(coordinates, 
               neighbors = 10, 
@@ -136,7 +161,9 @@ def filaments(coordinates,
               percentage = None,
               distance = 'haversine',
               n_process = 0,
-              mesh_size = None):
+              mesh_size = None,
+              n_neighbors = 200,
+              ):
     """Estimate density rigdges for a user-provided dataset of coordinates.
     
     This function uses an augmented version of the subspace-constrained mean
@@ -198,9 +225,9 @@ def filaments(coordinates,
                     mesh_size = mesh_size)
     print("Input parameters valid!\n")
     print("Preparing for iterations ...\n")
-	
-	global _last_calculated_bandwidth  # Declare it as global within the function
-	
+
+    global _last_calculated_bandwidth  # Declare it as global within the function
+
     # Check whether no bandwidth is provided
     if bandwidth is None:
         # Calculate an optimized bandwidth via cross-validation
@@ -232,9 +259,9 @@ def filaments(coordinates,
     # Loop over the number of prescripted iterations
     iteration_number = 0
 
+    tree = make_tree(coordinates)
+
     # Set parallelization for the updates
-    if n_process > 0:
-        numba.set_num_threads(n_process)
     time_taken = 0
     #while not update_change < convergence:
     while not update_change < convergence:
@@ -244,7 +271,7 @@ def filaments(coordinates,
         print(f"Iteration {iteration_number}  last update change: {update_change:.4f} target: {convergence:.4f} took {time_taken:.2f} seconds")
         # Update the points in the mesh - threaded version
         t = timer()
-        updates = numba_update(ridges, coordinates, bandwidth)
+        updates = ridge_update(ridges, coordinates, bandwidth, tree, n_neighbors)
         time_taken = timer() - t
         # Get the update change to check convergence
         update_average = np.mean(np.sum(updates))
@@ -267,16 +294,20 @@ def get_last_bandwidth():
     return _last_calculated_bandwidth
 
 
-@numba.jit(nopython=True, parallel=True)
-def numba_update(ridges, coordinates, bandwidth):
+def ridge_update(ridges, coordinates, bandwidth, tree, n_neighbors):
     # Create a list to store all update values
     updates = np.zeros(ridges.shape[0])
     # Loop over the number of points in the mesh
-    for i in numba.prange(ridges.shape[0]):
+    for i in tqdm(range(ridges.shape[0])):
         # Compute the update movements for each point
-        point_updates = update_function(ridges[i], coordinates, bandwidth)
+        ridge = ridges[i]
+        # get all the points within the 3 sigma bandwidth
+        nearby_indices, distance = query_tree(tree, ridge, n_neighbors)
+        nearby_coordinates = coordinates[nearby_indices].copy()
+    
+        point_updates = update_function(ridge, nearby_coordinates, bandwidth, distance)
         # Add the update movement to the respective point
-        ridges[i] = ridges[i] + point_updates
+        ridges[i] = ridge + point_updates
         # Store the change between updates to check convergence
         updates[i] = np.abs(np.sum(point_updates))
     return updates
@@ -409,10 +440,11 @@ def threshold_function(mesh,
     # Return the threshold for the provided mesh and density etimate
     return threshold, density_array
 
-@numba.jit(nopython=True)
+@njit
 def update_function(point, 
                     coordinates, 
-                    bandwidth):
+                    bandwidth,
+                    distance):
     """Calculate the mean shift update for a provided mesh point.
     
     This function calculates the mean shift update for a given point of 
@@ -439,9 +471,8 @@ def update_function(point,
     -----------
     None
     """
-    # first, calculate the interpoint distance
-    squared_distance = np.sum(np.square(coordinates - point), axis=1)
-    # eqvaluate the kernel at each distance
+    squared_distance = distance ** 2
+    # evaluate the kernel at each distance
     weights = gaussian_kernel(squared_distance, bandwidth)
     # now reweight each point
     shift = np.divide(coordinates.T.dot(weights), np.sum(weights))
@@ -461,7 +492,7 @@ def update_function(point,
     # Return the projections as the point updates
     return point_updates
 
-@numba.jit(nopython=True)
+@njit
 def gaussian_kernel(values, 
                     bandwidth):
     """Calculate the Gaussian kernel evaluation of distance values.
@@ -494,7 +525,7 @@ def gaussian_kernel(values,
     # Return the computed kernel value
     return kernel_value
 
-@numba.jit(nopython=True)
+@njit
 def mean1(a):
     """Calculate the mean of a 2D array along axis 1"""
     n1, n2 = a.shape
@@ -503,8 +534,7 @@ def mean1(a):
         res[i] = np.sum(a[i, :]) / n2
     return res
 
-
-@numba.jit(nopython=True)
+@njit
 def local_inv_cov(point, 
                   coordinates, 
                   bandwidth):
