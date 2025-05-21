@@ -138,7 +138,7 @@ def make_tree(coordinates):
 def query_tree(tree, point, n_neighbors=100):
     # swap ra and dec and convert to radians to match the tree.
     # NOTE: this is silly, should not convert back and forth
-    x = np.radians(point)
+    x = np.radians([point])
     # Convert the bandwidth to radians
     # bandwidth = np.radians(bandwidth)
     # Query the tree for the nearest neighbors
