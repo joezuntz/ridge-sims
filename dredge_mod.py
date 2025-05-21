@@ -131,17 +131,14 @@ warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
 _last_calculated_bandwidth = None # keep count of the bandwidth 
 
 def make_tree(coordinates):
-    ra = coordinates[:, 0]
-    dec = coordinates[:, 1]
-    coordinates = np.radians(np.vstack((dec, ra)).T)
+    coordinates = np.radians(coordinates)
     tree = BallTree(coordinates, metric='haversine')
     return tree
 
 def query_tree(tree, point, n_neighbors=100):
     # swap ra and dec and convert to radians to match the tree.
     # NOTE: this is silly, should not convert back and forth
-    ra, dec = point
-    x = np.radians(np.array([[dec, ra]]))
+    x = np.radians(point)
     # Convert the bandwidth to radians
     # bandwidth = np.radians(bandwidth)
     # Query the tree for the nearest neighbors
@@ -241,7 +238,7 @@ def filaments(coordinates,
         # Print the calculated optimized bandwidth
         print("Automatically computed bandwidth: %f\n" % bandwidth)
     # If not, calculate a KDE for the given data and distance
-    else:
+    elif percentage is not None:
         density_estimate = KDE(bandwidth = bandwidth, 
                                metric = distance,
                                kernel = 'gaussian',
@@ -277,6 +274,7 @@ def filaments(coordinates,
         update_average = np.mean(np.sum(updates))
         update_change = np.abs(previous_update - update_average)
         previous_update = update_average
+
     # Check whether a top-percentage of points should be returned
     if percentage is not None:
         # Evaluate all mesh points on the kernel density estimate
@@ -475,7 +473,7 @@ def update_function(point,
     # evaluate the kernel at each distance
     weights = gaussian_kernel(squared_distance, bandwidth)
     # now reweight each point
-    shift = np.divide(coordinates.T.dot(weights), np.sum(weights))
+    shift = coordinates.T @ weights / np.sum(weights)
     # first, we evaluate the mean shift update
     update = shift - point
     # Calculate the local inverse covariance for the decomposition
@@ -503,7 +501,7 @@ def gaussian_kernel(values,
     Parameters:
     -----------
     values : array-like
-        The distances between a mesh point and provided coordinates.
+        The squared distances between a mesh point and provided coordinates.
     
     bandwidth : float
         The bandwidth used for kernel density estimates of data points.
@@ -518,10 +516,7 @@ def gaussian_kernel(values,
     None
     """
     # Compute the kernel value for the given values
-    temp_1 = np.multiply(np.pi, np.square(bandwidth))
-    temp_2 = np.divide(1, np.sqrt(temp_1))
-    temp_3 = np.divide(values, np.square(bandwidth))
-    kernel_value = temp_2*np.exp(np.multiply(np.negative(0.5), temp_3))
+    kernel_value = np.exp(-0.5 * values / bandwidth**2)
     # Return the computed kernel value
     return kernel_value
 
@@ -567,40 +562,30 @@ def local_inv_cov(point,
     -----------
     None
     """
-    # Calculate the squared distance between points
-    squared_distance = np.sum(np.square(coordinates - point), axis=1)
-    # Compute the average of the weights as the estimate
-    weights = gaussian_kernel(squared_distance, bandwidth)
-    weight_average = np.mean(weights)
-    # Get the number of points and the dimensionality
+
+
     number_points, number_columns = coordinates.shape 
-    # Calculate one over the given bandwidth
-    fraction_1 = np.divide(1, np.square(bandwidth))
-    # Calculate one over the given number of points
-    fraction_2 = np.divide(1, number_points)
-    # Compute the mean for the provided points
-    mu = np.multiply(fraction_1, (coordinates - point))
-    # Compute the covariance matrix for the provided points
-    covariance = gaussian_kernel(squared_distance, bandwidth)
-    # Compute the Hessian matrix for the provided points
-    temp_1 = np.multiply(fraction_1, np.eye(number_columns))
-    temp_2 = (np.multiply(covariance, mu.T)).dot(mu)
-    temp_3 = np.multiply(fraction_2, temp_2)
-    temp_4 = np.multiply(temp_1, np.sum(covariance))
-    hessian = temp_3 - np.multiply(fraction_2, temp_4)
-    # Get the number of data points and the dimensionality
-    number_rows, number_columns = coordinates.shape 
-    # Compute the gradient at the given point for the data
-    # temp_5 = np.mean(np.multiply(covariance, mu.T), axis=1)
-    temp_5 = mean1(np.multiply(covariance, mu.T))
-    gradient = np.negative(temp_5)
-    # Compute the loval inverse covariance for the inputs
-    temp_6 = np.divide(np.negative(1), weight_average)
-    temp_7 = np.divide(1, np.square(weight_average))
-    temp_8 = np.multiply(temp_7, gradient.dot(gradient.T))
-    inverse_covariance = np.multiply(temp_6, hessian) + temp_8
-    # Return the local inverse covariance
-    return inverse_covariance
+
+    # Calculate the squared distance between points
+    squared_distance = np.sum((coordinates - point)**2, axis=1)
+    # Compute the weight kernels called b_j in the paper
+    weights = gaussian_kernel(squared_distance, bandwidth)
+    weight_sum = np.sum(weights)
+    weight_average = weight_sum / number_points
+
+    # Compute the location differences between the point and the dataset
+    mu = (coordinates - point) / bandwidth**2
+
+    # Combine terms to get the Hessian matrix following the paper algorith,
+    term1 = (weights * mu.T) @ mu / number_points
+    term2 = weight_sum * np.eye(number_columns) / bandwidth**2 / number_points
+    H = term1 - term2
+
+    # This is an extra term that is not in the paper
+    grad = -mean1(weights * mu.T)
+    inv_cov = -H / weight_average + (grad @ grad) / weight_average**2
+    return inv_cov
+
 
 def parameter_check(coordinates, 
                     neighbors, 
