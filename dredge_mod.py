@@ -122,6 +122,7 @@ from numba import njit, prange
 from tqdm import tqdm
 import multiprocessing
 from functools import partial
+import matplotlib.pyplot as plt
 
 
 
@@ -184,6 +185,17 @@ def cut_points_with_tree(ridges, tree, bandwidth, minimum_distance_in_bandwidths
     keep = distances[:, 0] < minimum_distance_in_bandwidths * np.radians(bandwidth)
     return ridges[keep]
 
+def plot_state(coordinates, ridges, i):
+    ra = coordinates[:, 1]
+    dec = coordinates[:, 0]
+    ridge_ra = ridges[:, 1]
+    ridge_dec = ridges[:, 0]
+
+    plt.figure()
+    plt.plot(ra, dec, 'r,')
+    plt.plot(ridge_ra, ridge_dec, 'k,')
+    plt.savefig(f"plots/state_{i}.png")
+    plt.close()
 
 def filaments(coordinates, 
               neighbors = 10, 
@@ -322,31 +334,27 @@ def filaments(coordinates,
 
 
     # Intitialize the update change as larger than the convergence
-    update_change = np.inf
-    # Initialize the previous update change as zero
-    previous_update = 0
+    update_average = np.inf
     # Loop over the number of prescripted iterations
     iteration_number = 0
+    plot_state(coordinates, ridges, iteration_number)
 
-    import cProfile
     time_taken = 0
-    while not update_change < convergence:
+    while not update_average < convergence:
         # Print the current iteration number
         iteration_number = iteration_number + 1
-        print(f"Iteration {iteration_number}  last update change: {update_change:.4f} target: {convergence:.4f} took {time_taken:.2f} seconds")
+        print(f"Iteration {iteration_number}  last update change: {update_average:.4f} target: {convergence:.4f} took {time_taken:.2f} seconds")
 
         # Update the points in the mesh. Record the timing
         t = timer()
-        with cProfile.Profile() as pr:
-            updates = ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors)
-            pr.print_stats('cumtime')
+        updates = ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors)
 
         time_taken = timer() - t
 
-        # Get the update change to check convergence
-        update_average = np.mean(np.sum(updates))
-        update_change = np.abs(previous_update - update_average)
-        previous_update = update_average
+        # Get the update size to check convergence
+        update_average = np.mean(updates)
+
+        plot_state(coordinates, ridges, iteration_number)
 
     # # Check whether a top-percentage of points should be returned
     # if percentage is not None:
@@ -382,11 +390,12 @@ def ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_d
         nearby_indices = all_nearby_indices[i]
         distance = all_distances[i]
         nearby_coordinates = coordinates[nearby_indices].copy()
+    
         point_updates = update_function(ridge, nearby_coordinates, bandwidth, distance)
         # Add the update movement to the respective point
         ridges[i] = ridge + point_updates
         # Store the change between updates to check convergence
-        updates[i] = np.abs(np.sum(point_updates))
+        updates[i] = np.sum(np.abs(point_updates))
     return updates
 
 
