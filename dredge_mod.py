@@ -155,6 +155,19 @@ class WrappedKDE(KDE):
     def pdf(self, X):
         log_pdf = self.score_samples(X)
         return np.exp(log_pdf)
+    
+def cut_points_with_tree(ridges, tree, bandwidth, minimum_distance_in_bandwidths=4):
+    """
+    Remove any points in ridges whoe nearest neighbour, as found
+    with the tree, is more than four bandwidths
+    """
+    print(ridges.shape)
+    distances, _ = tree.query(np.radians(ridges), k=1, return_distance=True)
+    print(distances.shape)
+    keep = distances[:, 0] < minimum_distance_in_bandwidths * np.radians(bandwidth)
+    print(keep.shape)
+    return ridges[keep]
+
 
 def filaments(coordinates, 
               neighbors = 10, 
@@ -246,24 +259,24 @@ def filaments(coordinates,
     else:
         bw = np.repeat(bandwidth, coordinates.shape[1])
 
-    # Generate the initial density estimate
-    print("Generating initial density estimator")
-    sys.stdout.flush()
-    density_estimate = KDEMultivariate(data=coordinates,
-                                       var_type='cc',
-                                       bw=bw,
-                                       defaults=defaults)
-    # density_estimate = WrappedKDE(bandwidth=bandwidth, algorithm='ball_tree', metric='haversine').fit(coordinates)
+    # # Generate the initial density estimate
+    # print("Generating initial density estimator")
+    # sys.stdout.flush()
+    # density_estimate = KDEMultivariate(data=coordinates,
+    #                                    var_type='cc',
+    #                                    bw=bw,
+    #                                    defaults=defaults)
+    # # density_estimate = WrappedKDE(bandwidth=bandwidth, algorithm='ball_tree', metric='haversine').fit(coordinates)
 
-    print("Generated KDE")
-    sys.stdout.flush()
+    # print("Generated KDE")
+    # sys.stdout.flush()
 
 
-    if bandwidth is None:
-        # Print and save the calculated optimized bandwidth
-        bandwidth = np.mean(density_estimate.bw)
-        _last_calculated_bandwidth = np.mean(density_estimate.bw) # Global variable 
-        print(f"Automatically computed bandwidth: {bandwidth}")
+    # if bandwidth is None:
+    #     # Print and save the calculated optimized bandwidth
+    #     bandwidth = np.mean(density_estimate.bw)
+    #     _last_calculated_bandwidth = np.mean(density_estimate.bw) # Global variable 
+    #     print(f"Automatically computed bandwidth: {bandwidth}")
 
     # Set a mesh size if none is provided by the user
     if mesh_size is None:
@@ -272,15 +285,24 @@ def filaments(coordinates,
     # Create an evenly-spaced mesh in for the provided coordinates
     ridges = mesh_generation(coordinates, mesh_size)
 
+    # Make the ball tree to speed up finding nearby points
+    tree = make_tree(coordinates)
 
-    # Throw away points with low initial density. This deals with points
-    # outside the mask since the initial mesh generation just uses
-    # a square
-    if threshold > 0:
-        print(f"Cutting initial mesh to threshold mean_density * {threshold}")
-        sys.stdout.flush()
-        ridges, cut = threshold_function(ridges, density_estimate, threshold, n_process=n_process)
-        print(f"Cut out mesh points with density below {cut}. {ridges.shape[0]} mesh points remain.")
+
+    # remove any ridges that are more than 4 bandwidths from any point
+    print(f"Cutting initial mesh to points within 4 bandwidths of a galaxy")
+    sys.stdout.flush()
+    ridges = cut_points_with_tree(ridges, tree, bandwidth, minimum_distance_in_bandwidths=4)
+    print(f"Finished cutting. {ridges.shape[0]} mesh points remain.")
+
+    # # Throw away points with low initial density. This deals with points
+    # # outside the mask since the initial mesh generation just uses
+    # # a square
+    # if threshold > 0:
+    #     print(f"Cutting initial mesh to threshold mean_density * {threshold}")
+    #     sys.stdout.flush()
+    #     ridges, cut = threshold_function(ridges, density_estimate, threshold, n_process=n_process)
+    #     print(f"Cut out mesh points with density below {cut}. {ridges.shape[0]} mesh points remain.")
 
 
     # Intitialize the update change as larger than the convergence
@@ -290,8 +312,6 @@ def filaments(coordinates,
     # Loop over the number of prescripted iterations
     iteration_number = 0
 
-    # Make the ball tree to speed up finding nearby points
-    tree = make_tree(coordinates)
 
     time_taken = 0
     while not update_change < convergence:
