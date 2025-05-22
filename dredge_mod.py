@@ -118,9 +118,11 @@ from sklearn.neighbors import BallTree
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
 from statsmodels.nonparametric.kernel_density import EstimatorSettings
 from timeit import default_timer as timer
-from numba import njit
+from numba import njit, prange
 from tqdm import tqdm
 import multiprocessing
+from functools import partial
+
 
 
 from numba.core.errors import NumbaPerformanceWarning
@@ -151,6 +153,23 @@ def query_tree(tree, point, n_neighbors=100):
     distances = np.degrees(distances)
     return indices, distances
 
+def query_tree2(tree, points, n_process, n_neighbors=100):
+    x = np.radians(points)
+    if n_process > 1:
+        with multiprocessing.Pool(n_process) as pool:
+            chunks = np.array_split(x, n_process)
+            results = pool.map(partial(tree.query, k=n_neighbors, return_distance=True), chunks)
+        distances, indices = zip(*results)
+        distances = np.concatenate(distances)
+        indices = np.concatenate(indices)
+    else:
+        distances, indices = tree.query(x, k=n_neighbors, return_distance=True)
+
+
+    # Convert the distances from radians to degrees
+    distances = np.degrees(distances)
+    return indices, distances
+
 class WrappedKDE(KDE):
     def pdf(self, X):
         log_pdf = self.score_samples(X)
@@ -161,11 +180,8 @@ def cut_points_with_tree(ridges, tree, bandwidth, minimum_distance_in_bandwidths
     Remove any points in ridges whoe nearest neighbour, as found
     with the tree, is more than four bandwidths
     """
-    print(ridges.shape)
     distances, _ = tree.query(np.radians(ridges), k=1, return_distance=True)
-    print(distances.shape)
     keep = distances[:, 0] < minimum_distance_in_bandwidths * np.radians(bandwidth)
-    print(keep.shape)
     return ridges[keep]
 
 
@@ -312,7 +328,7 @@ def filaments(coordinates,
     # Loop over the number of prescripted iterations
     iteration_number = 0
 
-
+    import cProfile
     time_taken = 0
     while not update_change < convergence:
         # Print the current iteration number
@@ -321,7 +337,10 @@ def filaments(coordinates,
 
         # Update the points in the mesh. Record the timing
         t = timer()
-        updates = ridge_update(ridges, coordinates, bandwidth, tree, n_neighbors)
+        with cProfile.Profile() as pr:
+            updates = ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors)
+            pr.print_stats('cumtime')
+
         time_taken = timer() - t
 
         # Get the update change to check convergence
@@ -329,14 +348,14 @@ def filaments(coordinates,
         update_change = np.abs(previous_update - update_average)
         previous_update = update_average
 
-    # Check whether a top-percentage of points should be returned
-    if percentage is not None:
-        # Evaluate all mesh points on the kernel density estimate
-        evaluations = density_estimate.pdf(ridges)
-        # Calculate the threshold value for a given percentage
-        valid_percentile = np.percentile(evaluations, [100 - percentage])
-        # Retain only the mesh points that are above the threshold
-        ridges = ridges[np.where(evaluations > valid_percentile)]
+    # # Check whether a top-percentage of points should be returned
+    # if percentage is not None:
+    #     # Evaluate all mesh points on the kernel density estimate
+    #     evaluations = density_estimate.pdf(ridges)
+    #     # Calculate the threshold value for a given percentage
+    #     valid_percentile = np.percentile(evaluations, [100 - percentage])
+    #     # Retain only the mesh points that are above the threshold
+    #     ridges = ridges[np.where(evaluations > valid_percentile)]
 
     # Return the iteratively updated mesh as the density ridges
     print("\nDone!")
@@ -347,23 +366,29 @@ def get_last_bandwidth():
     return _last_calculated_bandwidth
 
 
-def ridge_update(ridges, coordinates, bandwidth, tree, n_neighbors):
+def ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors):
+    # Loop over the number of points in the mesh
+    all_nearby_indices, all_distances = query_tree2(tree, ridges, n_process, n_neighbors)
+    return ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances)
+
+@njit
+def ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances):
     # Create a list to store all update values
     updates = np.zeros(ridges.shape[0])
-    # Loop over the number of points in the mesh
-    for i in tqdm(range(ridges.shape[0])):
+    for i in prange(ridges.shape[0]):
         # Compute the update movements for each point
         ridge = ridges[i]
         # get all the points within the 3 sigma bandwidth
-        nearby_indices, distance = query_tree(tree, ridge, n_neighbors)
+        nearby_indices = all_nearby_indices[i]
+        distance = all_distances[i]
         nearby_coordinates = coordinates[nearby_indices].copy()
-    
         point_updates = update_function(ridge, nearby_coordinates, bandwidth, distance)
         # Add the update movement to the respective point
         ridges[i] = ridge + point_updates
         # Store the change between updates to check convergence
         updates[i] = np.abs(np.sum(point_updates))
     return updates
+
 
 
 def update_ridge(ridge, 
