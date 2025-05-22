@@ -140,21 +140,8 @@ def make_tree(coordinates):
     tree = BallTree(coordinates, metric='haversine')
     return tree
 
-def query_tree(tree, point, n_neighbors=100):
-    x = np.radians([point])
 
-    # Query the tree for the nearest neighbors
-    distances, indices = tree.query(x, k=n_neighbors, return_distance=True)
-
-    # currently only doing this for one object so pull apart
-    indices = indices[0]
-    distances = distances[0]
-
-    # Convert the distances from radians to degrees
-    distances = np.degrees(distances)
-    return indices, distances
-
-def query_tree2(tree, points, n_process, n_neighbors=100):
+def query_tree(tree, points, n_process, n_neighbors=100):
     x = np.radians(points)
     if n_process > 1:
         with multiprocessing.Pool(n_process) as pool:
@@ -185,7 +172,7 @@ def cut_points_with_tree(ridges, tree, bandwidth, minimum_distance_in_bandwidths
     keep = distances[:, 0] < minimum_distance_in_bandwidths * np.radians(bandwidth)
     return ridges[keep]
 
-def plot_state(coordinates, ridges, i):
+def plot_state(coordinates, ridges, plot_dir, i):
     ra = coordinates[:, 1]
     dec = coordinates[:, 0]
     ridge_ra = ridges[:, 1]
@@ -194,7 +181,7 @@ def plot_state(coordinates, ridges, i):
     plt.figure()
     plt.plot(ra, dec, 'r,')
     plt.plot(ridge_ra, ridge_dec, 'k,')
-    plt.savefig(f"plots/state_{i}.png")
+    plt.savefig(f"{plot_dir}/ridges_{i}.png")
     plt.close()
 
 def filaments(coordinates, 
@@ -206,7 +193,8 @@ def filaments(coordinates,
               n_process = 0,
               mesh_size = None,
               n_neighbors = 200,
-              threshold = 0.05
+              threshold = 0.05,
+              plot_dir = None,
               ):
     """Estimate density rigdges for a user-provided dataset of coordinates.
     
@@ -270,7 +258,8 @@ def filaments(coordinates,
                     percentage = percentage,
                     distance = distance,
                     n_process = n_process,
-                    mesh_size = mesh_size)
+                    mesh_size = mesh_size,
+                    )
     print("Input parameters valid!\n")
     print("Preparing for iterations ...\n")
 
@@ -337,7 +326,9 @@ def filaments(coordinates,
     update_average = np.inf
     # Loop over the number of prescripted iterations
     iteration_number = 0
-    plot_state(coordinates, ridges, iteration_number)
+
+    if plot_dir is not None:
+        plot_state(coordinates, ridges, plot_dir, iteration_number)
 
     time_taken = 0
     while not update_average < convergence:
@@ -354,7 +345,9 @@ def filaments(coordinates,
         # Get the update size to check convergence
         update_average = np.mean(updates)
 
-        plot_state(coordinates, ridges, iteration_number)
+        plot_state(coordinates, ridges, plot_dir, iteration_number)
+
+
 
     # # Check whether a top-percentage of points should be returned
     # if percentage is not None:
@@ -376,7 +369,7 @@ def get_last_bandwidth():
 
 def ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors):
     # Loop over the number of points in the mesh
-    all_nearby_indices, all_distances = query_tree2(tree, ridges, n_process, n_neighbors)
+    all_nearby_indices, all_distances = query_tree(tree, ridges, n_process, n_neighbors)
     return ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances)
 
 @njit
