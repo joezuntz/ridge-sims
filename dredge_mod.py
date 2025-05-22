@@ -120,6 +120,8 @@ from statsmodels.nonparametric.kernel_density import EstimatorSettings
 from timeit import default_timer as timer
 from numba import njit
 from tqdm import tqdm
+import multiprocessing
+
 
 from numba.core.errors import NumbaPerformanceWarning
 import warnings
@@ -136,20 +138,23 @@ def make_tree(coordinates):
     return tree
 
 def query_tree(tree, point, n_neighbors=100):
-    # swap ra and dec and convert to radians to match the tree.
-    # NOTE: this is silly, should not convert back and forth
     x = np.radians([point])
-    # Convert the bandwidth to radians
-    # bandwidth = np.radians(bandwidth)
+
     # Query the tree for the nearest neighbors
     distances, indices = tree.query(x, k=n_neighbors, return_distance=True)
-    # indices, distances = tree.query_radius(x, r=bandwidth, return_distance=True)
+
     # currently only doing this for one object so pull apart
     indices = indices[0]
     distances = distances[0]
+
     # Convert the distances from radians to degrees
     distances = np.degrees(distances)
     return indices, distances
+
+class WrappedKDE(KDE):
+    def pdf(self, X):
+        log_pdf = self.score_samples(X)
+        return np.exp(log_pdf)
 
 def filaments(coordinates, 
               neighbors = 10, 
@@ -160,6 +165,7 @@ def filaments(coordinates,
               n_process = 0,
               mesh_size = None,
               n_neighbors = 200,
+              threshold = 0.05
               ):
     """Estimate density rigdges for a user-provided dataset of coordinates.
     
@@ -201,6 +207,10 @@ def filaments(coordinates,
     
     mesh_size : int, defaults to None
         The number of mesh points to be used to generate ridges.
+
+    threshold : float, defaults to 0.05
+        Do not generate initial mesh points in regions below this
+        fraction of the maximum density
         
     Returns:
     --------
@@ -226,29 +236,53 @@ def filaments(coordinates,
     global _last_calculated_bandwidth  # Declare it as global within the function
 
     # Check whether no bandwidth is provided
+    defaults = EstimatorSettings()
+    defaults.n_jobs = n_process
+    defaults.efficient = True
+
     if bandwidth is None:
-        # Calculate an optimized bandwidth via cross-validation
-        defaults = EstimatorSettings()
-        defaults.n_jobs = n_process
-        defaults.efficient = True
-        density_estimate = KDEMultivariate(data = coordinates,var_type = 'cc',bw = 'cv_ml',defaults = defaults)
+        print("Estimating bandwidth from data")
+        bw = 'cv_ml'
+    else:
+        bw = np.repeat(bandwidth, coordinates.shape[1])
+
+    # Generate the initial density estimate
+    print("Generating initial density estimator")
+    sys.stdout.flush()
+    density_estimate = KDEMultivariate(data=coordinates,
+                                       var_type='cc',
+                                       bw=bw,
+                                       defaults=defaults)
+    # density_estimate = WrappedKDE(bandwidth=bandwidth, algorithm='ball_tree', metric='haversine').fit(coordinates)
+
+    print("Generated KDE")
+    sys.stdout.flush()
+
+
+    if bandwidth is None:
+        # Print and save the calculated optimized bandwidth
         bandwidth = np.mean(density_estimate.bw)
         _last_calculated_bandwidth = np.mean(density_estimate.bw) # Global variable 
-        bandwidth_used = _last_calculated_bandwidth
-        # Print the calculated optimized bandwidth
-        print("Automatically computed bandwidth: %f\n" % bandwidth)
-    # If not, calculate a KDE for the given data and distance
-    elif percentage is not None:
-        density_estimate = KDE(bandwidth = bandwidth, 
-                               metric = distance,
-                               kernel = 'gaussian',
-                               algorithm = 'ball_tree').fit(coordinates)
-   
+        print(f"Automatically computed bandwidth: {bandwidth}")
+
     # Set a mesh size if none is provided by the user
     if mesh_size is None:
         mesh_size = int(np.min([1e5, np.max([5e4, len(coordinates)])]))
+
     # Create an evenly-spaced mesh in for the provided coordinates
     ridges = mesh_generation(coordinates, mesh_size)
+
+
+    # Throw away points with low initial density. This deals with points
+    # outside the mask since the initial mesh generation just uses
+    # a square
+    if threshold > 0:
+        print(f"Cutting initial mesh to threshold mean_density * {threshold}")
+        sys.stdout.flush()
+        ridges, cut = threshold_function(ridges, density_estimate, threshold, n_process=n_process)
+        print(f"Cut out mesh points with density below {cut}. {ridges.shape[0]} mesh points remain.")
+
+
     # Intitialize the update change as larger than the convergence
     update_change = np.inf
     # Initialize the previous update change as zero
@@ -256,20 +290,20 @@ def filaments(coordinates,
     # Loop over the number of prescripted iterations
     iteration_number = 0
 
+    # Make the ball tree to speed up finding nearby points
     tree = make_tree(coordinates)
 
-    # Set parallelization for the updates
     time_taken = 0
-    #while not update_change < convergence:
     while not update_change < convergence:
-        # Update the current iteration number
-        iteration_number = iteration_number + 1
         # Print the current iteration number
+        iteration_number = iteration_number + 1
         print(f"Iteration {iteration_number}  last update change: {update_change:.4f} target: {convergence:.4f} took {time_taken:.2f} seconds")
-        # Update the points in the mesh - threaded version
+
+        # Update the points in the mesh. Record the timing
         t = timer()
         updates = ridge_update(ridges, coordinates, bandwidth, tree, n_neighbors)
         time_taken = timer() - t
+
         # Get the update change to check convergence
         update_average = np.mean(np.sum(updates))
         update_change = np.abs(previous_update - update_average)
@@ -283,6 +317,7 @@ def filaments(coordinates,
         valid_percentile = np.percentile(evaluations, [100 - percentage])
         # Retain only the mesh points that are above the threshold
         ridges = ridges[np.where(evaluations > valid_percentile)]
+
     # Return the iteratively updated mesh as the density ridges
     print("\nDone!")
     return ridges
@@ -397,8 +432,7 @@ def mesh_generation(coordinates,
     # Return the evenly-spaced mesh for the coordinates
     return mesh
 
-def threshold_function(mesh, 
-                       density_estimate):
+def threshold_function(mesh, density_estimate, threshold, n_process):
     """Calculate the cut-off threshold for mesh point deletions.
     
     This function calculates the threshold that is used to deleted mesh
@@ -414,29 +448,38 @@ def threshold_function(mesh,
         
     density_estimate : scikit-learn object
         The kernel density estimator fitted on the provided dataset.
+
+    threshold : float
+        Keep only points with density below this fraction of the mean
+
+    n_process : int
+        Number of parallel processes
         
     Returns:
     --------
-    threshold : float
-        The cut-off threshold for the omission of points in the mesh.
-    
-    density_array : array-like
-        The density estimates for all points in the given mesh.
+    mesh: the new mesh points.
+
+    cut: the minimum density kept
         
     Attributes:
     -----------
     None
     """
+    # Run KDE to get an estimate of the coordinate point density
+    # at each mesh point. This can be slow so we do it in parallel.
+    if n_process > 1:
+        with multiprocessing.Pool(n_process) as pool:
+            chunks = np.array_split(mesh, n_process)
+            density_chunks = pool.map(density_estimate.pdf, chunks)
+        density = np.concatenate(density_chunks)
+    else:
+        density = density_estimate.pdf(mesh)
+
     # Calculate the average of density estimates for the data
-    density_array =  np.exp(density_estimate.pdf(mesh))#np.exp(density_estimate.score_samples(mesh))
-    density_sum = np.sum(density_array)
-    density_average = np.divide(density_sum, len(mesh))
-    # Compute the threshold via the RMS in the density fluctuation
-    density_difference = np.subtract(density_array, density_average)
-    square_sum = np.sum(np.square(density_difference))
-    threshold = np.sqrt(np.divide(square_sum, len(density_difference)))
-    # Return the threshold for the provided mesh and density etimate
-    return threshold, density_array
+    mean_density = density.mean()
+    cut = mean_density * threshold
+    keep = density > cut
+    return mesh[keep], cut
 
 @njit
 def update_function(point, 
