@@ -112,20 +112,15 @@ statsmodels 0.10.1
 # Load the necessary libraries
 import sys
 import numpy as np
-import scipy as sp
-from sklearn.neighbors import KernelDensity as KDE
 from sklearn.neighbors import BallTree
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
 from statsmodels.nonparametric.kernel_density import EstimatorSettings
 from timeit import default_timer as timer
 from numba import njit, prange
-from tqdm import tqdm
 import multiprocessing
 from functools import partial
 import matplotlib.pyplot as plt
-
-
-
+import os
 from numba.core.errors import NumbaPerformanceWarning
 import warnings
 
@@ -142,7 +137,39 @@ def make_tree(coordinates):
 
 
 def query_tree(tree, points, n_process, n_neighbors=100):
+    """
+    Query a KD Tree to find the nearest neighbors for a set of points, 
+    optionally using parallel processing.
+
+        Parameters:
+    -----------
+    tree : scipy.spatial.KDTree or similar
+        The KD Tree object used for querying nearest neighbors.
+
+    points : array-like
+        An array of points (in degrees) for which the nearest neighbors 
+        are to be found. Each point should have the same dimensionality 
+        as the KD Tree. Shape (npoint, ndim)
+
+    n_process : int
+        The number of processes to use for parallel querying. If set to 1 or less, 
+        no parallel processing is used.
+
+    n_neighbors : int, optional
+        The number of nearest neighbors to query for each point. Default is 100.
+
+    Returns:
+    --------
+    indices : numpy.ndarray
+        An array of indices of the nearest neighbors for each input point.
+
+    distances : numpy.ndarray
+        An array of distances (in degrees) to the nearest neighbors for 
+        each input point.
+    """
+
     x = np.radians(points)
+
     if n_process > 1:
         with multiprocessing.Pool(n_process) as pool:
             chunks = np.array_split(x, n_process)
@@ -153,24 +180,56 @@ def query_tree(tree, points, n_process, n_neighbors=100):
     else:
         distances, indices = tree.query(x, k=n_neighbors, return_distance=True)
 
-
     # Convert the distances from radians to degrees
     distances = np.degrees(distances)
     return indices, distances
 
-class WrappedKDE(KDE):
-    def pdf(self, X):
-        log_pdf = self.score_samples(X)
-        return np.exp(log_pdf)
     
-def cut_points_with_tree(ridges, tree, bandwidth, minimum_distance_in_bandwidths=4):
+def cut_points_with_tree(ridges, tree, bandwidth, threshold=4):
     """
-    Remove any points in ridges whoe nearest neighbour, as found
-    with the tree, is more than four bandwidths
+    Filters out points in the `ridges` array whose nearest neighbor, as determined
+    by the provided `tree`, is farther than a specified threshold distance.
+    The threshold distance is calculated as `threshold` times the angular distance
+    corresponding to the given `bandwidth`.
+    Parameters:
+    -----------
+    ridges : numpy.ndarray
+        An array of points (e.g., coordinates) to be filtered, in [dec, ra] in degrees
+    tree : scipy.spatial.cKDTree
+        A KD-tree object used to efficiently query the nearest neighbors of points in `ridges`.
+    bandwidth : float
+        The bandwidth value used to calculate the angular distance threshold.
+    threshold : float, optional
+        A multiplier for the bandwidth to determine the maximum allowable distance
+        for a point to be considered valid. Default is 4.
+    Returns:
+    --------
+    numpy.ndarray
+        A filtered array of points from `ridges` that meet the distance criteria.
+
+    Notes:
+    ------
+    - The function assumes that the input `ridges` are in degrees and converts them
+      to radians for distance calculations.
     """
     distances, _ = tree.query(np.radians(ridges), k=1, return_distance=True)
-    keep = distances[:, 0] < minimum_distance_in_bandwidths * np.radians(bandwidth)
+    keep = distances[:, 0] < threshold * np.radians(bandwidth)
     return ridges[keep]
+
+def estimate_bandsidth(coordinates, n_process):
+    defaults = EstimatorSettings()
+    defaults.n_jobs = n_process
+    defaults.efficient = True
+
+    # Generate the initial density estimate
+    print("Building density estimator")
+    sys.stdout.flush()
+    density_estimate = KDEMultivariate(data=coordinates,
+                                        var_type='cc',
+                                        bw='cv_ml',
+                                        defaults=defaults)
+    return np.mean(density_estimate.bw)
+
 
 def plot_state(coordinates, ridges, plot_dir, i):
     ra = coordinates[:, 1]
@@ -193,7 +252,8 @@ def filaments(coordinates,
               n_process = 0,
               mesh_size = None,
               n_neighbors = 200,
-              threshold = 0.05,
+              mesh_threshold = 4.0,
+              final_threshold = 1.0,
               plot_dir = None,
               ):
     """Estimate density rigdges for a user-provided dataset of coordinates.
@@ -237,9 +297,12 @@ def filaments(coordinates,
     mesh_size : int, defaults to None
         The number of mesh points to be used to generate ridges.
 
-    threshold : float, defaults to 0.05
-        Do not generate initial mesh points in regions below this
-        fraction of the maximum density
+    mesh_threshold: float, defaults to 4.0
+        Throw away initial mesh point more than this many bandwidths from any coordinate
+
+    final_threshold : float, defaults to 1.0
+        Throw away final points more than this many bandwidths away
+        from any point
         
     Returns:
     --------
@@ -266,34 +329,11 @@ def filaments(coordinates,
     global _last_calculated_bandwidth  # Declare it as global within the function
 
     # Check whether no bandwidth is provided
-    defaults = EstimatorSettings()
-    defaults.n_jobs = n_process
-    defaults.efficient = True
 
     if bandwidth is None:
         print("Estimating bandwidth from data")
-        bw = 'cv_ml'
-    else:
-        bw = np.repeat(bandwidth, coordinates.shape[1])
+        bandwidth = estimate_bandsidth(coordinates, n_process)
 
-    # # Generate the initial density estimate
-    # print("Generating initial density estimator")
-    # sys.stdout.flush()
-    # density_estimate = KDEMultivariate(data=coordinates,
-    #                                    var_type='cc',
-    #                                    bw=bw,
-    #                                    defaults=defaults)
-    # # density_estimate = WrappedKDE(bandwidth=bandwidth, algorithm='ball_tree', metric='haversine').fit(coordinates)
-
-    # print("Generated KDE")
-    # sys.stdout.flush()
-
-
-    # if bandwidth is None:
-    #     # Print and save the calculated optimized bandwidth
-    #     bandwidth = np.mean(density_estimate.bw)
-    #     _last_calculated_bandwidth = np.mean(density_estimate.bw) # Global variable 
-    #     print(f"Automatically computed bandwidth: {bandwidth}")
 
     # Set a mesh size if none is provided by the user
     if mesh_size is None:
@@ -309,17 +349,8 @@ def filaments(coordinates,
     # remove any ridges that are more than 4 bandwidths from any point
     print(f"Cutting initial mesh to points within 4 bandwidths of a galaxy")
     sys.stdout.flush()
-    ridges = cut_points_with_tree(ridges, tree, bandwidth, minimum_distance_in_bandwidths=4)
+    ridges = cut_points_with_tree(ridges, tree, bandwidth, threshold=mesh_threshold)
     print(f"Finished cutting. {ridges.shape[0]} mesh points remain.")
-
-    # # Throw away points with low initial density. This deals with points
-    # # outside the mask since the initial mesh generation just uses
-    # # a square
-    # if threshold > 0:
-    #     print(f"Cutting initial mesh to threshold mean_density * {threshold}")
-    #     sys.stdout.flush()
-    #     ridges, cut = threshold_function(ridges, density_estimate, threshold, n_process=n_process)
-    #     print(f"Cut out mesh points with density below {cut}. {ridges.shape[0]} mesh points remain.")
 
 
     # Intitialize the update change as larger than the convergence
@@ -328,35 +359,35 @@ def filaments(coordinates,
     iteration_number = 0
 
     if plot_dir is not None:
+        os.makedirs(plot_dir, exist_ok=True)
         plot_state(coordinates, ridges, plot_dir, iteration_number)
 
     time_taken = 0
     while not update_average < convergence:
-        # Print the current iteration number
-        iteration_number = iteration_number + 1
-        print(f"Iteration {iteration_number}  last update change: {update_average:.4f} target: {convergence:.4f} took {time_taken:.2f} seconds")
 
         # Update the points in the mesh. Record the timing
         t = timer()
         updates = ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors)
-
         time_taken = timer() - t
 
-        # Get the update size to check convergence
+        # Get the update size to check convergence.
+        # JZ updated this from the previous version to make it independent
+        # of the mesh size. This means the appropriate convergence values are much smaller
         update_average = np.mean(updates)
 
-        plot_state(coordinates, ridges, plot_dir, iteration_number)
+        iteration_number += 1
+        print(f"Iteration {iteration_number}  update change: {update_average:.2e} target: {convergence:.2e} took {time_taken:.2f} seconds")
+
+        if plot_dir is not None:
+            plot_state(coordinates, ridges, plot_dir, iteration_number)
 
 
 
     # # Check whether a top-percentage of points should be returned
-    # if percentage is not None:
-    #     # Evaluate all mesh points on the kernel density estimate
-    #     evaluations = density_estimate.pdf(ridges)
-    #     # Calculate the threshold value for a given percentage
-    #     valid_percentile = np.percentile(evaluations, [100 - percentage])
-    #     # Retain only the mesh points that are above the threshold
-    #     ridges = ridges[np.where(evaluations > valid_percentile)]
+    if final_threshold is not None:
+        # reject points without at least some points within one bandwidth
+        _, dist = query_tree(tree, ridges, n_process, n_neighbors=1)
+        ridges = ridges[dist[:, 0] < final_threshold * bandwidth]
 
     # Return the iteratively updated mesh as the density ridges
     print("\nDone!")
@@ -368,9 +399,10 @@ def get_last_bandwidth():
 
 
 def ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors):
-    # Loop over the number of points in the mesh
     all_nearby_indices, all_distances = query_tree(tree, ridges, n_process, n_neighbors)
-    return ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances)
+    updates = ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances)
+    return updates
+
 
 @njit
 def ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances):
@@ -666,7 +698,7 @@ def local_inv_cov(point,
     # Compute the location differences between the point and the dataset
     mu = (coordinates - point) / bandwidth**2
 
-    # Combine terms to get the Hessian matrix following the paper algorith,
+    # Combine terms to get the Hessian matrix following the paper algorithm
     term1 = (weights * mu.T) @ mu / number_points
     term2 = weight_sum * np.eye(number_columns) / bandwidth**2 / number_points
     H = term1 - term2
