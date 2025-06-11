@@ -253,7 +253,7 @@ def filaments(coordinates,
               mesh_size = None,
               n_neighbors = 200,
               mesh_threshold = 4.0,
-              final_threshold = 1.0,
+              final_threshold = 0.0,
               plot_dir = None,
               ):
     """Estimate density rigdges for a user-provided dataset of coordinates.
@@ -326,6 +326,9 @@ def filaments(coordinates,
     print("Input parameters valid!\n")
     print("Preparing for iterations ...\n")
 
+    if final_threshold >= 1:
+        raise ValueError("final_threshold must be between 0 and 1.")
+
     global _last_calculated_bandwidth  # Declare it as global within the function
 
     # Check whether no bandwidth is provided
@@ -380,17 +383,44 @@ def filaments(coordinates,
 
         if plot_dir is not None:
             plot_state(coordinates, ridges, plot_dir, iteration_number)
+            np.save(f"{plot_dir}/ridges_{iteration_number}.npy", ridges)
 
 
 
     # # Check whether a top-percentage of points should be returned
-    if final_threshold is not None:
-        # reject points without at least some points within one bandwidth
-        _, dist = query_tree(tree, ridges, n_process, n_neighbors=1)
-        ridges = ridges[dist[:, 0] < final_threshold * bandwidth]
+    if final_threshold > 0.0:
+        cut_final_threshold(ridges, bandwidth, final_threshold, tree=tree)
 
     # Return the iteratively updated mesh as the density ridges
     print("\nDone!")
+    return ridges
+
+def cut_final_threshold(ridges, bandwidth, final_threshold, tree=None, coordinates=None):
+    """Cut the final ridges to only include points with enough neighbors."""
+
+    if tree is None:
+        if coordinates is None:
+            raise ValueError("Either tree or coordinates must be provided.")
+        tree = make_tree(coordinates)
+    else:
+        if coordinates is not None:
+            print("Warning: both tree and coordinates provided, using tree.")
+
+    if final_threshold >= 1:
+        raise ValueError("final_threshold must be between 0 and 1.")
+
+    # get number of points within one bandwidth
+    counts = tree.query_radius(np.radians(ridges), r=np.radians(bandwidth), return_distance=False, count_only=True)
+    threshold = int(final_threshold * counts.max())
+    print("Ridge with most nearby points has: ", counts.max())
+    print("Final threshold for points: ", final_threshold)
+    print("So we will keep points with at least this many neighbors: ", threshold)
+    original_size = ridges.shape[0]
+
+    # keep only points with at least the threshold number of neighbors
+    ridges = ridges[counts >= threshold]
+    final_size = ridges.shape[0]
+    print(f"Keeping {final_size} out of {original_size} points ({100 * final_size / original_size:.2f}%)")
     return ridges
 
 def get_last_bandwidth():
