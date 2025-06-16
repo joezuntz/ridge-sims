@@ -80,10 +80,10 @@ if __name__ == "__main__":
 
 
     ridges = get_filaments(1, initial_min_percentage, bandwidth_str, neighbours)
-    filename = f"ridges_run_{initial_min_percentage}_{bandwidth_str}_{neighbours}.npy", ridges
+    filename = f"ridges_run_{initial_min_percentage}_{bandwidth_str}_{neighbours}.npy"
     np.save(filename, ridges)
 
-    run_dir = os.path.join(base_sim_dir, "run_{1}")
+    run_dir = os.path.join(base_sim_dir, "run_1")
     cat_file = os.path.join(run_dir, "lens_catalog_0.npy")
     density_map = build_density_map(cat_file, 2048, 0.5)
 
