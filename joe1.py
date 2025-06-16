@@ -71,7 +71,7 @@ if __name__ == "__main__":
     bandwidth = float(bandwidth_str)
     neighbours = int(sys.argv[3])
 
-    ridges = get_filaments(1)
+    ridges = get_filaments(1, initial_min_percentage, bandwidth_str, neighbours)
     filename = f"ridges_run_{initial_min_percentage}_{bandwidth_str}_{neighbours}.npy", ridges
     np.save(filename, ridges)
 
