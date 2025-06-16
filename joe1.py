@@ -66,10 +66,18 @@ def build_density_map(filename, nside, smoothing_degrees=0.5):
 import sys
 
 if __name__ == "__main__":
-    initial_min_percentage = int(sys.argv[1])
-    bandwidth_str = sys.argv[2]
-    bandwidth = float(bandwidth_str)
-    neighbours = int(sys.argv[3])
+
+    i1 = int(sys.argv[1])
+    i2 = int(sys.argv[2])
+    i3 = int(sys.argv[3])
+
+    percentages = [10, 20, 30, 40, 50]
+    bandwidths = ["0.1", "0.25", "0.5", "1.0", "2.0"]
+    neighbours = [100, 250, 500, 1000, 2000]
+    initial_min_percentage = percentages[i1]
+    bandwidth_str = bandwidths[i2]
+    neighbours = neighbours[i3]
+
 
     ridges = get_filaments(1, initial_min_percentage, bandwidth_str, neighbours)
     filename = f"ridges_run_{initial_min_percentage}_{bandwidth_str}_{neighbours}.npy", ridges
