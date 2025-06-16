@@ -243,11 +243,42 @@ def plot_state(coordinates, ridges, plot_dir, i):
     plt.savefig(f"{plot_dir}/ridges_{i}.png")
     plt.close()
 
+def cut_lowest_percent(x, val, percent):
+    """
+    Retain only points in x whose corresponding values in val are above the given percentile.
+    """
+    threshold = np.percentile(val, percent)
+    return x[val > threshold]
+
+    
+
+def cut_initial_density_percentage(ridges, tree, initial_min_percentage, bandwidth):
+    """Cut the initial ridges to only include points with enough neighbors."""
+    if initial_min_percentage is None:
+        return ridges
+
+    original_size = ridges.shape[0]
+
+    # get number of points within one bandwidth
+    counts = tree.query_radius(np.radians(ridges), r=np.radians(bandwidth), return_distance=False, count_only=True)
+
+    # cut out the ridge points with the lowest density
+    ridges = cut_lowest_percent(ridges, counts, initial_min_percentage)
+
+    print(f"Cutting initial mesh to points with at least {initial_min_percentage}% of the maximum density")
+    final_size = ridges.shape[0]
+    print(f"Keeping {final_size} out of {original_size} points ({100 * final_size / original_size:.2f}%)")
+    return ridges
+
+
+
+
+
 def filaments(coordinates, 
               neighbors = 10, 
               bandwidth = None, 
               convergence = 0.005,
-              percentage = None,
+              initial_min_percentage = None,
               distance = 'haversine',
               n_process = 0,
               mesh_size = None,
@@ -284,8 +315,9 @@ def filaments(coordinates,
     convergence : float, defaults to 0.005
         The convergence threshold for the inter-iteration update difference.
     
-    percentage : float, defaults to None
-        The percentage of highest-density filament points that are returned.
+    initial_min_percentage : float, defaults to None
+        The percentage of initial mesh points discarded, starting with the lowest
+        density points, before the iterations start. If None, no initial cut is made.
     
     distance: string, defaults to 'haversine'
         The distance function to be used, can be 'haversine' or 'euclidean'.
@@ -318,7 +350,7 @@ def filaments(coordinates,
                     neighbors = neighbors,
                     bandwidth = bandwidth,
                     convergence = convergence,
-                    percentage = percentage,
+                    percentage = initial_min_percentage,
                     distance = distance,
                     n_process = n_process,
                     mesh_size = mesh_size,
@@ -349,12 +381,14 @@ def filaments(coordinates,
     tree = make_tree(coordinates)
 
 
-    # remove any ridges that are more than 4 bandwidths from any point
-    print(f"Cutting initial mesh to points within 4 bandwidths of a galaxy")
+    # remove any ridges that are more than mesh_threshold bandwidths from any point
+    print(f"Cutting initial mesh to points within {mesh_threshold} bandwidths of a galaxy")
     sys.stdout.flush()
     ridges = cut_points_with_tree(ridges, tree, bandwidth, threshold=mesh_threshold)
     print(f"Finished cutting. {ridges.shape[0]} mesh points remain.")
 
+    # Remove points from the lowest density regions from the initial mesh
+    ridges = cut_initial_density_percentage(ridges, tree, initial_min_percentage, bandwidth)
 
     # Intitialize the update change as larger than the convergence
     update_average = np.inf
@@ -384,7 +418,6 @@ def filaments(coordinates,
         if plot_dir is not None:
             plot_state(coordinates, ridges, plot_dir, iteration_number)
             np.save(f"{plot_dir}/ridges_{iteration_number}.npy", ridges)
-
 
 
     # # Check whether a top-percentage of points should be returned
