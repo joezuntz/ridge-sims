@@ -25,7 +25,7 @@ def get_filaments(run_id, bandwidth, neighbours):
     
     ridges, initial_density, final_density = dredge_mod.filaments(coordinates,
                          bandwidth=bandwidth,
-                         convergence=0.1,
+                         convergence=1e-5,
                          distance='haversine',
                          n_neighbors=neighbours,
                          n_process=4,
