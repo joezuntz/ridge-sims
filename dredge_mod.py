@@ -243,33 +243,6 @@ def plot_state(coordinates, ridges, plot_dir, i):
     plt.savefig(f"{plot_dir}/ridges_{i}.png")
     plt.close()
 
-def cut_lowest_percent(x, val, percent):
-    """
-    Retain only points in x whose corresponding values in val are above the given percentile.
-    """
-    threshold = np.percentile(val, percent)
-    return x[val > threshold]
-
-    
-
-def cut_initial_density_percentage(ridges, tree, initial_min_percentage, bandwidth):
-    """Cut the initial ridges to only include points with enough neighbors."""
-    if initial_min_percentage is None:
-        return ridges
-
-    original_size = ridges.shape[0]
-
-    # get number of points within one bandwidth
-    counts = tree.query_radius(np.radians(ridges), r=np.radians(bandwidth), return_distance=False, count_only=True)
-
-    # cut out the ridge points with the lowest density
-    ridges = cut_lowest_percent(ridges, counts, initial_min_percentage)
-
-    print(f"Cutting initial mesh to points with at least {initial_min_percentage}% of the maximum density")
-    final_size = ridges.shape[0]
-    print(f"Keeping {final_size} out of {original_size} points ({100 * final_size / original_size:.2f}%)")
-    return ridges
-
 
 
 
@@ -377,6 +350,7 @@ def filaments(coordinates,
     # Create an evenly-spaced mesh in for the provided coordinates
     ridges = mesh_generation(coordinates, mesh_size)
 
+    print("Generated mesh.  Making tree.")
     # Make the ball tree to speed up finding nearby points
     tree = make_tree(coordinates)
 
@@ -387,8 +361,8 @@ def filaments(coordinates,
     ridges = cut_points_with_tree(ridges, tree, bandwidth, threshold=mesh_threshold)
     print(f"Finished cutting. {ridges.shape[0]} mesh points remain.")
 
-    # Remove points from the lowest density regions from the initial mesh
-    ridges = cut_initial_density_percentage(ridges, tree, initial_min_percentage, bandwidth)
+    # Record the initial density of all the points to allow us to do cuts later
+    initial_density = tree.query_radius(np.radians(ridges), r=np.radians(bandwidth), return_distance=False, count_only=True)
 
     # Intitialize the update change as larger than the convergence
     update_average = np.inf
@@ -421,40 +395,12 @@ def filaments(coordinates,
 
 
     # # Check whether a top-percentage of points should be returned
-    if final_threshold > 0.0:
-        cut_final_threshold(ridges, bandwidth, final_threshold, tree=tree)
+    final_density = tree.query_radius(np.radians(ridges), r=np.radians(bandwidth), return_distance=False, count_only=True)
 
     # Return the iteratively updated mesh as the density ridges
     print("\nDone!")
-    return ridges
+    return ridges, initial_density, final_density
 
-def cut_final_threshold(ridges, bandwidth, final_threshold, tree=None, coordinates=None):
-    """Cut the final ridges to only include points with enough neighbors."""
-
-    if tree is None:
-        if coordinates is None:
-            raise ValueError("Either tree or coordinates must be provided.")
-        tree = make_tree(coordinates)
-    else:
-        if coordinates is not None:
-            print("Warning: both tree and coordinates provided, using tree.")
-
-    if final_threshold >= 1:
-        raise ValueError("final_threshold must be between 0 and 1.")
-
-    # get number of points within one bandwidth
-    counts = tree.query_radius(np.radians(ridges), r=np.radians(bandwidth), return_distance=False, count_only=True)
-    threshold = int(final_threshold * counts.max())
-    print("Ridge with most nearby points has: ", counts.max())
-    print("Final threshold for points: ", final_threshold)
-    print("So we will keep points with at least this many neighbors: ", threshold)
-    original_size = ridges.shape[0]
-
-    # keep only points with at least the threshold number of neighbors
-    ridges = ridges[counts >= threshold]
-    final_size = ridges.shape[0]
-    print(f"Keeping {final_size} out of {original_size} points ({100 * final_size / original_size:.2f}%)")
-    return ridges
 
 def get_last_bandwidth():
     global _last_calculated_bandwidth
