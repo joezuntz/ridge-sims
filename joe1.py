@@ -4,6 +4,7 @@ import h5py
 import dredge_mod
 import healpy
 import matplotlib.pyplot as plt
+import sys
 
 base_sim_dir = "lhc_run_sims"
 
@@ -29,7 +30,7 @@ def get_filaments(run_id, initial_min_percentage, bandwidth_str, neighbours):
                          distance='haversine',
                          n_neighbors=neighbours,
                          n_process=4,
-                         plot_dir = f'plots_{initial_min_percentage}_{bandwidth_str}_{neighbours}',
+                         plot_dir = f'plots/{initial_min_percentage}_{bandwidth_str}_{neighbours}',
                          mesh_size=None)
 
 
@@ -78,16 +79,21 @@ if __name__ == "__main__":
     bandwidth_str = bandwidths[i2]
     neighbours = neighbours[i3]
 
+    print("Running version", initial_min_percentage, bandwidth_str, neighbours)
+    
+    plot_filename = f"plots/filaments_run_{initial_min_percentage}_{bandwidth_str}_{neighbours}.png"
+    filename = f"joe1/ridges_run_{initial_min_percentage}_{bandwidth_str}_{neighbours}.npy"
 
+    if os.path.exists(plot_filename):
+        print("File already exists - skipping", plot_filename)
+        sys.exit(0)
+    
     ridges = get_filaments(1, initial_min_percentage, bandwidth_str, neighbours)
-    filename = f"ridges_run_{initial_min_percentage}_{bandwidth_str}_{neighbours}.npy"
     np.save(filename, ridges)
 
     run_dir = os.path.join(base_sim_dir, "run_1")
     cat_file = os.path.join(run_dir, "lens_catalog_0.npy")
     density_map = build_density_map(cat_file, 2048, 0.5)
-
-    plot_filename = f"filaments_run_{initial_min_percentage}_{bandwidth_str}_{neighbours}.png"
 
     results_plot(density_map, filename, plot_filename)
 
