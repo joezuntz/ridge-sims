@@ -265,7 +265,7 @@ def load_ridge_state(plot_dir):
     i = 1
     filename = None
     f = f"{plot_dir}/ridges_{i}.npy"
-    while os.path.exist(f):
+    while os.path.exists(f):
         filename = f
         i += 1
         f = f"{plot_dir}/ridges_{i}.npy"
