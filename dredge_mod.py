@@ -277,7 +277,7 @@ def load_ridge_state(plot_dir):
     print(f"Loading ridge state from {filename}")
     ridges = np.load(filename)
 
-    return ridges
+    return ridges, i - 1
 
 
 def filaments(coordinates, 
@@ -413,7 +413,7 @@ def filaments(coordinates,
     if resume:
         loaded_ridges = load_ridge_state(plot_dir)
         if loaded_ridges is not None:
-            ridges = loaded_ridges
+            ridges, iteration_number = loaded_ridges
 
     time_taken = 0
     while not update_average < convergence:
