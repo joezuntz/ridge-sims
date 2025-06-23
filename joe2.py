@@ -28,8 +28,9 @@ def get_filaments(run_id, bandwidth, neighbours):
                          convergence=1e-5,
                          distance='haversine',
                          n_neighbors=neighbours,
-                         n_process=4,
+                         n_process=3,
                          plot_dir = f'joe2/{neighbours}',
+                         resume=True,
                          mesh_size=None)
 
 

@@ -244,7 +244,40 @@ def plot_state(coordinates, ridges, plot_dir, i):
     plt.close()
 
 
+def load_ridge_state(plot_dir):
+    """
+    Load the last saved ridge state from the specified directory.
 
+    This function looks for the most recent ridge state file in the given
+    directory and loads it. It assumes that the files are named in a way
+    that allows sorting by iteration number.
+
+    Parameters:
+    -----------
+    plot_dir : str
+        The directory where ridge state files are stored.
+
+    Returns:
+    --------
+    ridges : numpy.ndarray
+        The loaded ridge points from the most recent file.
+    """
+    i = 1
+    filename = None
+    f = f"{plot_dir}/ridges_{i}.npy"
+    while os.path.exist(f):
+        filename = f
+        i += 1
+        f = f"{plot_dir}/ridges_{i}.npy"
+
+    if filename is None:
+        print(f"Warning: No ridge state files found in {plot_dir} so cannot resume iterations.")
+        return None
+
+    print(f"Loading ridge state from {filename}")
+    ridges = np.load(filename)
+
+    return ridges
 
 
 def filaments(coordinates, 
@@ -259,6 +292,7 @@ def filaments(coordinates,
               mesh_threshold = 4.0,
               final_threshold = 0.0,
               plot_dir = None,
+              resume = False,
               ):
     """Estimate density rigdges for a user-provided dataset of coordinates.
     
@@ -308,7 +342,10 @@ def filaments(coordinates,
     final_threshold : float, defaults to 1.0
         Throw away final points more than this many bandwidths away
         from any point
-        
+
+    resume: bool, defaults to False
+        If True, the function will attempt to resume from a previous run
+
     Returns:
     --------
     ridges : array-like
@@ -372,6 +409,11 @@ def filaments(coordinates,
     if plot_dir is not None:
         os.makedirs(plot_dir, exist_ok=True)
         plot_state(coordinates, ridges, plot_dir, iteration_number)
+    
+    if resume:
+        loaded_ridges = load_ridge_state(plot_dir)
+        if loaded_ridges is not None:
+            ridges = loaded_ridges
 
     time_taken = 0
     while not update_average < convergence:
