@@ -31,6 +31,7 @@ def get_filaments(run_id, bandwidth, neighbours):
                          n_process=3,
                          plot_dir = f'joe2/{neighbours}',
                          resume=True,
+                         seed  = 3482364,
                          mesh_size=None)
 
 
@@ -56,7 +57,10 @@ def build_density_map(filename, nside, smoothing_degrees=0.5):
     m1 = healpy.smoothing(m, fwhm=np.radians(smoothing_degrees), verbose=False)
     return m1
 
-
+def redo_cuts(ridges):
+    cut1 = initial_density > initial_density.max() * 0.4
+    cut2 = final_density > final_density.max() * 0.05
+    return ridges[cut1 & cut2]
 
 import sys
 

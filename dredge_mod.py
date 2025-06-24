@@ -293,6 +293,7 @@ def filaments(coordinates,
               final_threshold = 0.0,
               plot_dir = None,
               resume = False,
+              seed = None,
               ):
     """Estimate density rigdges for a user-provided dataset of coordinates.
     
@@ -346,10 +347,19 @@ def filaments(coordinates,
     resume: bool, defaults to False
         If True, the function will attempt to resume from a previous run
 
+    seed: int, defaults to None
+        If provided, sets the random seed for reproducibility.
+
     Returns:
     --------
     ridges : array-like
         The coordinates for the estimated density ridges of the data.
+
+    initial_density : array-like
+        The initial density of the mesh points before iterations.
+    
+    final_density : array-like
+        The final density of the ridge points after iterations.
         
     Attributes:
     -----------
@@ -385,7 +395,7 @@ def filaments(coordinates,
         mesh_size = int(np.min([1e5, np.max([5e4, len(coordinates)])]))
 
     # Create an evenly-spaced mesh in for the provided coordinates
-    ridges = mesh_generation(coordinates, mesh_size)
+    ridges = mesh_generation(coordinates, mesh_size, seed)
 
     print("Generated mesh.  Making tree.")
     # Make the ball tree to speed up finding nearby points
@@ -409,7 +419,8 @@ def filaments(coordinates,
     if plot_dir is not None:
         os.makedirs(plot_dir, exist_ok=True)
         plot_state(coordinates, ridges, plot_dir, iteration_number)
-    
+        np.save(f"{plot_dir}/ridges_{iteration_number}.npy", ridges)
+
     if resume:
         loaded_ridges = load_ridge_state(plot_dir)
         if loaded_ridges is not None:
@@ -517,7 +528,8 @@ def update_ridge(ridge,
     return ridge, update_change
 
 def mesh_generation(coordinates, 
-                    mesh_size):
+                    mesh_size,
+                    seed=None):
     """Generate a set of uniformly-random distributed points as a mesh.
     
     The subspace-constrained mean shift algorithm operates on either a grid
@@ -537,6 +549,9 @@ def mesh_generation(coordinates,
     
     mesh_size : int
         The number of mesh points to be used to generate ridges.
+    
+    seed: int, optional
+        If provided, sets the random seed for reproducibility.
         
     Returns:
     --------
@@ -556,8 +571,9 @@ def mesh_generation(coordinates,
     # Get the number of provided coordinates
     #size = int(np.min([1e5, np.max([5e4, len(coordinates)])]))
     # Create an array of uniform-random points as a mesh
-    mesh_1 = np.random.uniform(min_latitude, max_latitude, mesh_size)
-    mesh_2 = np.random.uniform(min_longitude, max_longitude, mesh_size)
+    rng = np.random.default_rng(seed)
+    mesh_1 = rng.uniform(min_latitude, max_latitude, mesh_size)
+    mesh_2 = rng.uniform(min_longitude, max_longitude, mesh_size)
     mesh = np.vstack((mesh_1.flatten(), mesh_2.flatten())).T
     # Return the evenly-spaced mesh for the coordinates
     return mesh
