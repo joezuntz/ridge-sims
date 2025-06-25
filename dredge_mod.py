@@ -172,8 +172,6 @@ def query_tree(tree, points, n_process, n_neighbors):
 
     task = partial(tree.query, k=n_neighbors, return_distance=True)
 
-    min_chunk_size = 100
-    n_process = min(n_process, x.shape[0] // min_chunk_size + 1)
     chunks = np.array_split(x, n_process)
 
     with ProcessPoolExecutor(max_workers=n_process) as executor:
