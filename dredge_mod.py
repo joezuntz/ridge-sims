@@ -123,6 +123,7 @@ import matplotlib.pyplot as plt
 import os
 from numba.core.errors import NumbaPerformanceWarning
 import warnings
+from concurrent.futures import ThreadPoolExecutor, wait
 
 # Suppress Numba performance warnings
 warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
@@ -136,10 +137,11 @@ def make_tree(coordinates):
     return tree
 
 
-def query_tree(tree, points, n_process, n_neighbors=100):
+def query_tree(tree, points, n_process, n_neighbors):
     """
     Query a KD Tree to find the nearest neighbors for a set of points, 
-    optionally using parallel processing.
+    optionally using parallel processing. Despite the name, the n_process
+    parameter is actually the number of threads to use, not processes.
 
         Parameters:
     -----------
@@ -152,11 +154,10 @@ def query_tree(tree, points, n_process, n_neighbors=100):
         as the KD Tree. Shape (npoint, ndim)
 
     n_process : int
-        The number of processes to use for parallel querying. If set to 1 or less, 
-        no parallel processing is used.
+        The number of threads to use for parallel querying. 
 
-    n_neighbors : int, optional
-        The number of nearest neighbors to query for each point. Default is 100.
+    n_neighbors : int
+        The number of nearest neighbors to query for each point.
 
     Returns:
     --------
@@ -167,24 +168,28 @@ def query_tree(tree, points, n_process, n_neighbors=100):
         An array of distances (in degrees) to the nearest neighbors for 
         each input point.
     """
-
     x = np.radians(points)
 
-    if n_process > 1:
-        with multiprocessing.Pool(n_process) as pool:
-            chunks = np.array_split(x, n_process)
-            results = pool.map(partial(tree.query, k=n_neighbors, return_distance=True), chunks)
+    task = partial(tree.query, k=n_neighbors, return_distance=True)
+
+    min_chunk_size = 100
+    n_process = min(n_process, x.shape[0] // min_chunk_size + 1)
+    chunks = np.array_split(x, n_process)
+
+    with ThreadPoolExecutor(max_workers=n_process) as executor:
+        results = executor.map(task, chunks)
+        # Collect together the results from all the threads
         distances, indices = zip(*results)
-        distances = np.concatenate(distances)
-        indices = np.concatenate(indices)
-    else:
-        distances, indices = tree.query(x, k=n_neighbors, return_distance=True)
+
+    # Squash the lists back into numpy arrays
+    distances = np.concatenate(distances)
+    indices = np.concatenate(indices)
 
     # Convert the distances from radians to degrees
     distances = np.degrees(distances)
     return indices, distances
 
-    
+
 def cut_points_with_tree(ridges, tree, bandwidth, threshold=4):
     """
     Filters out points in the `ridges` array whose nearest neighbor, as determined
@@ -244,7 +249,7 @@ def plot_state(coordinates, ridges, plot_dir, i):
     plt.close()
 
 
-def load_ridge_state(plot_dir):
+def load_ridge_state(checkpoint_dir):
     """
     Load the last saved ridge state from the specified directory.
 
@@ -254,7 +259,7 @@ def load_ridge_state(plot_dir):
 
     Parameters:
     -----------
-    plot_dir : str
+    checkpoint_dir : str
         The directory where ridge state files are stored.
 
     Returns:
@@ -264,14 +269,14 @@ def load_ridge_state(plot_dir):
     """
     i = 1
     filename = None
-    f = f"{plot_dir}/ridges_{i}.npy"
+    f = f"{checkpoint_dir}/ridges_{i}.npy"
     while os.path.exists(f):
         filename = f
         i += 1
-        f = f"{plot_dir}/ridges_{i}.npy"
+        f = f"{checkpoint_dir}/ridges_{i}.npy"
 
     if filename is None:
-        print(f"Warning: No ridge state files found in {plot_dir} so cannot resume iterations.")
+        print(f"Warning: No ridge state files found in {checkpoint_dir} so cannot resume iterations.")
         return None
 
     print(f"Loading ridge state from {filename}")
@@ -291,6 +296,7 @@ def filaments(coordinates,
               n_neighbors = 200,
               mesh_threshold = 4.0,
               final_threshold = 0.0,
+              checkpoint_dir = None,
               plot_dir = None,
               resume = False,
               seed = None,
@@ -401,7 +407,6 @@ def filaments(coordinates,
     # Make the ball tree to speed up finding nearby points
     tree = make_tree(coordinates)
 
-
     # remove any ridges that are more than mesh_threshold bandwidths from any point
     print(f"Cutting initial mesh to points within {mesh_threshold} bandwidths of a galaxy")
     sys.stdout.flush()
@@ -416,35 +421,56 @@ def filaments(coordinates,
     # Loop over the number of prescripted iterations
     iteration_number = 0
 
+    if checkpoint_dir is not None:
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        np.save(f"{checkpoint_dir}/ridges_{iteration_number}.npy", ridges)
+
     if plot_dir is not None:
         os.makedirs(plot_dir, exist_ok=True)
         plot_state(coordinates, ridges, plot_dir, iteration_number)
-        np.save(f"{plot_dir}/ridges_{iteration_number}.npy", ridges)
 
-    if resume:
-        loaded_ridges = load_ridge_state(plot_dir)
+    if resume and checkpoint_dir is not None:
+        loaded_ridges = load_ridge_state(checkpoint_dir)
         if loaded_ridges is not None:
             ridges, iteration_number = loaded_ridges
 
     time_taken = 0
-    while not update_average < convergence:
+
+    full_ridges = ridges
+
+    # we keep track of which points have converged and which have not.
+    # To start with we update all points.
+    points_to_update = np.ones(full_ridges.shape[0], dtype=bool)
+    index = np.arange(full_ridges.shape[0])
+    while points_to_update.sum() > 10:
+        # pull out the set of points that we want to update
+        ridges = full_ridges[points_to_update]
+        this_index = index[points_to_update]
 
         # Update the points in the mesh. Record the timing
         t = timer()
         updates = ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors)
         time_taken = timer() - t
 
-        # Get the update size to check convergence.
-        # JZ updated this from the previous version to make it independent
-        # of the mesh size. This means the appropriate convergence values are much smaller
+        # Copy the update from this set of ridges to the full set
+        full_ridges[this_index] = ridges
+
+        # Find which points have converged
         update_average = np.mean(updates)
+        newly_converged_points = updates < convergence
+        smallest_update = np.min(updates)
+        largest_update = np.max(updates)
+        points_to_update[this_index[newly_converged_points]] = False
+        n_to_update = points_to_update.sum()
 
         iteration_number += 1
-        print(f"Iteration {iteration_number}  update change: {update_average:.2e} target: {convergence:.2e} took {time_taken:.2f} seconds")
+        print(f"Iteration {iteration_number}  update change: {update_average:e} took {time_taken:.2f} seconds. {n_to_update} points left to converge. Smallest update: {smallest_update:e}, largest update: {largest_update:e}")
+
+        if checkpoint_dir is not None:
+            np.save(f"{checkpoint_dir}/ridges_{iteration_number}.npy", full_ridges)
 
         if plot_dir is not None:
-            plot_state(coordinates, ridges, plot_dir, iteration_number)
-            np.save(f"{plot_dir}/ridges_{iteration_number}.npy", ridges)
+            plot_state(coordinates, full_ridges, checkpoint_dir, iteration_number)
 
 
     # # Check whether a top-percentage of points should be returned
@@ -461,29 +487,35 @@ def get_last_bandwidth():
 
 
 def ridge_update(ridges, coordinates, bandwidth, tree, n_process, n_neighbors):
+    t = timer()
     all_nearby_indices, all_distances = query_tree(tree, ridges, n_process, n_neighbors)
+    t = timer() - t
+    print("query_tree took", t, "seconds")
+    t = timer()
     updates = ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances)
+    t = timer() - t
+    print("ridge_update_inner took", t, "seconds")
     return updates
 
 
-@njit
+@njit(parallel=True)
 def ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances):
     # Create a list to store all update values
-    updates = np.zeros(ridges.shape[0])
+    update_sizes = np.zeros(ridges.shape[0])
+    updates = np.zeros(ridges.shape)
     for i in prange(ridges.shape[0]):
         # Compute the update movements for each point
-        ridge = ridges[i]
         # get all the points within the 3 sigma bandwidth
         nearby_indices = all_nearby_indices[i]
         distance = all_distances[i]
         nearby_coordinates = coordinates[nearby_indices].copy()
     
-        point_updates = update_function(ridge, nearby_coordinates, bandwidth, distance)
-        # Add the update movement to the respective point
-        ridges[i] = ridge + point_updates
+        updates[i] = update_function(ridges[i], nearby_coordinates, bandwidth, distance)
+
         # Store the change between updates to check convergence
-        updates[i] = np.sum(np.abs(point_updates))
-    return updates
+        update_sizes[i] = np.sum(np.abs(updates[i]))
+    ridges += updates
+    return update_sizes
 
 
 
