@@ -123,7 +123,7 @@ import matplotlib.pyplot as plt
 import os
 from numba.core.errors import NumbaPerformanceWarning
 import warnings
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor, wait, ProcessPoolExecutor
 
 # Suppress Numba performance warnings
 warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
@@ -176,7 +176,7 @@ def query_tree(tree, points, n_process, n_neighbors):
     n_process = min(n_process, x.shape[0] // min_chunk_size + 1)
     chunks = np.array_split(x, n_process)
 
-    with ThreadPoolExecutor(max_workers=n_process) as executor:
+    with ProcessPoolExecutor(max_workers=n_process) as executor:
         results = executor.map(task, chunks)
         # Collect together the results from all the threads
         distances, indices = zip(*results)

@@ -28,7 +28,7 @@ def get_filaments(run_id, bandwidth, neighbours):
                          convergence=1e-5,
                          distance='haversine',
                          n_neighbors=neighbours,
-                         n_process=32,
+                         n_process=2,
                          checkpoint_dir=None,
                          plot_dir=None,
                          resume=True,
