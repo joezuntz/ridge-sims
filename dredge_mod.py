@@ -170,18 +170,20 @@ def query_tree(tree, points, n_process, n_neighbors):
     """
     x = np.radians(points)
 
-    task = partial(tree.query, k=n_neighbors, return_distance=True)
+    if n_process > 1:
+        task = partial(tree.query, k=n_neighbors, return_distance=True)
+        chunks = np.array_split(x, n_process)
+        with ThreadPoolExecutor(max_workers=n_process) as executor:
+            results = executor.map(task, chunks)
+            # Collect together the results from all the threads
+            distances, indices = zip(*results)
 
-    chunks = np.array_split(x, n_process)
-
-    with ProcessPoolExecutor(max_workers=n_process) as executor:
-        results = executor.map(task, chunks)
-        # Collect together the results from all the threads
-        distances, indices = zip(*results)
-
-    # Squash the lists back into numpy arrays
-    distances = np.concatenate(distances)
-    indices = np.concatenate(indices)
+        # Squash the lists back into numpy arrays
+        distances = np.concatenate(distances)
+        indices = np.concatenate(indices)
+    else:
+        # If only one process, just query directly
+        distances, indices = tree.query(x, k=n_neighbors, return_distance=True)
 
     # Convert the distances from radians to degrees
     distances = np.degrees(distances)
