@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import h5py
-import dredge_mod_parallel
+import dredge_mod3
 import healpy
 import matplotlib.pyplot as plt
 from mpi4py.MPI import COMM_WORLD
@@ -20,16 +20,16 @@ def get_filaments(run_id, bandwidth, neighbours):
     
     coordinates = np.column_stack((dec, ra))
 
-    print(COMM_WORLD.rank, "Data size", coordinates.shape)
+    if COMM_WORLD.rank == 0:
+        print("Read coordinate data. Size = ", coordinates.shape)
     
-    ridges, initial_density, final_density = dredge_mod_parallel.filaments(coordinates,
+    ridges, initial_density, final_density = dredge_mod3.filaments(coordinates,
                          bandwidth=bandwidth,
                          convergence=1e-5,
                          distance='haversine',
                          n_neighbors=neighbours,
                          comm=COMM_WORLD,
                          checkpoint_dir=None,
-                         plot_dir=None,
                          resume=True,
                          seed=3482364,
                          mesh_size=None)

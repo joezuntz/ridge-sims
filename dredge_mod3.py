@@ -369,6 +369,7 @@ def filaments(coordinates,
     None
     """
     is_root = comm is None or comm.rank == 0
+    rank = 0 if comm is None else comm.rank
 
     if final_threshold >= 1:
         raise ValueError("final_threshold must be between 0 and 1.")
@@ -386,8 +387,8 @@ def filaments(coordinates,
     if mesh_size is None:
         mesh_size = int(np.min([1e5, np.max([5e4, len(coordinates)])]))
 
-    print("Generated mesh.  Making tree.")
     if is_root:
+        print("Generated mesh.  Making tree.")
         # Create an evenly-spaced mesh in for the provided coordinates
         ridges = mesh_generation(coordinates, mesh_size, seed)
 
@@ -406,7 +407,6 @@ def filaments(coordinates,
                 print(f"Saving tree to {tree_file}")
                 pickle.dump(tree, f)
 
-
         # remove any ridges that are more than mesh_threshold bandwidths from any point
         # We do the cutting here on the root process so that each process actually does get the
         # same number of points to work with.
@@ -414,6 +414,10 @@ def filaments(coordinates,
         sys.stdout.flush()
         ridges = cut_points_with_tree(ridges, tree, bandwidth, threshold=mesh_threshold)
         print(f"Finished cutting. {ridges.shape[0]} mesh points remain.")
+    
+    else:
+        tree = None
+        ridges = None
 
 
     if comm is not None:
@@ -438,13 +442,13 @@ def filaments(coordinates,
         load_ridge_state(checkpoint_dir, comm)
 
     time_taken = 0
-
     full_ridges = ridges
 
     # we keep track of which points have converged and which have not.
     # To start with we update all points.
     points_to_update = np.ones(full_ridges.shape[0], dtype=bool)
     index = np.arange(full_ridges.shape[0])
+    n_to_update = points_to_update.sum()
 
     # Wait until all points have converged. Towards the end the
     # points will be updating very quickly as there are so few of them.
@@ -453,9 +457,11 @@ def filaments(coordinates,
         ridges = full_ridges[points_to_update]
         this_index = index[points_to_update]
 
+        print(f"[Proc {rank}]: updating {n_to_update} ridge points.")
+
         # Update the points in the mesh. Record the timing
         t = timer()
-        updates = ridge_update(ridges, coordinates, bandwidth, tree, comm, n_neighbors)
+        updates = ridge_update(ridges, coordinates, bandwidth, tree, n_neighbors)
         time_taken = timer() - t
 
         # Copy the update from this set of ridges to the full set
@@ -468,7 +474,6 @@ def filaments(coordinates,
         n_to_update = points_to_update.sum()
 
         iteration_number += 1
-        rank = 0 if comm is None else comm.rank
         print(f"[Proc {rank}]: iteration {iteration_number}  update change: {update_average:e} took {time_taken:.2f} seconds. {n_to_update} points left to converge.")
 
         # The checkpointing forces all ranks to synchronize.
@@ -503,14 +508,8 @@ def filaments(coordinates,
 
 
 def ridge_update(ridges, coordinates, bandwidth, tree, n_neighbors):
-    t = timer()
     all_nearby_indices, all_distances = query_tree(tree, ridges, n_neighbors)
-    t = timer() - t
-    print("query_tree took", t, "seconds")
-    t = timer()
     updates = ridge_update_inner(ridges, coordinates, bandwidth, all_nearby_indices, all_distances)
-    t = timer() - t
-    print("ridge_update_inner took", t, "seconds")
     return updates
 
 
