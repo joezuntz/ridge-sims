@@ -201,7 +201,7 @@ def cut_points_with_tree(ridges, tree, bandwidth, threshold=4):
     keep = distances[:, 0] < threshold * np.radians(bandwidth)
     return ridges[keep]
 
-def estimate_bandsidth(coordinates, n_process):
+def estimate_bandwidth(coordinates, n_process):
     defaults = EstimatorSettings()
     defaults.n_jobs = n_process
     defaults.efficient = True
@@ -215,18 +215,6 @@ def estimate_bandsidth(coordinates, n_process):
                                         defaults=defaults)
     return np.mean(density_estimate.bw)
 
-
-def plot_state(coordinates, ridges, plot_dir, i):
-    ra = coordinates[:, 1]
-    dec = coordinates[:, 0]
-    ridge_ra = ridges[:, 1]
-    ridge_dec = ridges[:, 0]
-
-    plt.figure()
-    plt.plot(ra, dec, 'r,')
-    plt.plot(ridge_ra, ridge_dec, 'k,')
-    plt.savefig(f"{plot_dir}/ridges_{i}.png")
-    plt.close()
 
 
 def load_ridge_state(checkpoint_dir, comm):
