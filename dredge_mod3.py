@@ -414,6 +414,7 @@ def filaments(coordinates,
         sys.stdout.flush()
         ridges = cut_points_with_tree(ridges, tree, bandwidth, threshold=mesh_threshold)
         print(f"Finished cutting. {ridges.shape[0]} mesh points remain.")
+        sys.stdout.flush()
     
     else:
         tree = None
@@ -450,14 +451,15 @@ def filaments(coordinates,
     index = np.arange(full_ridges.shape[0])
     n_to_update = points_to_update.sum()
 
-    # Wait until all points have converged. Towards the end the
+    # Wait until almost all points have converged. Towards the end the
     # points will be updating very quickly as there are so few of them.
-    while points_to_update.sum() > 0:
+    while points_to_update.sum() > points_to_update.size * 0.005:
         # pull out the set of points that we want to update
         ridges = full_ridges[points_to_update]
         this_index = index[points_to_update]
 
         print(f"[Proc {rank}]: updating {n_to_update} ridge points.")
+        sys.stdout.flush()
 
         # Update the points in the mesh. Record the timing
         t = timer()
@@ -475,6 +477,7 @@ def filaments(coordinates,
 
         iteration_number += 1
         print(f"[Proc {rank}]: iteration {iteration_number}  update change: {update_average:e} took {time_taken:.2f} seconds. {n_to_update} points left to converge.")
+        sys.stdout.flush()
 
         # The checkpointing forces all ranks to synchronize.
         # This might end up slowing things down a lot towards the end.

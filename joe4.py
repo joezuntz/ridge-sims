@@ -19,6 +19,7 @@ def get_filaments(run_id, bandwidth, neighbours):
     ra = (ra + 180) % 360
     
     coordinates = np.column_stack((dec, ra))
+#    coordinate = coordinates[:20000]
 
     if COMM_WORLD.rank == 0:
         print("Read coordinate data. Size = ", coordinates.shape)
@@ -32,7 +33,8 @@ def get_filaments(run_id, bandwidth, neighbours):
                          checkpoint_dir=None,
                          resume=True,
                          seed=3482364,
-                         mesh_size=None)
+                                                                   mesh_size=None)
+ #                                                                  mesh_size=4000)
 
 
     return ridges, initial_density, final_density
