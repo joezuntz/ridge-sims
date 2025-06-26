@@ -271,15 +271,11 @@ def checkpoint(checkpoint_dir, iteration_number, ridges, comm):
         np.save(f"{checkpoint_dir}/ridges_{iteration_number}.npy", ridges)
 
 def filaments(coordinates, 
-              neighbors = 10, 
               bandwidth = None, 
               convergence = 0.005,
-              initial_min_percentage = None,
-              distance = 'haversine',
               mesh_size = None,
               n_neighbors = 200,
               mesh_threshold = 4.0,
-              final_threshold = 0.0,
               checkpoint_dir = None,
               resume = False,
               seed = None,
@@ -311,7 +307,7 @@ def filaments(coordinates,
     bandwidth : float, defaults to None
         The bandwidth used for kernel density estimates of data points.
     
-    convergence : float, defaults to 0.005
+    convergence : float
         The convergence threshold for the inter-iteration update difference.
     
     initial_min_percentage : float, defaults to None
@@ -330,10 +326,6 @@ def filaments(coordinates,
 
     mesh_threshold: float, defaults to 4.0
         Throw away initial mesh point more than this many bandwidths from any coordinate
-
-    final_threshold : float, defaults to 1.0
-        Throw away final points more than this many bandwidths away
-        from any point
 
     resume: bool, defaults to False
         If True, the function will attempt to resume from a previous run
@@ -358,9 +350,6 @@ def filaments(coordinates,
     """
     is_root = comm is None or comm.rank == 0
     rank = 0 if comm is None else comm.rank
-
-    if final_threshold >= 1:
-        raise ValueError("final_threshold must be between 0 and 1.")
 
     if checkpoint_dir is not None and is_root:
         os.makedirs(checkpoint_dir, exist_ok=True)
@@ -444,8 +433,6 @@ def filaments(coordinates,
         # pull out the set of points that we want to update
         ridges = full_ridges[points_to_update]
         this_index = index[points_to_update]
-
-        print(f"[Proc {rank}]: updating {n_to_update} ridge points.")
 
         # Update the points in the mesh. Record the timing
         t = timer()
