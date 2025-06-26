@@ -124,6 +124,7 @@ import os
 from numba.core.errors import NumbaPerformanceWarning
 import warnings
 from concurrent.futures import ThreadPoolExecutor, wait, ProcessPoolExecutor
+import pickle
 
 # Suppress Numba performance warnings
 warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
@@ -300,6 +301,7 @@ def filaments(coordinates,
               plot_dir = None,
               resume = False,
               seed = None,
+              tree_file = None,
               ):
     """Estimate density rigdges for a user-provided dataset of coordinates.
     
@@ -405,7 +407,17 @@ def filaments(coordinates,
 
     print("Generated mesh.  Making tree.")
     # Make the ball tree to speed up finding nearby points
-    tree = make_tree(coordinates)
+    if tree_file is None:
+        tree = make_tree(coordinates)
+    elif os.path.exists(tree_file):
+        print(f"Loading tree from {tree_file}")
+        with open (tree_file, 'rb') as f:
+            tree = pickle.load(f)
+    else:
+        tree = make_tree(coordinates)
+        with open(tree_file, 'wb') as f:
+            print(f"Saving tree to {tree_file}")
+            pickle.dump(tree, f)
 
     # remove any ridges that are more than mesh_threshold bandwidths from any point
     print(f"Cutting initial mesh to points within {mesh_threshold} bandwidths of a galaxy")
