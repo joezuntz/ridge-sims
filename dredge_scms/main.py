@@ -10,7 +10,8 @@ from .scms import ridge_update, mesh_generation
 def find_filaments(coordinates, 
               bandwidth = np.radians(0.5), 
               convergence = np.radians(0.005),
-              max_unconverged_fraction = 0.001,
+              max_unconverged_fraction = 0.005,
+              max_iterations = 5000,
               mesh_size = None,
               n_neighbors = 5000,
               distance_metric = "haversine",
@@ -53,6 +54,9 @@ def find_filaments(coordinates,
         before the iterations stop. This is used to avoid running for too long
         when the points are very close to converging, but not quite there,
         or are oscillating around target points.
+
+    max_iterations : int, defaults to 5000
+        The maximum number of iterations to run before stopping.
     
     mesh_size : int, defaults to None
         The number of mesh points to be used to generate ridges.
@@ -186,7 +190,7 @@ def find_filaments(coordinates,
 
     # Wait until almost all points have converged. Towards the end the
     # points will be updating very quickly as there are so few of them.
-    while points_to_update.sum() > np.ceil(points_to_update.size * max_unconverged_fraction):
+    while (iteration_number < max_iterations) and points_to_update.sum() > np.ceil(points_to_update.size * max_unconverged_fraction):
         # pull out the set of points that we want to update
         ridges_subset = ridges[points_to_update]
         subset_index = index[points_to_update]

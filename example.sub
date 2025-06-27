@@ -1,0 +1,18 @@
+#!/bin/bash -l
+#SBATCH -n 16
+#SBATCH -N 1
+#SBATCH -t 24:00:00
+#SBATCH -J ridge-tests5
+#SBATCH -o example.log
+#SBATCH --mem=32G
+
+
+module load anaconda
+. /usr/local/anaconda/3.11/etc/profile.d/conda.sh
+
+# Mehraveh - you will need to change this path
+conda activate $HOME/ridges/env2
+export OMP_NUM_THREADS=1
+
+mpirun -n 16  python example_run.py
+
