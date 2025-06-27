@@ -57,21 +57,24 @@ def redo_cuts(ridges, initial_density, final_density):
 def main():
     bandwidth = 0.5
     neighbours = 5000
+    convergence = 1e-5
     run_id = 1
     filename = f"joe5/ridges_run_{neighbours}_{bandwidth}.npz"
 
     coordinates = load_coordinates(base_sim_dir, run_id)
+    coordinates = coordinates[::5]  
+    mesh_size = 20000
         
     ridges, initial_density, final_density = dredge_scms.find_filaments(coordinates,
                             bandwidth=np.radians(bandwidth),
-                            convergence=np.radians(1e-5),
-                            distance='haversine',
+                            convergence=np.radians(convergence),
+                            distance_metric='haversine',
                             n_neighbors=neighbours,
                             comm=COMM_WORLD,
                             checkpoint_dir=None,
                             resume=True,
                             seed=3482364,
-                            mesh_size=None
+                            mesh_size=mesh_size
                             )
     
     if COMM_WORLD.rank == 0:
