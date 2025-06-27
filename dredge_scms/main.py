@@ -103,6 +103,10 @@ def find_filaments(coordinates,
     -----------
     None
     """
+    # Set a mesh size if none is provided by the user
+    if mesh_size is None:
+        mesh_size = int(np.min([1e5, np.max([5e4, len(coordinates)])]))
+
     parameter_check(**locals())
 
     # parallelization information
@@ -113,9 +117,6 @@ def find_filaments(coordinates,
     if checkpoint_dir is not None and is_root:
         os.makedirs(checkpoint_dir, exist_ok=True)
 
-    # Set a mesh size if none is provided by the user
-    if mesh_size is None:
-        mesh_size = int(np.min([1e5, np.max([5e4, len(coordinates)])]))
 
     # Only the root process makes the mesh and the tree, so that
     # every process is using the exact same one.

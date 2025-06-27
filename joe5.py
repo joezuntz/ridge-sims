@@ -58,12 +58,11 @@ def main():
     bandwidth = 0.5
     neighbours = 5000
     convergence = 1e-5
+    mesh_size = None
     run_id = 1
     filename = f"joe5/ridges_run_{neighbours}_{bandwidth}.npz"
 
     coordinates = load_coordinates(base_sim_dir, run_id)
-    coordinates = coordinates[::5]  
-    mesh_size = 20000
         
     ridges, initial_density, final_density = dredge_scms.find_filaments(coordinates,
                             bandwidth=np.radians(bandwidth),
