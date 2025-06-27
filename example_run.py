@@ -33,7 +33,7 @@ def results_plot(density_map, ridges, plot_filename):
     """
     Make a plot of a density map and ridge points on top.
     """
-    healpy.cartview(density_map, min=0, lonra=[20, 50], latra=[-40, -10],)
+    healpy.cartview(density_map, min=0, lonra=[20, 50], latra=[-30, 0],)
     healpy.graticule()
 
     ridges = np.degrees(ridges)
@@ -96,8 +96,11 @@ def main():
         print(f"Final density shape: {final_density.shape}")
         np.savez(filename, ridges=ridges, initial_density=initial_density, final_density=final_density)
 
-
-
+    # You can make a useful plot like this:
+    # density_map = build_density_map(base_sim_dir, 1, 2048, smoothing_degrees=0.5)
+    # data = np.load("example/ridges_run_5000_0.5.npz")
+    # ridges = data["ridges"]
+    # results_plot(density_map, ridges, "example.png")
 
 if __name__ == "__main__":
     main()
