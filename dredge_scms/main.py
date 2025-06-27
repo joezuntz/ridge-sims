@@ -16,6 +16,7 @@ def find_filaments(coordinates,
               distance_metric = "haversine",
               mesh_threshold = 4.0,
               checkpoint_dir = None,
+              min_checkpoint_gap = 30,
               resume = False,
               seed = None,
               tree_file = None,
@@ -69,6 +70,11 @@ def find_filaments(coordinates,
     checkpoint_dir: str, defaults to None
         If provided, the directory where the intermediate results will be saved.
         This allows for resuming the computation from a previous state.
+
+    min_checkpoint_gap: int, defaults to 30
+        The minimum time in seconds between checkpoints. This prevents
+        excessive checkpointing during the iterations, which can things down,
+        especially towards the end.
 
     resume: bool, defaults to False
         If True, the function will attempt to resume from a previous run
@@ -160,18 +166,20 @@ def find_filaments(coordinates,
     # Loop over the number of prescripted iterations
     iteration_number = 0
 
+    # We keep track of which points need to be updated.  
+    # Initially, all points are set to be updated.  
+    points_to_update = np.ones(ridges.shape[0], dtype=bool)
+
     # Checkpoint 0 - initial random state of the points
-    checkpoint(checkpoint_dir, iteration_number, ridges, comm)
+    checkpoint(checkpoint_dir, iteration_number, ridges, points_to_update, comm)
+    time_of_last_checkpoint = timer()
 
     # Optionally restart from an incomplete run
     if resume and checkpoint_dir is not None:
-        load_ridge_state(checkpoint_dir, comm)
+        state = load_ridge_state(checkpoint_dir, comm)
+        if state is not None:
+            ridges, points_to_update, iteration_number = state
 
-    time_taken = 0
-
-    # we keep track of which points have converged and which have not.
-    # To start with we update all points.
-    points_to_update = np.ones(ridges.shape[0], dtype=bool)
     index = np.arange(ridges.shape[0])
     n_to_update = points_to_update.sum()
     print(f"[Proc {rank}]: iteration {iteration_number}  {n_to_update} points to iterate.")
@@ -207,7 +215,10 @@ def find_filaments(coordinates,
         # The checkpointing forces all ranks to synchronize.
         # This might end up slowing things down a lot towards the end.
         if checkpoint_dir is not None:
-            checkpoint(checkpoint_dir, iteration_number, ridges, comm)
+            if timer() - time_of_last_checkpoint > min_checkpoint_gap:
+                time_of_last_checkpoint = timer()
+                # Save the current state of the ridges and points to update
+                checkpoint(checkpoint_dir, iteration_number, ridges, points_to_update, comm)
 
     # We also record the density at the end of the iterations - we may want to cut
     # to high density ridges only.
