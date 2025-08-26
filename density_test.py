@@ -99,7 +99,7 @@ def main():
     )
 
     if COMM_WORLD.rank == 0:
-        final_percentiles = 15 # [0, 10, 25, 40, 50, 60, 75, 85, 90, 95]
+        final_percentiles = [15] # [0, 10, 25, 40, 50, 60, 75, 85, 90, 95]
         initial_percentile = 0
 
         # Build density map once (outside the loop)
