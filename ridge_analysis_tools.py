@@ -19,7 +19,7 @@ except ImportError:
     comm = None
 
 
-def transform_background(background_file, output_hdf5_file):
+def transform_background(background_file, output_hdf5_file, seed):
     """Applies random rotation to shear values and saves the transformed background to an HDF5 file."""
     
     np.random.seed(seed)  # Set the seed 
