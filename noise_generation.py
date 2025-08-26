@@ -1,7 +1,7 @@
 import os
 import h5py
 import numpy as np
-from shear_analysis_tools import *
+from ridge_analysis_tools import *
 
 
 
