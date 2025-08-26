@@ -300,3 +300,24 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
     # ========================
 
 
+def sum_in_place(data, comm):
+    """
+    Use MPI to sum up the data from all the different processes in an array.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        The data to sum up.
+
+    comm : mpi4py.MPI.Comm
+        The MPI communicator to use. If None, this function does nothing.
+    """
+    if comm is None:
+        return
+
+    import mpi4py.MPI
+
+    if comm.Get_rank() == 0:
+        comm.Reduce(mpi4py.MPI.IN_PLACE, data)
+    else:
+        comm.Reduce(data, None)
