@@ -53,7 +53,7 @@ for fp in final_percentiles:
         if comm is None or comm.rank == 0:
             print(f"[rank 0] Processing noise realization {i} for p={fp}")
         
-        process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_csv)
-
+        process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_csv, background_type ='sim')
+        process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_csv.replace(".csv", "_flipG1.csv"), flip_g1=True, background_type='sim')
     if comm is not None:
         comm.Barrier()
