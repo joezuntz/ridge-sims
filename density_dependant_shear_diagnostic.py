@@ -24,7 +24,7 @@ BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5
 filament_dir = "example_zl04_mesh5e5/filaments"
 os.makedirs(filament_dir, exist_ok=True)
 
-final_percentiles = 15 #[0, 10, 25, 40, 50, 60, 75, 85, 90, 95]
+final_percentiles = [15] #[0, 10, 25, 40, 50, 60, 75, 85, 90, 95]
 for fp in final_percentiles:
     if comm is None or comm.rank == 0:
         print(f"[rank 0] Processing filaments for final_percentile={fp}")
