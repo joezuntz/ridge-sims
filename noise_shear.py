@@ -13,6 +13,7 @@ except ImportError:
 base_sim_dir = "lhc_run_sims"
 run_id = 1
 noise_shear_dir = "example_zl04_mesh5e5/noise/shear"
+noise_dir = "example_zl04_mesh5e5/noise"
 filament_dir = "example_zl04_mesh5e5/filaments"
 os.makedirs(filament_dir, exist_ok=True)
 
@@ -45,7 +46,7 @@ for fp in final_percentiles:
     # --- Loop over 30 noise realizations ---
     num_realizations = 30
     for i in range(num_realizations):
-        noise_file = os.path.join(noise_shear_dir, f"source_catalog_noise_{i:02d}.h5")
+        noise_file = os.path.join(noise_dir, f"source_catalog_noise_{i:02d}.h5")
         shear_noise_csv = os.path.join(
             noise_shear_dir, f"shear_noise_p{fp:02d}_r{i:02d}.csv"
         )
