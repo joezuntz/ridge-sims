@@ -78,7 +78,7 @@ ax[1].plot(arcmin_centers, g_cross_signal, 'k--', label="Raw signal $g_\times$")
 ax[1].errorbar(arcmin_centers, g_cross_subtracted, yerr=g_cross_noise_std, fmt='x-', label="Signal - Noise")
 ax[1].set_xscale("log")
 ax[1].set_xlabel("Separation (arcmin)")
-ax[1].set_ylabel(r"$g_\\times$")
+ax[1].set_ylabel(r"$g_\times$")
 ax[1].grid(True, which="both", ls="--")
 ax[1].legend()
 
