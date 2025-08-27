@@ -58,7 +58,7 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
         np.ndarray: A boolean array indicating which ridges to keep.
     """
     # Convert RA and DEC from degrees to healpy's spherical coordinates (theta, phi)
-    # This correctly handles the `ValueError: THETA is out of range [0,pi]`
+    
     theta_ridges = np.radians(90.0 - ridge_dec)
     phi_ridges = np.radians(ridge_ra)
     
@@ -91,13 +91,13 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
 
 # --- load mask once on all ranks ---
 if rank == 0:
-    print(" Loading mask...")
+    print("[INFO] Loading mask...")
 mask = load_mask(mask_filename, nside)
 comm.Barrier()
 
 # --- load ridge on rank 0 and broadcast ---
 if rank == 0:
-    print("Loading ridge...")
+    print("Loading ridge HDF5...")
     try:
         with h5py.File(ridge_file, "r") as f:
             # Only load the 'ridges' dataset here
@@ -148,49 +148,32 @@ comm.Gatherv(sendbuf=local_keep,
 if rank == 0:
     # Use the gathered boolean array to filter the ridges
     ridges_clean = ridges[all_keep]
-
-    # Re-open the original HDF5 file to get the full, original density arrays.
-    # This is to attempt fixing the IndexError because it ensures we are applying
-    # the mask to an array of the same original length.
-    try:
-        with h5py.File(ridge_file, "r") as f_orig:
-            initial_density_orig = f_orig["initial_density"][:]
-            final_density_orig = f_orig["final_density"][:]
-
-        # Filter the original density arrays using the boolean mask
-        initial_density_clean = initial_density_orig[all_keep]
-        final_density_clean = final_density_orig[all_keep]
-
-        out_file = os.path.join(output_dir, "ridges_p15_shrinked.h5")
-        with h5py.File(out_file, "w") as f:
-            f.create_dataset("ridges", data=ridges_clean)
-            f.create_dataset("initial_density", data=initial_density_clean)
-            f.create_dataset("final_density", data=final_density_clean)
-
-        print(f"Saved cleaned ridges to {out_file}")
     
-        # Plotting code - convert back to degrees for conventional plotting
-        ridges_ra_deg = ridges[:, 1]
-        ridges_dec_deg = ridges[:, 0]
-        ridges_clean_ra_deg = ridges_clean[:, 1]
-        ridges_clean_dec_deg = ridges_clean[:, 0]
+    out_file = os.path.join(output_dir, "ridges_p15_shrinked.h5")
+    with h5py.File(out_file, "w") as f:
+        f.create_dataset("ridges", data=ridges_clean)
+        # the script does not save the initial/final density,
+        # The input file has a size mismatch between the ridges and density datasets.
+    
+    print(f"Saved cleaned ridges to {out_file}")
 
-        plt.figure(figsize=(8,6))
-        plt.scatter(ridges_ra_deg, ridges_dec_deg, s=1, alpha=0.3, label="All ridges")
-        plt.scatter(ridges_clean_ra_deg, ridges_clean_dec_deg, s=1, alpha=0.6, label="Filtered ridges")
-        plt.xlabel("RA [deg]")
-        plt.ylabel("Dec [deg]")
-        plt.title("Ridges before/after edge filtering")
-        plt.legend()
-        plt.tight_layout()
+    # Plotting code - convert back to degrees for conventional plotting
+    ridges_ra_deg = ridges[:, 1]
+    ridges_dec_deg = ridges[:, 0]
+    ridges_clean_ra_deg = ridges_clean[:, 1]
+    ridges_clean_dec_deg = ridges_clean[:, 0]
 
-        plot_file = os.path.join(output_dir, "ridges_filter_diagnostic.png")
-        plt.savefig(plot_file, dpi=200)
-        plt.close()
+    plt.figure(figsize=(8,6))
+    plt.scatter(ridges_ra_deg, ridges_dec_deg, s=1, alpha=0.3, label="All ridges")
+    plt.scatter(ridges_clean_ra_deg, ridges_clean_dec_deg, s=1, alpha=0.6, label="Filtered ridges")
+    plt.xlabel("RA [deg]")
+    plt.ylabel("Dec [deg]")
+    plt.title("Ridges before/after edge filtering")
+    plt.legend()
+    plt.tight_layout()
 
-        print(f"Saved diagnostic plot to {plot_file}")
-    except KeyError as e:
-        print(f"Error: Missing dataset in HDF5 file: {e}. ")
-    except FileNotFoundError:
-        print(f"Error: The file '{ridge_file}' was not found.")
+    plot_file = os.path.join(output_dir, "ridges_filter_diagnostic.png")
+    plt.savefig(plot_file, dpi=200)
+    plt.close()
 
+    print(f"Saved diagnostic plot to {plot_file}")
