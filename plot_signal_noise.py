@@ -10,9 +10,9 @@ final_percentile = 15
 num_realizations = 30
 
 # --- Input files ---
-shear_csv = os.path.join(filament_dir, f"shear_p{final_percentile:02d}.csv")
+shear_csv = os.path.join(filament_dir, f"shear_p{final_percentile:02d}_flipG1.csv")
 noise_files = [
-    os.path.join(noise_shear_dir, f"shear_noise_p{final_percentile:02d}_r{i:02d}.csv")
+    os.path.join(noise_shear_dir, f"shear_noise_p{final_percentile:02d}_r{i:02d}_flipG1.csv")
     for i in range(num_realizations)
 ]
 
@@ -58,7 +58,7 @@ plt.ylabel("Shear (noise)")
 plt.legend()
 plt.grid(True, which="both", ls="--")
 plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, "noise_only.png"), dpi=200)
+plt.savefig(os.path.join(plot_dir, "noise_only_flipG1.png"), dpi=200)
 plt.show()
 
 # --- Plot signal vs noise-subtracted ---
@@ -83,7 +83,7 @@ ax[1].grid(True, which="both", ls="--")
 ax[1].legend()
 
 plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, "signal_vs_noise.png"), dpi=200)
+plt.savefig(os.path.join(plot_dir, "signal_vs_noise_flipG1.png"), dpi=200)
 plt.show()
 
 print("Plots saved: noise_only.png and signal_vs_noise.png")
@@ -105,7 +105,7 @@ plt.ylabel("Shear (signal - noise)")
 plt.legend()
 plt.grid(True, which="both", ls="--")
 plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, "signal_minus_noise.png"), dpi=200)
+plt.savefig(os.path.join(plot_dir, "signal_minus_noise_flipG1.png"), dpi=200)
 plt.show()
 
 print("Plots saved: noise_only.png, signal_vs_noise.png, signal_minus_noise.png")
