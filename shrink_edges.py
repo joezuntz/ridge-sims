@@ -36,22 +36,39 @@ def load_mask(mask_filename, nside):
 
 def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_coverage):
     """
-    Apply ridge-edge filter to a chunk of ridge points.
-    Returns keep mask (bool array).
+    Apply ridge-edge filter to a chunk of ridge points using an alternative
+    method for older healpy versions.
+
+    Args:
+        ridge_ra (np.ndarray): Array of ridge RA values in degrees.
+        ridge_dec (np.ndarray): Array of ridge Dec values in degrees.
+        mask (np.ndarray): The HEALPix mask.
+        nside (int): The nside of the HEALPix map.
+        r_bins (np.ndarray): Radial bins for the annulus, in radians.
+        min_inner_coverage (float): The minimum coverage fraction for the inner annulus.
+
+    Returns:
+        np.ndarray: A boolean array indicating which ridges to keep.
     """
     # Convert RA and DEC from degrees to healpy's spherical coordinates (theta, phi)
-    # RA needs to be converted to radians.
-    # DEC needs to be converted to radians and shifted from [-90, 90] to [0, pi].
     theta_ridges = np.radians(90.0 - ridge_dec)
     phi_ridges = np.radians(ridge_ra)
     
-    vec_ridges = hp.ang2vec(theta_ridges, phi_ridges)  # (N, 3)    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
+    vec_ridges = hp.ang2vec(theta_ridges, phi_ridges)
+    
+    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
 
     for i, v in enumerate(vec_ridges):
         ok = True
         for j in range(len(r_bins)-1):
             rmin, rmax = r_bins[j], r_bins[j+1]
-            annulus_pix = hp.query_annulus(nside, v, rmin, rmax, inclusive=True)
+
+            # Use hp.query_disc and np.setdiff1d to get the annulus pixels
+            # This is the alternative to hp.query_annulus -> Exists in later versions of healpy
+            outer_disk_pixels = hp.query_disc(nside, v, rmax, inclusive=True)
+            inner_disk_pixels = hp.query_disc(nside, v, rmin, inclusive=True)
+            annulus_pix = np.setdiff1d(outer_disk_pixels, inner_disk_pixels)
+
             if len(annulus_pix) == 0:
                 frac = 0.0
             else:
@@ -63,6 +80,7 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
         keep_idx[i] = ok
 
     return keep_idx
+
 
 
 
