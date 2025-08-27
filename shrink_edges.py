@@ -20,11 +20,16 @@ if rank == 0:
 
 # --- parameters ---
 nside = 512
+# The r_bins are in radians, but they are defined using a conversion from arcminutes
+# The `arcmin` variable converts arcminutes to radians.
 arcmin = np.pi / 180.0 / 60.0
 r_bins = np.array([0.0, 2*arcmin, 4*arcmin, 8*arcmin])
 min_inner_coverage = 1.0  # stricter choice
 
 def load_mask(mask_filename, nside):
+    """
+    Loads and ud_grades a binary mask from an input numpy file.
+    """
     input_mask_nside = 4096
     hit_pix = np.load(mask_filename)  
     mask = np.zeros(hp.nside2npix(input_mask_nside))
@@ -35,9 +40,12 @@ def load_mask(mask_filename, nside):
 
 def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_coverage):
     """
-    Apply ridge-edge filter to a chunk of ridge points using an alternative
-    method for older healpy versions.
-
+    Apply ridge-edge filter to a chunk of ridge points.
+    
+    This function checks the coverage of the input mask around each ridge point
+    in different radial bins to filter out ridges on the survey edge. It uses 
+    `hp.query_disc` to replicate `hp.query_annulus` for compatibility.
+    
     Args:
         ridge_ra (np.ndarray): Array of ridge RA values in degrees.
         ridge_dec (np.ndarray): Array of ridge Dec values in degrees.
@@ -45,16 +53,16 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
         nside (int): The nside of the HEALPix map.
         r_bins (np.ndarray): Radial bins for the annulus, in radians.
         min_inner_coverage (float): The minimum coverage fraction for the inner annulus.
-
+    
     Returns:
         np.ndarray: A boolean array indicating which ridges to keep.
     """
     # Convert RA and DEC from degrees to healpy's spherical coordinates (theta, phi)
+    # This correctly handles the `ValueError: THETA is out of range [0,pi]`
     theta_ridges = np.radians(90.0 - ridge_dec)
     phi_ridges = np.radians(ridge_ra)
     
-    vec_ridges = hp.ang2vec(theta_ridges, phi_ridges)
-    
+    vec_ridges = hp.ang2vec(theta_ridges, phi_ridges)  # (N, 3)    
     keep_idx = np.zeros(len(ridge_ra), dtype=bool)
 
     for i, v in enumerate(vec_ridges):
@@ -63,7 +71,8 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
             rmin, rmax = r_bins[j], r_bins[j+1]
 
             # Use hp.query_disc and np.setdiff1d to get the annulus pixels
-            # This is the alternative to hp.query_annulus
+            # This is the alternative to hp.query_annulus which might not
+            # exist in older healpy versions.
             outer_disk_pixels = hp.query_disc(nside, v, rmax, inclusive=True)
             inner_disk_pixels = hp.query_disc(nside, v, rmin, inclusive=True)
             annulus_pix = np.setdiff1d(outer_disk_pixels, inner_disk_pixels)
@@ -82,7 +91,7 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
 
 # --- load mask once on all ranks ---
 if rank == 0:
-    print("[INFO] Loading mask...")
+    print("Loading mask...")
 mask = load_mask(mask_filename, nside)
 comm.Barrier()
 
@@ -90,12 +99,12 @@ comm.Barrier()
 if rank == 0:
     print("Loading ridge HDF5...")
     with h5py.File(ridge_file, "r") as f:
+        # Only load the 'ridges' dataset here
         ridges = f["ridges"][:]  # shape (N, 2) = (dec, ra)
-        # We no longer load initial_density and final_density here
-        # to avoid the size mismatch issue.
 else:
     ridges = None
 
+# Broadcast only the ridges data
 ridges = comm.bcast(ridges, root=0)
 
 ridge_dec = ridges[:, 0]
@@ -128,16 +137,17 @@ comm.Gatherv(sendbuf=local_keep,
 
 # --- save output only on rank 0 ---
 if rank == 0:
-    # Get the cleaned ridges using the gathered boolean array
+    # Use the gathered boolean array to filter the ridges
     ridges_clean = ridges[all_keep]
 
-    # Re-open the original ridge file to get the full, original density arrays
-    # This ensures the density arrays have the correct size for the 'all_keep' mask.
+    # Re-open the original HDF5 file to get the full, original density arrays.
+    # This is the fix for the IndexError because it ensures we are applying
+    # the mask to an array of the same original length.
     with h5py.File(ridge_file, "r") as f_orig:
         initial_density_orig = f_orig["initial_density"][:]
         final_density_orig = f_orig["final_density"][:]
 
-    # Apply the gathered boolean mask to the original density arrays
+    # Filter the original density arrays using the boolean mask
     initial_density_clean = initial_density_orig[all_keep]
     final_density_clean = final_density_orig[all_keep]
 
@@ -148,14 +158,18 @@ if rank == 0:
         f.create_dataset("final_density", data=final_density_clean)
 
     print(f"Saved cleaned ridges to {out_file}")
-
-if rank == 0:
     
+    # Plotting code - convert back to degrees for conventional plotting
+    ridges_ra_deg = ridges[:, 1]
+    ridges_dec_deg = ridges[:, 0]
+    ridges_clean_ra_deg = ridges_clean[:, 1]
+    ridges_clean_dec_deg = ridges_clean[:, 0]
+
     plt.figure(figsize=(8,6))
-    plt.scatter(ridges[:,1], ridges[:,0], s=1, alpha=0.3, label="All ridges")
-    plt.scatter(ridges_clean[:,1], ridges_clean[:,0], s=1, alpha=0.6, label="Filtered ridges")
-    plt.xlabel("RA [rad]")
-    plt.ylabel("Dec [rad]")
+    plt.scatter(ridges_ra_deg, ridges_dec_deg, s=1, alpha=0.3, label="All ridges")
+    plt.scatter(ridges_clean_ra_deg, ridges_clean_dec_deg, s=1, alpha=0.6, label="Filtered ridges")
+    plt.xlabel("RA [deg]")
+    plt.ylabel("Dec [deg]")
     plt.title("Ridges before/after edge filtering")
     plt.legend()
     plt.tight_layout()
