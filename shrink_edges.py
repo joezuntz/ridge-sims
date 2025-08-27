@@ -14,6 +14,7 @@ size = comm.Get_size()
 mask_filename = "des-data/desy3_gold_mask.npy"
 ridge_file = "example_zl04_mesh5e5/Ridges_final_p15/ridges_p15.h5"
 output_dir = "example_zl04_mesh5e5/shrinked_ridges"
+
 if rank == 0:
     os.makedirs(output_dir, exist_ok=True)
 
@@ -23,7 +24,6 @@ arcmin = np.pi / 180.0 / 60.0
 r_bins = np.array([0.0, 2*arcmin, 4*arcmin, 8*arcmin])
 min_inner_coverage = 1.0  # stricter choice
 
-
 def load_mask(mask_filename, nside):
     input_mask_nside = 4096
     hit_pix = np.load(mask_filename)  
@@ -32,7 +32,6 @@ def load_mask(mask_filename, nside):
     mask = hp.reorder(mask, n2r=True)
     mask = hp.ud_grade(mask, nside_out=nside)
     return mask
-
 
 def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_coverage):
     """
@@ -64,7 +63,7 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
             rmin, rmax = r_bins[j], r_bins[j+1]
 
             # Use hp.query_disc and np.setdiff1d to get the annulus pixels
-            # This is the alternative to hp.query_annulus -> Exists in later versions of healpy
+            # This is the alternative to hp.query_annulus
             outer_disk_pixels = hp.query_disc(nside, v, rmax, inclusive=True)
             inner_disk_pixels = hp.query_disc(nside, v, rmin, inclusive=True)
             annulus_pix = np.setdiff1d(outer_disk_pixels, inner_disk_pixels)
@@ -81,9 +80,6 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
 
     return keep_idx
 
-
-
-
 # --- load mask once on all ranks ---
 if rank == 0:
     print("[INFO] Loading mask...")
@@ -95,16 +91,12 @@ if rank == 0:
     print("Loading ridge HDF5...")
     with h5py.File(ridge_file, "r") as f:
         ridges = f["ridges"][:]  # shape (N, 2) = (dec, ra)
-        initial_density = f["initial_density"][:]
-        final_density = f["final_density"][:]
+        # We no longer load initial_density and final_density here
+        # to avoid the size mismatch issue.
 else:
     ridges = None
-    initial_density = None
-    final_density = None
 
 ridges = comm.bcast(ridges, root=0)
-initial_density = comm.bcast(initial_density, root=0)
-final_density = comm.bcast(final_density, root=0)
 
 ridge_dec = ridges[:, 0]
 ridge_ra = ridges[:, 1]
@@ -136,16 +128,26 @@ comm.Gatherv(sendbuf=local_keep,
 
 # --- save output only on rank 0 ---
 if rank == 0:
+    # Get the cleaned ridges using the gathered boolean array
     ridges_clean = ridges[all_keep]
+
+    # Re-open the original ridge file to get the full, original density arrays
+    # This ensures the density arrays have the correct size for the 'all_keep' mask.
+    with h5py.File(ridge_file, "r") as f_orig:
+        initial_density_orig = f_orig["initial_density"][:]
+        final_density_orig = f_orig["final_density"][:]
+
+    # Apply the gathered boolean mask to the original density arrays
+    initial_density_clean = initial_density_orig[all_keep]
+    final_density_clean = final_density_orig[all_keep]
+
     out_file = os.path.join(output_dir, "ridges_p15_shrinked.h5")
     with h5py.File(out_file, "w") as f:
         f.create_dataset("ridges", data=ridges_clean)
-        f.create_dataset("initial_density", data=initial_density[all_keep])
-        f.create_dataset("final_density", data=final_density[all_keep])
+        f.create_dataset("initial_density", data=initial_density_clean)
+        f.create_dataset("final_density", data=final_density_clean)
 
     print(f"Saved cleaned ridges to {out_file}")
-
-
 
 if rank == 0:
     
