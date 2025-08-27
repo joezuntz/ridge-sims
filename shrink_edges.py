@@ -13,7 +13,7 @@ size = comm.Get_size()
 # --- config ---
 mask_filename = "des-data/desy3_gold_mask.npy"
 ridge_file = "example_zl04_mesh5e5/Ridges_final_p15/ridges_p15.h5"
-output_dir = "example_zl04_mesh_5e5/shrinked_ridges"
+output_dir = "example_zl04_mesh5e5/shrinked_ridges"
 if rank == 0:
     os.makedirs(output_dir, exist_ok=True)
 
@@ -39,8 +39,13 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
     Apply ridge-edge filter to a chunk of ridge points.
     Returns keep mask (bool array).
     """
-    vec_ridges = hp.ang2vec(ridge_ra, ridge_dec)  # (N, 3)
-    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
+    # Convert RA and DEC from degrees to healpy's spherical coordinates (theta, phi)
+    # RA needs to be converted to radians.
+    # DEC needs to be converted to radians and shifted from [-90, 90] to [0, pi].
+    theta_ridges = np.radians(90.0 - ridge_dec)
+    phi_ridges = np.radians(ridge_ra)
+    
+    vec_ridges = hp.ang2vec(theta_ridges, phi_ridges)  # (N, 3)    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
 
     for i, v in enumerate(vec_ridges):
         ok = True
@@ -58,6 +63,7 @@ def ridge_edge_filter(ridge_ra, ridge_dec, mask, nside, r_bins, min_inner_covera
         keep_idx[i] = ok
 
     return keep_idx
+
 
 
 # --- load mask once on all ranks ---
