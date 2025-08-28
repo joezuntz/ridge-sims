@@ -13,8 +13,8 @@ bg_data_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl
 output_dir = "example_zl04_mesh5e5/noise"
 os.makedirs(output_dir, exist_ok=True)
 
-# Loop to generate 30 different noise realizations
-num_realizations = 30
+# Loop to generate 300 different noise realizations
+num_realizations = 300
 for i in range(num_realizations):
     # Use a different seed for each run to ensure different random rotations
     seed = 123 + i  
