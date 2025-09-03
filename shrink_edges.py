@@ -19,7 +19,7 @@ os.makedirs(output_dir, exist_ok=True)
 # --- parameters ---
 nside = 512
 arcmin = np.pi / 180.0 / 60.0
-radius_arcmin = 8.0          # radius of the disk filter
+radius_arcmin = 4.0          # radius of the disk filter
 min_coverage = 1           # minimum coverage fraction allowed (0–1)
 
 
