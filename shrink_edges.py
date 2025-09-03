@@ -3,6 +3,7 @@ import numpy as np
 import h5py
 import healpy as hp
 import matplotlib.pyplot as plt
+import time
 
 # --- start timer ---
 t0 = time.time()
