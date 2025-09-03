@@ -12,9 +12,11 @@ except ImportError:
 # Directories
 base_sim_dir = "lhc_run_sims"
 run_id = 1
-noise_shear_dir = "example_zl04_mesh5e5/noise/shear"
+#noise_shear_dir = "example_zl04_mesh5e5/noise/shear"
+noise_shear_dir = "example_zl04_mesh5e5/noise/shrinked_ridges_shear"
 noise_dir = "example_zl04_mesh5e5/noise"
-filament_dir = "example_zl04_mesh5e5/filaments"
+#filament_dir = "example_zl04_mesh5e5/filaments"
+filament_dir = "example_zl04_mesh5e5/filaments/shrinked_filaments" # added sub-directory for filaments created from shrinked ridges
 os.makedirs(filament_dir, exist_ok=True)
 
 # Final density 
@@ -24,7 +26,8 @@ final_percentiles = [15]
 for fp in final_percentiles:
     if comm is None or comm.rank == 0:
         print(f"[rank 0] Processing filaments for final_percentile={fp}")
-        h5_file = f"example_zl04_mesh5e5/Ridges_final_p{fp:02d}/ridges_p{fp:02d}.h5"
+        #h5_file = f"example_zl04_mesh5e5/Ridges_final_p{fp:02d}/ridges_p{fp:02d}.h5"
+        h5_file = f"example_zl04_mesh5e5/shrinked_ridges/ridges_p{fp:02d}_shrinked.h5" # the shrinked ridge file
         with h5py.File(h5_file, 'r') as f:
             Ridges = f["ridges"][:]
 
@@ -43,8 +46,8 @@ for fp in final_percentiles:
 
     filament_h5 = os.path.join(filament_dir, f"filaments_p{fp:02d}.h5")
 
-    # --- Loop over 30 noise realizations ---
-    num_realizations = 30
+    # --- Loop over 300 noise realizations ---
+    num_realizations = 300
     for i in range(num_realizations):
         noise_file = os.path.join(noise_dir, f"source_catalog_noise_{i:02d}.h5")
         shear_noise_csv = os.path.join(
