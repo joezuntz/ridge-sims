@@ -17,7 +17,9 @@ noise_shear_dir = "example_zl04_mesh5e5/noise/shrinked_ridges_shear"
 noise_dir = "example_zl04_mesh5e5/noise"
 #filament_dir = "example_zl04_mesh5e5/filaments"
 filament_dir = "example_zl04_mesh5e5/filaments/shrinked_filaments" # added sub-directory for filaments created from shrinked ridges
+
 os.makedirs(filament_dir, exist_ok=True)
+os.makedirs(noise_shear_dir, exist_ok=True)
 
 # Final density 
 final_percentiles = [15]
