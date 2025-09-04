@@ -14,9 +14,9 @@ final_percentile = 15
 num_realizations = 300
 
 # --- Input files ---
-shear_csv = os.path.join(filament_dir, f"shear_p{final_percentile:02d}_flipG1.csv")
+shear_csv = os.path.join(filament_dir, f"shear_p{final_percentile:02d}.csv")
 noise_files = [
-    os.path.join(noise_shear_dir, f"shear_noise_p{final_percentile:02d}_r{i:02d}_flipG1.csv")
+    os.path.join(noise_shear_dir, f"shear_noise_p{final_percentile:02d}_r{i:02d}.csv")
     for i in range(num_realizations)
 ]
 
