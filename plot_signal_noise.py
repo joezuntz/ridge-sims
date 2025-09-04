@@ -3,11 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # --- Configuration ---
-filament_dir = "example_zl04_mesh5e5/filaments"
-noise_shear_dir = "example_zl04_mesh5e5/noise/shear"
-plot_dir =  "example_zl04_mesh5e5/shear_plots"
+#filament_dir = "example_zl04_mesh5e5/filaments"
+#noise_shear_dir = "example_zl04_mesh5e5/noise/shear"
+#plot_dir =  "example_zl04_mesh5e5/shear_plots"
+filament_dir = "example_zl04_mesh5e5/filaments/shrinked_filaments" 
+noise_shear_dir = "example_zl04_mesh5e5/noise/shrinked_ridges_shear"
+plot_dir =  "example_zl04_mesh5e5/shrinked_shear_plots"
+os.makedirs(plot_dir, exist_ok=True)
 final_percentile = 15
-num_realizations = 30
+num_realizations = 300
 
 # --- Input files ---
 shear_csv = os.path.join(filament_dir, f"shear_p{final_percentile:02d}_flipG1.csv")
@@ -109,4 +113,42 @@ plt.savefig(os.path.join(plot_dir, "signal_minus_noise_flipG1.png"), dpi=200)
 plt.show()
 
 print("Plots saved: noise_only.png, signal_vs_noise.png, signal_minus_noise.png")
+
+
+
+# --- Plot noise vs noise-subtracted signal together ---
+plt.figure(figsize=(7,5))
+
+# Noise with error bars
+plt.errorbar(
+    arcmin_centers, g_plus_noise_mean, yerr=g_plus_noise_std,
+    fmt='o--', color="gray", label=r"$g_+$ noise"
+)
+plt.errorbar(
+    arcmin_centers, g_cross_noise_mean, yerr=g_cross_noise_std,
+    fmt='x--', color="lightgray", label=r"$g_\times$ noise"
+)
+
+# Signal - Noise with error bars
+plt.errorbar(
+    arcmin_centers, g_plus_subtracted, yerr=g_plus_noise_std,
+    fmt='o-', color="blue", label=r"$g_+$ (signal - noise)"
+)
+plt.errorbar(
+    arcmin_centers, g_cross_subtracted, yerr=g_cross_noise_std,
+    fmt='x-', color="red", label=r"$g_\times$ (signal - noise)"
+)
+
+plt.xscale("log")
+plt.xlabel("Separation (arcmin)")
+plt.ylabel("Shear")
+plt.legend()
+plt.grid(True, which="both", ls="--")
+plt.tight_layout()
+plt.savefig(os.path.join(plot_dir, "noise_vs_signal_minus_noise.png"), dpi=200)
+plt.show()
+
+print("Plots saved: noise_only.png, signal_vs_noise.png, signal_minus_noise.png, noise_vs_signalminusnoise.png")
+
+
 
