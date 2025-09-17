@@ -51,7 +51,7 @@ def main():
         print(f"--- Processing Run {run_id} ---")
         
         # Define directories for the current run
-        output_base_dir = f"example30/run_{run_id}"
+        output_base_dir = f"example30_band0.4/run_{run_id}"
         os.makedirs(output_base_dir, exist_ok=True)
         
         ridges_dir = os.path.join(output_base_dir, "ridges")
@@ -66,7 +66,7 @@ def main():
         # Find filaments
         ridges, initial_density, final_density = dredge_scms.find_filaments(
             coordinates,
-            bandwidth=np.radians(0.3),
+            bandwidth=np.radians(0.4),
             convergence=np.radians(1e-5),
             distance_metric='haversine',
             n_neighbors=5000,
