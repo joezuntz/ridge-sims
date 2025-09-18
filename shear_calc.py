@@ -2,7 +2,11 @@ import os
 import pandas as pd
 import numpy as np
 import h5py
-from ridge_analysis_tools import process_shear_sims
+import time
+from ridge_analysis_tools import *
+from sklearn.neighbors import NearestNeighbors
+import matplotlib.pyplot as plt
+
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 
