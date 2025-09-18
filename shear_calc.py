@@ -36,7 +36,7 @@ def main():
         filament_segments = split_mst_at_branches(mst, branch_points)
         filament_labels = segment_filaments_with_dbscan(Ridges, filament_segments)
         
-        filament_h5 = os.path.join(filament_dir, f"filaments_p{fp:02d}.h5")
+        filament_h5 = os.path.join(filament_dir, f"filaments_p{final_percentile:02d}.h5")
         save_filaments_to_hdf5(Ridges, filament_labels, filament_h5)
         
         # Use the segmented filament file 
