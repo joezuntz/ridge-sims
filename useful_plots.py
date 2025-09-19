@@ -109,68 +109,51 @@ import random
 
 
 
-def plot_background_data(base_sim_dir="lhc_run_sims_50", num_runs=8):
+def plot_separate_backgrounds(base_sim_dir="lhc_run_sims_50", num_runs=3):
     """
-    Plots the RA and DEC of background galaxies from a series of HDF5 files.
+    Plots the RA and DEC of background galaxies for each run separately.
     """
-    
-    # --- NEW: Define and create the output directory ---
     base_dir = "example30_band0.4/8test"
     output_dir = os.path.join(base_dir, "useful_plots")
     os.makedirs(output_dir, exist_ok=True)
     
-    plt.style.use('dark_background')
-    plt.figure(figsize=(10, 8))
+   
+    fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(20, 10), sharex=True, sharey=True)
+    axes = axes.flatten() 
     
-    all_ra = []
-    all_dec = []
-    
-    # Loop through each run to gather data
+    # Loop through each run
     for run_id in range(1, num_runs + 1):
         file_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
+        ax = axes[run_id - 1] # Select the subplot
         
         if not os.path.exists(file_path):
             print(f"Warning: File not found for Run {run_id}. Skipping.")
+            ax.set_title(f'Run {run_id} (No Data)')
             continue
             
         try:
             with h5py.File(file_path, "r") as hf:
                 ra_values = hf["RA"][:]
                 dec_values = hf["DEC"][:]
-                all_ra.append(ra_values)
-                all_dec.append(dec_values)
-                print(f"Loaded data from Run {run_id}: {len(ra_values)} galaxies.")
                 
+            ax.scatter(ra_values, dec_values, s=0.1, alpha=0.5, c='cyan')
+            ax.set_title(f'Run {run_id} ({len(ra_values)} galaxies)')
+            ax.grid(True, linestyle='--', alpha=0.3)
+            
         except Exception as e:
             print(f"Error reading file for Run {run_id}: {e}")
 
-    if not all_ra:
-        print("No valid data files found to plot.")
-        return
-
-    combined_ra = np.concatenate(all_ra)
-    combined_dec = np.concatenate(all_dec)
-
-    # Create the scatter plot
-    plt.scatter(
-        combined_ra, 
-        combined_dec, 
-        s=0.1,
-        alpha=0.5,
-        c='cyan'
-    )
+    # Add shared labels and a main title
+    fig.suptitle('Background Galaxy Distribution for Each Run', fontsize=18)
+    fig.text(0.5, 0.04, 'Right Ascension', ha='center', va='center', fontsize=12)
+    fig.text(0.06, 0.5, 'Declination ', ha='center', va='center', rotation='vertical', fontsize=12)
+    plt.tight_layout(rect=[0.05, 0.05, 1, 0.95])
     
-    # Add plot labels and title
-    plt.xlabel('Right Ascension (degrees)', fontsize=12)
-    plt.ylabel('Declination (degrees)', fontsize=12)
-    plt.title('Filtered Background Galaxy Distribution', fontsize=14)
-    plt.grid(True, linestyle='--', alpha=0.3)
-    plt.tight_layout()
-    
-    # --- NEW: Save the plot instead of showing it ---
-    plot_file_path = os.path.join(output_dir, "background_galaxy_distribution.png")
+    # Save the plot
+    plot_file_path = os.path.join(output_dir, "background_distributions.png")
     plt.savefig(plot_file_path, dpi=200)
     print(f"\nPlot saved to: {plot_file_path}")
 
 if __name__ == "__main__":
-    plot_background_data()
+    plt.style.use('dark_background')
+    plot_separate_backgrounds()
