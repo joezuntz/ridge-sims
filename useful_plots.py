@@ -46,63 +46,131 @@ import random
     
 
 
-# --- config ---
-base_dir = "example30_band0.4/8test"
-noise_dir = os.path.join(base_dir, "noise_data")
-output_dir = os.path.join(base_dir, "useful_plots")
-os.makedirs(output_dir, exist_ok=True)
+## --- config ---
+#base_dir = "example30_band0.4/8test"
+#noise_dir = os.path.join(base_dir, "noise_data")
+#output_dir = os.path.join(base_dir, "useful_plots")
+#os.makedirs(output_dir, exist_ok=True)
 
-# how many random files to inspect per run
-num_samples = 1
-runs_to_check = [1, 2, 3]
+## how many random files to inspect per run
+#num_samples = 1
+#runs_to_check = [1, 2, 3]
 
-for run_id in runs_to_check:
-    for _ in range(num_samples):
-        noise_idx = random.randint(0, 299)
-        noise_file = os.path.join(noise_dir, f"noise_r{run_id:02d}_n{noise_idx:03d}.h5")
+#for run_id in runs_to_check:
+#    for _ in range(num_samples):
+#        noise_idx = random.randint(0, 299)
+#        noise_file = os.path.join(noise_dir, f"noise_r{run_id:02d}_n{noise_idx:03d}.h5")
 
-        if not os.path.exists(noise_file):
-            print(f"[Run {run_id}] File not found: {noise_file}")
+#        if not os.path.exists(noise_file):
+#            print(f"[Run {run_id}] File not found: {noise_file}")
+#            continue
+
+#        print(f"\n[Run {run_id}] Inspecting {noise_file}")
+#        with h5py.File(noise_file, "r") as f:
+#            keys = list(f.keys())
+#            print("  Keys in file:", keys)
+
+#            try:
+#                dec = f["DEC"][:]
+#                ra = f["RA"][:]
+#                g1 = f["G1"][:]
+#                g2 = f["G2"][:]
+#            except KeyError as e:
+#                print(f"  Missing expected dataset: {e}")
+#                continue
+
+#        print(f"  -> Catalog size: {len(ra)} objects")
+
+#        # scatter plot RA/Dec
+#        plt.figure(figsize=(6, 4))
+#        plt.scatter(ra, dec, s=0.2, alpha=0.5)
+#        plt.xlabel("RA")
+#        plt.ylabel("Dec")
+#        plt.title(f"Run {run_id} – Noise n{noise_idx:03d} (RA/Dec)")
+#        plt.tight_layout()
+#        out_png = os.path.join(output_dir, f"run{run_id}_noise{noise_idx:03d}_radec.png")
+#        plt.savefig(out_png, dpi=150)
+#        plt.close()
+#        print(f"  -> RA/Dec plot saved to {out_png}")
+
+#        # histogram of g1/g2
+#        plt.figure(figsize=(6, 4))
+#        plt.hist(g1, bins=100, alpha=0.6, label="G1")
+#        plt.hist(g2, bins=100, alpha=0.6, label="G2")
+#        plt.xlabel("Shear value")
+#        plt.ylabel("Count")
+#        plt.title(f"Run {run_id} – Noise n{noise_idx:03d} (G1/G2)")
+#        plt.legend()
+#        plt.tight_layout()
+#        out_png = os.path.join(output_dir, f"run{run_id}_noise{noise_idx:03d}_g1g2.png")
+#        plt.savefig(out_png, dpi=150)
+#        plt.close()
+#        print(f"  -> G1/G2 histogram saved to {out_png}")
+
+
+
+def plot_background_data(base_sim_dir="lhc_run_sims_50", num_runs=8):
+    """
+    Plots the RA and DEC of background galaxies from a series of HDF5 files.
+    """
+    
+    # --- NEW: Define and create the output directory ---
+    base_dir = "example30_band0.4/8test"
+    output_dir = os.path.join(base_dir, "useful_plots")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    plt.style.use('dark_background')
+    plt.figure(figsize=(10, 8))
+    
+    all_ra = []
+    all_dec = []
+    
+    # Loop through each run to gather data
+    for run_id in range(1, num_runs + 1):
+        file_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
+        
+        if not os.path.exists(file_path):
+            print(f"Warning: File not found for Run {run_id}. Skipping.")
             continue
+            
+        try:
+            with h5py.File(file_path, "r") as hf:
+                ra_values = hf["RA"][:]
+                dec_values = hf["DEC"][:]
+                all_ra.append(ra_values)
+                all_dec.append(dec_values)
+                print(f"Loaded data from Run {run_id}: {len(ra_values)} galaxies.")
+                
+        except Exception as e:
+            print(f"Error reading file for Run {run_id}: {e}")
 
-        print(f"\n[Run {run_id}] Inspecting {noise_file}")
-        with h5py.File(noise_file, "r") as f:
-            keys = list(f.keys())
-            print("  Keys in file:", keys)
+    if not all_ra:
+        print("No valid data files found to plot.")
+        return
 
-            try:
-                dec = f["DEC"][:]
-                ra = f["RA"][:]
-                g1 = f["G1"][:]
-                g2 = f["G2"][:]
-            except KeyError as e:
-                print(f"  Missing expected dataset: {e}")
-                continue
+    combined_ra = np.concatenate(all_ra)
+    combined_dec = np.concatenate(all_dec)
 
-        print(f"  -> Catalog size: {len(ra)} objects")
+    # Create the scatter plot
+    plt.scatter(
+        combined_ra, 
+        combined_dec, 
+        s=0.1,
+        alpha=0.5,
+        c='cyan'
+    )
+    
+    # Add plot labels and title
+    plt.xlabel('Right Ascension (degrees)', fontsize=12)
+    plt.ylabel('Declination (degrees)', fontsize=12)
+    plt.title('Filtered Background Galaxy Distribution', fontsize=14)
+    plt.grid(True, linestyle='--', alpha=0.3)
+    plt.tight_layout()
+    
+    # --- NEW: Save the plot instead of showing it ---
+    plot_file_path = os.path.join(output_dir, "background_galaxy_distribution.png")
+    plt.savefig(plot_file_path, dpi=200)
+    print(f"\nPlot saved to: {plot_file_path}")
 
-        # scatter plot RA/Dec
-        plt.figure(figsize=(6, 4))
-        plt.scatter(ra, dec, s=0.2, alpha=0.5)
-        plt.xlabel("RA")
-        plt.ylabel("Dec")
-        plt.title(f"Run {run_id} – Noise n{noise_idx:03d} (RA/Dec)")
-        plt.tight_layout()
-        out_png = os.path.join(output_dir, f"run{run_id}_noise{noise_idx:03d}_radec.png")
-        plt.savefig(out_png, dpi=150)
-        plt.close()
-        print(f"  -> RA/Dec plot saved to {out_png}")
-
-        # histogram of g1/g2
-        plt.figure(figsize=(6, 4))
-        plt.hist(g1, bins=100, alpha=0.6, label="G1")
-        plt.hist(g2, bins=100, alpha=0.6, label="G2")
-        plt.xlabel("Shear value")
-        plt.ylabel("Count")
-        plt.title(f"Run {run_id} – Noise n{noise_idx:03d} (G1/G2)")
-        plt.legend()
-        plt.tight_layout()
-        out_png = os.path.join(output_dir, f"run{run_id}_noise{noise_idx:03d}_g1g2.png")
-        plt.savefig(out_png, dpi=150)
-        plt.close()
-        print(f"  -> G1/G2 histogram saved to {out_png}")
+if __name__ == "__main__":
+    plot_background_data()
