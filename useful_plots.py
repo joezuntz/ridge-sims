@@ -33,7 +33,7 @@ for run_id in range(1, num_runs + 1):
     plt.title(f"Run {run_id} – Filtered ridges (p{final_percentile})")
     plt.tight_layout()
     
-    output_plot = os.path.join(base_dir, "useful_plots"
+    output_plot = os.path.join(base_dir, "useful_plots")
     out_png = ridge_file.replace(".h5", ".png")
     plt.savefig(output_plot, dpi=150)
     plt.close()
