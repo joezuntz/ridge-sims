@@ -240,6 +240,20 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
         nbrs = NearestNeighbors(n_neighbors=1, metric="haversine").fit(filament_coords)
         distances, indices = nbrs.kneighbors(bg_coords)
+        
+        # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
+        print(f"Minimum distance found: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
+        print(f"Maximum distance found: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
+    
+        # Find a reasonable percentile to set as your max bin
+        valid_distances = distances[np.where(distances > 0)]
+        max_bin_limit = np.percentile(valid_distances, 95)
+        print(f"95th percentile distance: {np.degrees(max_bin_limit) * 60:.2f} arcmin")
+        # === END TEMPORARY CODE ===
+        
+        
+        
+        
         matched_filament_points = filament_coords[indices[:, 0]]
 
         delta_ra = matched_filament_points[:, 0] - bg_coords[:, 0]
@@ -297,7 +311,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 #    plt.savefig(plot_file, dpi=200)
 #    plt.close()
 #    print(f"Saved shear plot: {plot_file}")
-    # ========================
+    # ========================x
 
 
 def sum_in_place(data, comm):
