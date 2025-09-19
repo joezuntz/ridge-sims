@@ -41,4 +41,4 @@ for run_id in range(1, num_runs + 1):
     # Save the plot to the correct path
     plt.savefig(output_plot_path, dpi=150)
     plt.close()
-    print(f"Plot saved → {output_plot}")
+    print(f"Plot saved → {output_plot_path}")
