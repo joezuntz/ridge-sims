@@ -2,6 +2,7 @@ import os
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 # --- config ---
 base_dir = "example30_band0.4/8test"
