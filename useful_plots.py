@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 base_dir = "example30_band0.4/8test"
 num_runs = 8
 final_percentile = 15
+output_dir = os.path.join(base_dir, "useful_plots")
+os.makedirs(output_dir, exist_ok=True)
 
 for run_id in range(1, num_runs + 1):
     ridge_file = os.path.join(
@@ -33,8 +35,10 @@ for run_id in range(1, num_runs + 1):
     plt.title(f"Run {run_id} – Filtered ridges (p{final_percentile})")
     plt.tight_layout()
     
-    output_plot = os.path.join(base_dir, "useful_plots")
-    out_png = ridge_file.replace(".h5", ".png")
-    plt.savefig(output_plot, dpi=150)
+    output_filename = f"run_{run_id}_ridges_p{final_percentile:02d}.png"
+    output_plot_path = os.path.join(output_dir, output_filename)
+
+    # Save the plot to the correct path
+    plt.savefig(output_plot_path, dpi=150)
     plt.close()
-    print(f"[Run {run_id}] Plot saved → {out_png}")
+    print(f"Plot saved → {output_plot}")
