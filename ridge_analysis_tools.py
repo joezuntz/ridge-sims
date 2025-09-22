@@ -200,6 +200,22 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
     bg_ra, bg_dec, g1_values, g2_values, z_true, weights = load_background(
     bg_data, comm=comm, rows=rows, background_type=background_type)
+    
+    
+     # === PLOT BACKGROUND + FILAMENTS ===
+    plt.figure(figsize=(8, 6))
+    plt.scatter(bg_ra, bg_dec, s=2, c="gray", alpha=0.5, label="Background galaxies")
+    plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7, label="Filament points")
+    plt.xlabel("RA ")
+    plt.ylabel("DEC")
+    plt.title("Background Galaxies and Filament Positions")
+    plt.legend()
+    plot_file = output_shear_file.replace(".csv", "_bg_filaments.png")
+    plt.savefig(plot_file, dpi=200)
+    plt.close()
+    print(f"Saved background+filament plot: {plot_file}")
+    # ===================================
+    
 	
     # ========= SIGN-FLIP ==========
     if flip_g1:
