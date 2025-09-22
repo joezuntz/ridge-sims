@@ -9,8 +9,13 @@ from scipy.sparse import coo_matrix
 from sklearn.cluster import DBSCAN
 from scipy.spatial import KDTree
 from sklearn.neighbors import NearestNeighbors
+
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+
 import h5py
 import numpy as np
+
 
 try:
     from mpi4py import MPI
@@ -135,6 +140,7 @@ def read_sim_background(bg_file, rows, comm=None):
             s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
 
         bg_ra = f["RA"][s]
+        bg_ra = (bg_ra + 180) % 360
         bg_dec = f["DEC"][s]
         g1 = f["G1"][s]
         g2 = f["G2"][s]
@@ -155,6 +161,7 @@ def read_DES_background(bg_file, comm=None):
             s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
 
         bg_ra = f["background"]["ra"][s]
+        bg_ra = (bg_ra + 180) % 360
         bg_dec = f["background"]["dec"][s]
         g1 = f["background"]["g1"][s]
         g2 = f["background"]["g2"][s]
@@ -255,10 +262,25 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         
         
         matched_filament_points = filament_coords[indices[:, 0]]
-
-        delta_ra = matched_filament_points[:, 0] - bg_coords[:, 0]
-        delta_dec = matched_filament_points[:, 1] - bg_coords[:, 1]
-        phi = np.arctan2(delta_dec, delta_ra * np.cos(bg_coords[:, 1]))
+        
+        ### This method is not wrong 
+        #delta_ra = matched_filament_points[:, 0] - bg_coords[:, 0]
+        #delta_dec = matched_filament_points[:, 1] - bg_coords[:, 1]
+        #phi = np.arctan2(delta_dec, delta_ra * np.cos(bg_coords[:, 1]))
+        
+        ### But this method is more precise 
+        
+        # matched_filament_points and bg_coords are in radians right now.
+        # So we need to convert them back to degrees for SkyCoord
+        bg_sky = SkyCoord(ra=np.degrees(bg_coords[:, 0]) * u.deg,
+                  dec=np.degrees(bg_coords[:, 1]) * u.deg)
+        filament_sky = SkyCoord(ra=np.degrees(matched_filament_points[:, 0]) * u.deg,
+                        dec=np.degrees(matched_filament_points[:, 1]) * u.deg)
+        
+        # Compute position angle of filament point relative to background galaxy
+        phi = bg_sky.position_angle(filament_sky).rad  # radians, same as before
+        
+        
 
         g_plus = -g1_values * np.cos(2 * phi) + g2_values * np.sin(2 * phi)
         g_cross = g1_values * np.sin(2 * phi) - g2_values * np.cos(2 * phi)
