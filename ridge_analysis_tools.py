@@ -9,7 +9,7 @@ from scipy.sparse import coo_matrix
 from sklearn.cluster import DBSCAN
 from scipy.spatial import KDTree
 from sklearn.neighbors import NearestNeighbors
-
+import matplotlib.pyplot as plt
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
