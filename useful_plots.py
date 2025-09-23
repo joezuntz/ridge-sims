@@ -209,12 +209,12 @@ with h5py.File(filament_h5, "r") as hdf:
     
 # === PLOT BACKGROUND + FILAMENTS ===
 plt.figure(figsize=(8, 6))
-plt.scatter(bg_ra, bg_dec, s=2, c="gray", alpha=0.5)
+#plt.scatter(bg_ra, bg_dec, s=2, c="gray", alpha=0.5)
 plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7)
 plt.xlabel("RA ")
 plt.ylabel("DEC")
-plt.title("Background Galaxies and Filament Positions")
-plot_file = "example_zl04_mesh5e5/background_and_filaments.png"
+plt.title(" Filament Positions")
+plot_file = "example_zl04_mesh5e5/filaments_only.png"
 plt.savefig(plot_file, dpi=200)
 plt.close()
 print(f"Saved background+filament plot: {plot_file}")
