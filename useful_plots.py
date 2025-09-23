@@ -214,7 +214,7 @@ plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7)
 plt.xlabel("RA ")
 plt.ylabel("DEC")
 plt.title(" Filament Positions")
-plot_file = "example_zl04_mesh5e5/filaments_only.png"
+plot_file = "example_zl04_mesh5e5/filaments.png"
 plt.savefig(plot_file, dpi=200)
 plt.close()
 print(f"Saved background+filament plot: {plot_file}")
