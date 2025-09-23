@@ -191,3 +191,30 @@ if __name__ == "__main__":
     plt.savefig(output_plot, dpi=200)
     plt.close()
     print(f"Saved background-only plot: {output_plot}")
+
+
+filament_dir = "example_zl04_mesh5e5/filaments"
+filament_h5 = os.path.join(filament_dir, f"filaments_p15.h5")    
+    
+    
+with h5py.File(filament_h5, "r") as hdf:
+    dataset = hdf["data"]
+    ra_values = dataset["RA"][:]
+    dec_values = dataset["DEC"][:]
+    labels = dataset["Filament_Label"][:]
+    rows = dataset["RA"].size
+    
+
+    
+# === PLOT BACKGROUND + FILAMENTS ===
+plt.figure(figsize=(8, 6))
+plt.scatter(bg_ra, bg_dec, s=2, c="gray", alpha=0.5)
+plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7)
+plt.xlabel("RA ")
+plt.ylabel("DEC")
+plt.title("Background Galaxies and Filament Positions")
+plot_file = "example_zl04_mesh5e5/background_and_filaments.png"
+plt.savefig(plot_file, dpi=200)
+plt.close()
+print(f"Saved background+filament plot: {plot_file}")
+# ===================================
