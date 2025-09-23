@@ -184,11 +184,10 @@ if __name__ == "__main__":
 
     # === PLOT BACKGROUND ONLY ===
     plt.figure(figsize=(8, 6))
-    plt.scatter(bg_ra, bg_dec, s=2, c="blue", alpha=0.5, label="Background galaxies")
+    plt.scatter(bg_ra, bg_dec, s=2, c="blue", alpha=0.5)
     plt.xlabel("RA [deg]")
     plt.ylabel("DEC [deg]")
     plt.title("Background Galaxies (raw from catalog)")
-    plt.legend()
     plt.savefig(output_plot, dpi=200)
     plt.close()
     print(f"Saved background-only plot: {output_plot}")
