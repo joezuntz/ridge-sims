@@ -3,7 +3,7 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-
+from ridge_analysis_tools import *
 ## --- config ---
 #base_dir = "example30_band0.4/8test"
 #num_runs = 8
@@ -109,51 +109,86 @@ import random
 
 
 
-def plot_separate_backgrounds(base_sim_dir="lhc_run_sims_50", num_runs=3):
-    """
-    Plots the RA and DEC of background galaxies for each run separately.
-    """
-    base_dir = "example30_band0.4/8test"
-    output_dir = os.path.join(base_dir, "useful_plots")
-    os.makedirs(output_dir, exist_ok=True)
+#def plot_separate_backgrounds(base_sim_dir="lhc_run_sims_50", num_runs=3):
+#    """
+#    Plots the RA and DEC of background galaxies for each run separately.
+#    """
+#    base_dir = "example30_band0.4/8test"
+#    output_dir = os.path.join(base_dir, "useful_plots")
+#    os.makedirs(output_dir, exist_ok=True)
     
    
-    fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(20, 10), sharex=True, sharey=True)
-    axes = axes.flatten() 
+#    fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(20, 10), sharex=True, sharey=True)
+#    axes = axes.flatten() 
     
-    # Loop through each run
-    for run_id in range(1, num_runs + 1):
-        file_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
-        ax = axes[run_id - 1] # Select the subplot
+#    # Loop through each run
+#    for run_id in range(1, num_runs + 1):
+#        file_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
+#        ax = axes[run_id - 1] # Select the subplot
         
-        if not os.path.exists(file_path):
-            print(f"Warning: File not found for Run {run_id}. Skipping.")
-            ax.set_title(f'Run {run_id} (No Data)')
-            continue
+#        if not os.path.exists(file_path):
+#            print(f"Warning: File not found for Run {run_id}. Skipping.")
+#            ax.set_title(f'Run {run_id} (No Data)')
+#            continue
             
-        try:
-            with h5py.File(file_path, "r") as hf:
-                ra_values = hf["RA"][:]
-                dec_values = hf["DEC"][:]
+#        try:
+#            with h5py.File(file_path, "r") as hf:
+#                ra_values = hf["RA"][:]
+#                dec_values = hf["DEC"][:]
                 
-            ax.scatter(ra_values, dec_values, s=0.1, alpha=0.5, c='cyan')
-            ax.set_title(f'Run {run_id} ({len(ra_values)} galaxies)')
-            ax.grid(True, linestyle='--', alpha=0.3)
+#            ax.scatter(ra_values, dec_values, s=0.1, alpha=0.5, c='cyan')
+#            ax.set_title(f'Run {run_id} ({len(ra_values)} galaxies)')
+#            ax.grid(True, linestyle='--', alpha=0.3)
             
-        except Exception as e:
-            print(f"Error reading file for Run {run_id}: {e}")
+#        except Exception as e:
+#            print(f"Error reading file for Run {run_id}: {e}")
 
-    # Add shared labels and a main title
-    fig.suptitle('Background Galaxy Distribution for Each Run', fontsize=18)
-    fig.text(0.5, 0.04, 'Right Ascension', ha='center', va='center', fontsize=12)
-    fig.text(0.06, 0.5, 'Declination ', ha='center', va='center', rotation='vertical', fontsize=12)
-    plt.tight_layout(rect=[0.05, 0.05, 1, 0.95])
+#    # Add shared labels and a main title
+#    fig.suptitle('Background Galaxy Distribution for Each Run', fontsize=18)
+#    fig.text(0.5, 0.04, 'Right Ascension', ha='center', va='center', fontsize=12)
+#    fig.text(0.06, 0.5, 'Declination ', ha='center', va='center', rotation='vertical', fontsize=12)
+#    plt.tight_layout(rect=[0.05, 0.05, 1, 0.95])
     
-    # Save the plot
-    plot_file_path = os.path.join(output_dir, "background_distributions.png")
-    plt.savefig(plot_file_path, dpi=200)
-    print(f"\nPlot saved to: {plot_file_path}")
+#    # Save the plot
+#    plot_file_path = os.path.join(output_dir, "background_distributions.png")
+#    plt.savefig(plot_file_path, dpi=200)
+#    print(f"\nPlot saved to: {plot_file_path}")
+
+#if __name__ == "__main__":
+#    plt.style.use('dark_background')
+#    plot_separate_backgrounds()
+
+
+
+#### This plot is for the background from first run 
 
 if __name__ == "__main__":
-    plt.style.use('dark_background')
-    plot_separate_backgrounds()
+    # BG file
+    base_sim_dir = "lhc_run_sims"
+    run_id = 1
+    BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
+ 
+    background_type = "sim"   # or "DES"
+    output_plot = "example_zl04_mesh5e5/background_only.png"
+
+    # For sim background, need number of rows
+    rows = None
+    if background_type == "sim":
+        with h5py.File(bg_file, "r") as f:
+            rows = f["RA"].shape[0]
+
+    # Load background
+    bg_ra, bg_dec, g1, g2, z_true, weights = load_background(
+        BG_data, rows=rows, background_type=background_type
+    )
+
+    # === PLOT BACKGROUND ONLY ===
+    plt.figure(figsize=(8, 6))
+    plt.scatter(bg_ra, bg_dec, s=2, c="blue", alpha=0.5, label="Background galaxies")
+    plt.xlabel("RA [deg]")
+    plt.ylabel("DEC [deg]")
+    plt.title("Background Galaxies (raw from catalog)")
+    plt.legend()
+    plt.savefig(output_plot, dpi=200)
+    plt.close()
+    print(f"Saved background-only plot: {output_plot}")
