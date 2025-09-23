@@ -174,7 +174,7 @@ if __name__ == "__main__":
     # For sim background, need number of rows
     rows = None
     if background_type == "sim":
-        with h5py.File(bg_file, "r") as f:
+        with h5py.File(BG_data, "r") as f:
             rows = f["RA"].shape[0]
 
     # Load background
