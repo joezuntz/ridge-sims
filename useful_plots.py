@@ -200,6 +200,7 @@ filament_h5 = os.path.join(filament_dir, f"filaments_p15.h5")
 with h5py.File(filament_h5, "r") as hdf:
     dataset = hdf["data"]
     ra_values = dataset["RA"][:]
+    ra_values = (ra_values + 180) % 360
     dec_values = dataset["DEC"][:]
     labels = dataset["Filament_Label"][:]
     rows = dataset["RA"].size
