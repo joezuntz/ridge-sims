@@ -162,51 +162,78 @@ from ridge_analysis_tools import *
 
 
 
-#### This plot is for the background from first run 
+if __name__ == "__main__":
+    # BG file
+    base_sim_dir = "lhc_run_sims"
+    run_id = 1
+    BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
-#if __name__ == "__main__":
-#    # BG file
-#    base_sim_dir = "lhc_run_sims"
-#    run_id = 1
-#    BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
- 
-#    background_type = "sim"   # or "DES"
-#    output_plot = "example_zl04_mesh5e5/background_only.png"
+    background_type = "sim"   # or "DES"
+    output_plot = "example_zl04_mesh5e5/background_only.png"
 
-#    # For sim background, need number of rows
-#    rows = None
-#    if background_type == "sim":
-#        with h5py.File(BG_data, "r") as f:
-#            rows = f["RA"].shape[0]
+    # For sim background, need number of rows
+    rows = None
+    if background_type == "sim":
+        with h5py.File(BG_data, "r") as f:
+            rows = f["RA"].shape[0]
 
-#    # Load background
-#    bg_ra, bg_dec, g1, g2, z_true, weights = load_background(
-#        BG_data, rows=rows, background_type=background_type
-#    )
+    # Load background
+    bg_ra, bg_dec, g1, g2, z_true, weights = load_background(
+        BG_data, rows=rows, background_type=background_type
+    )
 
-#    # === PLOT BACKGROUND ONLY ===
-#    plt.figure(figsize=(8, 6))
-#    plt.scatter(bg_ra, bg_dec, s=2, c="blue", alpha=0.5)
-#    plt.xlabel("RA [deg]")
-#    plt.ylabel("DEC [deg]")
-#    plt.title("Background Galaxies (raw from catalog)")
-#    plt.savefig(output_plot, dpi=200)
-#    plt.close()
-#    print(f"Saved background-only plot: {output_plot}")
+    # === PLOT BACKGROUND ONLY ===
+    plt.figure(figsize=(8, 6))
+    plt.scatter(bg_ra, bg_dec, s=2, c="blue", alpha=0.5)
+    plt.xlabel("RA [deg]")
+    plt.ylabel("DEC [deg]")
+    plt.title("Background Galaxies (raw from catalog)")
+    plt.savefig(output_plot, dpi=200)
+    plt.close()
+    print(f"Saved background-only plot: {output_plot}")
 
 
-#filament_dir = "example_zl04_mesh5e5/filaments"
-#filament_h5 = os.path.join(filament_dir, f"filaments_p15.h5")    
-    
-    
-#with h5py.File(filament_h5, "r") as hdf:
-#    dataset = hdf["data"]
-#    ra_values = dataset["RA"][:]
-#    ra_values = (ra_values + 180) % 360
-#    dec_values = dataset["DEC"][:]
-#    labels = dataset["Filament_Label"][:]
-#    rows = dataset["RA"].size
-    
+# --- Load filaments ---
+filament_dir = "example_zl04_mesh5e5/filaments"
+filament_h5 = os.path.join(filament_dir, "filaments_p15.h5")    
+
+with h5py.File(filament_h5, "r") as hdf:
+    dataset = hdf["data"]
+    ra_fil = (dataset["RA"][:] + 180) % 360
+    dec_fil = dataset["DEC"][:]
+    labels = dataset["Filament_Label"][:]
+
+# --- Diagnostics ---
+print("Filaments RA range:", ra_fil.min(), ra_fil.max())
+print("Filaments DEC range:", dec_fil.min(), dec_fil.max())
+print("Background RA range:", bg_ra.min(), bg_ra.max())
+print("Background DEC range:", bg_dec.min(), bg_dec.max())
+
+# --- Overlay zoomed-in view around the filament patch ---
+plt.figure(figsize=(8,6))
+plt.scatter(bg_ra, bg_dec, s=0.5, c="gray", alpha=0.5, label="Background galaxies")
+plt.scatter(ra_fil, dec_fil, s=5, c="red", label="Filaments")
+
+# Zoom into filament region (slightly padded box around filaments)
+plt.xlim(ra_fil.min()-1, ra_fil.max()+1)
+plt.ylim(dec_fil.min()-1, dec_fil.max()+1)
+
+plt.xlabel("RA [deg]")
+plt.ylabel("DEC [deg]")
+plt.title("Zoomed-in Overlay: Filaments + Background Galaxies")
+plt.legend()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
 
     
 ## === PLOT BACKGROUND + FILAMENTS ===
@@ -227,120 +254,131 @@ from ridge_analysis_tools import *
 
 
 
-# --- Background loader functions ---
-def read_sim_background(bg_file, rows):
-    with h5py.File(bg_file, "r") as f:
-        bg_ra = f["RA"][:rows]
-        bg_ra = (bg_ra + 180) % 360
-        bg_dec = f["DEC"][:rows]
-        g1 = f["G1"][:rows]
-        g2 = f["G2"][:rows]
-        z_true = f["Z_TRUE"][:rows]
-        weights = f["weight"][:rows] if "weight" in f else np.ones_like(bg_ra)
-    return bg_ra, bg_dec, g1, g2, z_true, weights
-
-def read_DES_background(bg_file):
-    with h5py.File(bg_file, "r") as f:
-        bg_ra = f["background"]["ra"][:]
-        bg_ra = (bg_ra + 180) % 360
-        bg_dec = f["background"]["dec"][:]
-        g1 = f["background"]["g1"][:]
-        g2 = f["background"]["g2"][:]
-        weights = f["background"]["weight"][:]
-    return bg_ra, bg_dec, g1, g2, None, weights
-
-def load_background(bg_file, background_type="sim", rows=None):
-    if background_type == "sim":
-        return read_sim_background(bg_file, rows)
-    elif background_type == "DES":
-        return read_DES_background(bg_file)
-    else:
-        raise ValueError(f"Unknown background_type: {background_type}")
 
 
-if __name__ == "__main__":
-    # --- Background catalog ---
-    output_plot_path = "example_zl04_mesh5e5/useful_plots"
-    os.makedirs(output_plot_path, exist_ok=True)
-    base_sim_dir = "lhc_run_sims"
-    run_id = 1
-    BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
-    background_type = "sim"   # or "DES"
-    rows = None
-    if background_type == "sim":
-        with h5py.File(BG_data, "r") as f:
-            rows = f["RA"].shape[0]
 
-    bg_ra, bg_dec, g1, g2, z_true, weights = load_background(BG_data, background_type=background_type, rows=rows)
-    
-    # --- Plot background only (subsample if large) ---
-    subsample = 50000
-    idx = np.random.choice(len(bg_ra), min(subsample, len(bg_ra)), replace=False)
-    plt.figure(figsize=(8, 6))
-    plt.scatter(bg_ra[idx], bg_dec[idx], s=1, c="blue", alpha=0.5)
-    plt.xlabel("RA [deg]")
-    plt.ylabel("DEC [deg]")
-    plt.title("Background Galaxies (raw)")
-    output_filename = f"background_only.png"
-    output_plot = os.path.join(output_plot_path, output_filename)
-    plt.savefig(output_plot, dpi=200)
-    plt.close()
-    print(f"Saved background-only plot")
 
-    # --- Filament catalog ---
-    filament_dir = "example_zl04_mesh5e5/filaments"
-    filament_h5 = os.path.join(filament_dir, "filaments_p15.h5")
-    with h5py.File(filament_h5, "r") as hdf:
-        dataset = hdf["data"]
-        ra_values = (dataset["RA"][:] + 180) % 360
-        dec_values = dataset["DEC"][:]
-        labels = dataset["Filament_Label"][:]
+
+
+
+
+
+
+
+## --- Background loader functions ---
+#def read_sim_background(bg_file, rows):
+#    with h5py.File(bg_file, "r") as f:
+#        bg_ra = f["RA"][:rows]
+#        bg_ra = (bg_ra + 180) % 360
+#        bg_dec = f["DEC"][:rows]
+#        g1 = f["G1"][:rows]
+#        g2 = f["G2"][:rows]
+#        z_true = f["Z_TRUE"][:rows]
+#        weights = f["weight"][:rows] if "weight" in f else np.ones_like(bg_ra)
+#    return bg_ra, bg_dec, g1, g2, z_true, weights
+
+#def read_DES_background(bg_file):
+#    with h5py.File(bg_file, "r") as f:
+#        bg_ra = f["background"]["ra"][:]
+#        bg_ra = (bg_ra + 180) % 360
+#        bg_dec = f["background"]["dec"][:]
+#        g1 = f["background"]["g1"][:]
+#        g2 = f["background"]["g2"][:]
+#        weights = f["background"]["weight"][:]
+#    return bg_ra, bg_dec, g1, g2, None, weights
+
+#def load_background(bg_file, background_type="sim", rows=None):
+#    if background_type == "sim":
+#        return read_sim_background(bg_file, rows)
+#    elif background_type == "DES":
+#        return read_DES_background(bg_file)
+#    else:
+#        raise ValueError(f"Unknown background_type: {background_type}")
+
+
+#if __name__ == "__main__":
+#    # --- Background catalog ---
+#    output_plot_path = "example_zl04_mesh5e5/useful_plots"
+#    os.makedirs(output_plot_path, exist_ok=True)
+#    base_sim_dir = "lhc_run_sims"
+#    run_id = 1
+#    BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
+#    background_type = "sim"   # or "DES"
+#    rows = None
+#    if background_type == "sim":
+#        with h5py.File(BG_data, "r") as f:
+#            rows = f["RA"].shape[0]
+
+#    bg_ra, bg_dec, g1, g2, z_true, weights = load_background(BG_data, background_type=background_type, rows=rows)
     
-    # --- Compute nearest-neighbor distances ---
-    filament_coords = np.radians(np.column_stack((ra_values, dec_values)))
-    bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
+#    # --- Plot background only (subsample if large) ---
+#    subsample = 50000
+#    idx = np.random.choice(len(bg_ra), min(subsample, len(bg_ra)), replace=False)
+#    plt.figure(figsize=(8, 6))
+#    plt.scatter(bg_ra[idx], bg_dec[idx], s=1, c="blue", alpha=0.5)
+#    plt.xlabel("RA [deg]")
+#    plt.ylabel("DEC [deg]")
+#    plt.title("Background Galaxies (raw)")
+#    output_filename = f"background_only.png"
+#    output_plot = os.path.join(output_plot_path, output_filename)
+#    plt.savefig(output_plot, dpi=200)
+#    plt.close()
+#    print(f"Saved background-only plot")
+
+#    # --- Filament catalog ---
+#    filament_dir = "example_zl04_mesh5e5/filaments"
+#    filament_h5 = os.path.join(filament_dir, "filaments_p15.h5")
+#    with h5py.File(filament_h5, "r") as hdf:
+#        dataset = hdf["data"]
+#        ra_values = (dataset["RA"][:] + 180) % 360
+#        dec_values = dataset["DEC"][:]
+#        labels = dataset["Filament_Label"][:]
     
-    nbrs = NearestNeighbors(n_neighbors=1, metric="haversine").fit(filament_coords)
-    distances, indices = nbrs.kneighbors(bg_coords)
+#    # --- Compute nearest-neighbor distances ---
+#    filament_coords = np.radians(np.column_stack((ra_values, dec_values)))
+#    bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
     
-    # --- TEMPORARY CHECK ---
-    print(f"Minimum distance: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
-    print(f"Maximum distance: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
+#    nbrs = NearestNeighbors(n_neighbors=1, metric="haversine").fit(filament_coords)
+#    distances, indices = nbrs.kneighbors(bg_coords)
     
-    valid_distances = distances[distances > 0]
-    if len(valid_distances) > 0:
-        max_bin_limit = np.percentile(valid_distances, 95)
-        print(f"95th percentile distance: {np.degrees(max_bin_limit) * 60:.2f} arcmin")
+#    # --- TEMPORARY CHECK ---
+#    print(f"Minimum distance: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
+#    print(f"Maximum distance: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
     
-    # --- Histogram of distances ---
-    plt.figure(figsize=(8, 6))
-    hist_subsample = np.random.choice(len(valid_distances), min(100000, len(valid_distances)), replace=False)
-    plt.hist(np.degrees(valid_distances[hist_subsample]) * 60, bins=50, color="green", alpha=0.7)
-    plt.xlabel("Distance to nearest filament [arcmin]")
-    plt.ylabel("Number of background galaxies")
-    plt.title("Histogram of Background-to-Filament Distances")
-    hist_plot_filename = f"background_filament_distance_hist.png"
-    hist_plot_path = os.path.join(output_plot_path,hist_plot_filename)
-    plt.savefig(hist_plot_path, dpi=200)
-    plt.close()
-    print(f"Saved histogram plot")
+#    valid_distances = distances[distances > 0]
+#    if len(valid_distances) > 0:
+#        max_bin_limit = np.percentile(valid_distances, 95)
+#        print(f"95th percentile distance: {np.degrees(max_bin_limit) * 60:.2f} arcmin")
     
-    # --- Combined plot: background + filaments ---
-    subsample_bg = np.random.choice(len(bg_ra), min(subsample, len(bg_ra)), replace=False)
-    bg_plot_ra = bg_ra[subsample_bg]
-    bg_plot_dec = bg_dec[subsample_bg]
-    bg_plot_dist = distances[subsample_bg, 0]  # distance to nearest filament
+#    # --- Histogram of distances ---
+#    plt.figure(figsize=(8, 6))
+#    hist_subsample = np.random.choice(len(valid_distances), min(100000, len(valid_distances)), replace=False)
+#    plt.hist(np.degrees(valid_distances[hist_subsample]) * 60, bins=50, color="green", alpha=0.7)
+#    plt.xlabel("Distance to nearest filament [arcmin]")
+#    plt.ylabel("Number of background galaxies")
+#    plt.title("Histogram of Background-to-Filament Distances")
+#    hist_plot_filename = f"background_filament_distance_hist.png"
+#    hist_plot_path = os.path.join(output_plot_path,hist_plot_filename)
+#    plt.savefig(hist_plot_path, dpi=200)
+#    plt.close()
+#    print(f"Saved histogram plot")
     
-    plt.figure(figsize=(10, 7))
-    sc = plt.scatter(bg_plot_ra, bg_plot_dec, s=1, c=np.degrees(bg_plot_dist)*60, cmap="viridis", alpha=0.5)
-    plt.colorbar(sc, label="Distance to nearest filament [arcmin]")
-    plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7, label="Filaments")
-    plt.xlabel("RA [deg]")
-    plt.ylabel("DEC [deg]")
-    plt.title("Background Galaxies and Filaments (distance-coded)")
-    plt.legend()
-    combined_plot_filename = f"background_filaments_distance.png"
-    combined_plot_path = os.path.join(output_plot_path, combined_plot_filename )
-    plt.savefig(combined_plot_path, dpi=200)
-    plt.close()
-    print(f"Saved combined background+filament plot")
+#    # --- Combined plot: background + filaments ---
+#    subsample_bg = np.random.choice(len(bg_ra), min(subsample, len(bg_ra)), replace=False)
+#    bg_plot_ra = bg_ra[subsample_bg]
+#    bg_plot_dec = bg_dec[subsample_bg]
+#    bg_plot_dist = distances[subsample_bg, 0]  # distance to nearest filament
+    
+#    plt.figure(figsize=(10, 7))
+#    sc = plt.scatter(bg_plot_ra, bg_plot_dec, s=1, c=np.degrees(bg_plot_dist)*60, cmap="viridis", alpha=0.5)
+#    plt.colorbar(sc, label="Distance to nearest filament [arcmin]")
+#    plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7, label="Filaments")
+#    plt.xlabel("RA [deg]")
+#    plt.ylabel("DEC [deg]")
+#    plt.title("Background Galaxies and Filaments (distance-coded)")
+#    plt.legend()
+#    combined_plot_filename = f"background_filaments_distance.png"
+#    combined_plot_path = os.path.join(output_plot_path, combined_plot_filename )
+#    plt.savefig(combined_plot_path, dpi=200)
+#    plt.close()
+#    print(f"Saved combined background+filament plot")
