@@ -182,15 +182,15 @@ if __name__ == "__main__":
         BG_data, rows=rows, background_type=background_type
     )
 
-    # === PLOT BACKGROUND ONLY ===
-    plt.figure(figsize=(8, 6))
-    plt.scatter(bg_ra, bg_dec, s=2, c="blue", alpha=0.5)
-    plt.xlabel("RA [deg]")
-    plt.ylabel("DEC [deg]")
-    plt.title("Background Galaxies (raw from catalog)")
-    plt.savefig(output_plot, dpi=200)
-    plt.close()
-    print(f"Saved background-only plot: {output_plot}")
+#    # === PLOT BACKGROUND ONLY ===
+#    plt.figure(figsize=(8, 6))
+#    plt.scatter(bg_ra, bg_dec, s=2, c="blue", alpha=0.5)
+#    plt.xlabel("RA [deg]")
+#    plt.ylabel("DEC [deg]")
+#    plt.title("Background Galaxies (raw from catalog)")
+#    plt.savefig(output_plot, dpi=200)
+#    plt.close()
+#    print(f"Saved background-only plot: {output_plot}")
 
 
 # --- Load filaments ---
@@ -225,7 +225,7 @@ with h5py.File(filament_h5, "r") as hdf:
 #plt.show()
 
 #filament_coords = np.column_stack((ra_values, dec_values))
-bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
+#bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
 
 # === PLOT BACKGROUND + FILAMENTS ===
 plt.figure(figsize=(8, 6))
