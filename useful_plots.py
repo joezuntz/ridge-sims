@@ -203,51 +203,42 @@ with h5py.File(filament_h5, "r") as hdf:
     dec_fil = dataset["DEC"][:]
     labels = dataset["Filament_Label"][:]
 
-# --- Diagnostics ---
-print("Filaments RA range:", ra_fil.min(), ra_fil.max())
-print("Filaments DEC range:", dec_fil.min(), dec_fil.max())
-print("Background RA range:", bg_ra.min(), bg_ra.max())
-print("Background DEC range:", bg_dec.min(), bg_dec.max())
+## --- Diagnostics ---
+#print("Filaments RA range:", ra_fil.min(), ra_fil.max())
+#print("Filaments DEC range:", dec_fil.min(), dec_fil.max())
+#print("Background RA range:", bg_ra.min(), bg_ra.max())
+#print("Background DEC range:", bg_dec.min(), bg_dec.max())
 
-# --- Overlay zoomed-in view around the filament patch ---
-plt.figure(figsize=(8,6))
-plt.scatter(bg_ra, bg_dec, s=0.5, c="gray", alpha=0.5, label="Background galaxies")
-plt.scatter(ra_fil, dec_fil, s=5, c="red", label="Filaments")
+## --- Overlay zoomed-in view around the filament patch ---
+#plt.figure(figsize=(8,6))
+#plt.scatter(bg_ra, bg_dec, s=0.5, c="gray", alpha=0.5, label="Background galaxies")
+#plt.scatter(ra_fil, dec_fil, s=5, c="red", label="Filaments")
 
-# Zoom into filament region (slightly padded box around filaments)
-plt.xlim(ra_fil.min()-1, ra_fil.max()+1)
-plt.ylim(dec_fil.min()-1, dec_fil.max()+1)
+## Zoom into filament region (slightly padded box around filaments)
+#plt.xlim(ra_fil.min()-1, ra_fil.max()+1)
+#plt.ylim(dec_fil.min()-1, dec_fil.max()+1)
 
-plt.xlabel("RA [deg]")
-plt.ylabel("DEC [deg]")
-plt.title("Zoomed-in Overlay: Filaments + Background Galaxies")
-plt.legend()
-plt.show()
+#plt.xlabel("RA [deg]")
+#plt.ylabel("DEC [deg]")
+#plt.title("Zoomed-in Overlay: Filaments + Background Galaxies")
+#plt.legend()
+#plt.show()
 
+#filament_coords = np.column_stack((ra_values, dec_values))
+bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
 
-
-
-
-
-
-
-
-
-
-
-    
-## === PLOT BACKGROUND + FILAMENTS ===
-#plt.figure(figsize=(8, 6))
-##plt.scatter(bg_ra, bg_dec, s=2, c="gray", alpha=0.5)
-#plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7)
-#plt.xlabel("RA ")
-#plt.ylabel("DEC")
-#plt.title(" Filament Positions")
-#plot_file = "example_zl04_mesh5e5/filaments.png"
-#plt.savefig(plot_file, dpi=200)
-#plt.close()
-#print(f"Saved background+filament plot: {plot_file}")
-## ===================================
+# === PLOT BACKGROUND + FILAMENTS ===
+plt.figure(figsize=(8, 6))
+plt.scatter(bg_ra, bg_dec, s=2, c="gray", alpha=0.5)
+plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7)
+plt.xlabel("RA ")
+plt.ylabel("DEC")
+plt.title(" Filament Positions")
+plot_file = "example_zl04_mesh5e5/BG-filaments.png"
+plt.savefig(plot_file, dpi=200)
+plt.close()
+print(f"Saved background+filament plot: {plot_file}")
+# ===================================
 
 
 
@@ -335,7 +326,8 @@ plt.show()
 #        labels = dataset["Filament_Label"][:]
     
 #    # --- Compute nearest-neighbor distances ---
-#    filament_coords = np.radians(np.column_stack((ra_values, dec_values)))
+#    #filament_coords = np.radians(np.column_stack((ra_values, dec_values)))
+#    filament_coords = np.column_stack((ra_values, dec_values))
 #    bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
     
 #    nbrs = NearestNeighbors(n_neighbors=1, metric="haversine").fit(filament_coords)
