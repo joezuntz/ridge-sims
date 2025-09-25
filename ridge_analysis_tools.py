@@ -270,7 +270,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         colors = plt.cm.tab20(np.linspace(0, 1, len(unique_labels)))
         for i, label in enumerate(unique_labels):
             filament_points_to_plot = np.column_stack((ra_values[labels == label], dec_values[labels == label]))
-            plt.scatter(filament_points_to_plot[:, 0], filament_points_to_plot[:, 1], s=5, c=colors[i], alpha=0.8)
+            plt.scatter(filament_points_to_plot[:, 0], filament_points_to_plot[:, 1], s=5, color=colors[i], alpha=0.8)
         
         plt.xlabel('RA [deg]')
         plt.ylabel('Dec [deg]')
