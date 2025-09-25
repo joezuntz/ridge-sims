@@ -239,8 +239,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
     for label in unique_labels:
         filament_mask = labels == label
-        filament_coords = 
-            np.column_stack((ra_values[filament_mask], dec_values[filament_mask]))
+        filament_coords = np.column_stack((ra_values[filament_mask], dec_values[filament_mask]))
 
         # Safety check
         if filament_coords.shape[0] == 0:
