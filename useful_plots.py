@@ -229,8 +229,8 @@ with h5py.File(filament_h5, "r") as hdf:
 
 # === PLOT BACKGROUND + FILAMENTS ===
 plt.figure(figsize=(8, 6))
-plt.scatter(np.radians(bg_ra), np.radians(bg_dec), s=2, c="gray", alpha=0.5)
-plt.scatter(np.radians(ra_values), np.radians(dec_values), s=5, c="red", alpha=0.7)
+plt.scatter(bg_ra, np.radians(bg_dec), s=2, c="gray", alpha=0.5)
+plt.scatter(ra_values, np.radians(dec_values), s=5, c="red", alpha=0.7)
 plt.xlabel("RA ")
 plt.ylabel("DEC")
 plt.title(" Filament Positions")
