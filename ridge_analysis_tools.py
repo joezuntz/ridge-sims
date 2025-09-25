@@ -189,7 +189,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
     with h5py.File(filament_file, "r") as hdf:
         dataset = hdf["data"]
         ra_values = dataset["RA"][:]
-        ra_values = (ra_values + 180) % 360
+        ra_values = ra_values
         dec_values = dataset["DEC"][:]
         labels = dataset["Filament_Label"][:]
         rows = dataset["RA"].size
@@ -239,9 +239,8 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
     for label in unique_labels:
         filament_mask = labels == label
-        filament_coords = np.radians(
+        filament_coords = 
             np.column_stack((ra_values[filament_mask], dec_values[filament_mask]))
-        )
 
         # Safety check
         if filament_coords.shape[0] == 0:
@@ -261,10 +260,35 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 #        print(f"95th percentile distance: {np.degrees(max_bin_limit) * 60:.2f} arcmin")
 #        # === END TEMPORARY CODE ===
         
-        
-        
-        
         matched_filament_points = filament_coords[indices[:, 0]]
+        
+        # Plot the background coordinates in gray
+        plt.figure(figsize=(10, 8))
+        plt.scatter(np.radians(bg_ra), np.radians(bg_dec), s=1, c='gray', alpha=0.1)
+        
+        #######################################################################################
+        # Plot the filaments color-coded by label
+        colors = plt.cm.tab20(np.linspace(0, 1, len(unique_labels)))
+        for i, label in enumerate(unique_labels):
+            filament_points_to_plot = np.column_stack((ra_values[labels == label], dec_values[labels == label]))
+            plt.scatter(filament_points_to_plot[:, 0], filament_points_to_plot[:, 1], s=5, c=colors[i], alpha=0.8)
+        
+        plt.xlabel('RA [deg]')
+        plt.ylabel('Dec [deg]')
+        plt.title('Filaments and Background Galaxies')
+        
+        # Ensure the output directory exists
+        plot_dir = 'filaments'
+        if not os.path.exists(plot_dir):
+            os.makedirs(plot_dir)
+        
+        # Save the plot
+        plt.savefig(os.path.join(plot_dir, 'filaments_and_background.png'))
+        plt.close()
+        
+        print(f"Filament plot saved to {os.path.join(plot_dir, 'filaments_and_background.png')}")
+        
+        #########################################################################################
         
         ###  This method is not wrong ####
         
