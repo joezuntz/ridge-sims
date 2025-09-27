@@ -57,17 +57,6 @@ def transform_background(background_file, output_hdf5_file, seed):
             
     print(f"Transformed background saved to {output_hdf5_file}")
 
-
-
-
-
-
-
-
-
-
-
-
 def build_mst(points, k=10):
     """Constructs a Minimum Spanning Tree (MST) from given points."""
     tree = KDTree(points)
@@ -189,7 +178,6 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
     with h5py.File(filament_file, "r") as hdf:
         dataset = hdf["data"]
         ra_values = dataset["RA"][:]
-        ra_values = ra_values
         dec_values = dataset["DEC"][:]
         labels = dataset["Filament_Label"][:]
         rows = dataset["RA"].size
@@ -231,6 +219,9 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
     if bg_coords.shape[0] == 0:
         print(f"[rank {comm.rank if comm else 0}] WARNING: No background sources passed cuts! Skipping shear computation.")
         return
+        
+    bg_ra = np.radians(bg_ra) 
+    bg_dec= np.radians(bg_dec)
     max_distance = 0
     bin_sums_plus = np.zeros(num_bins)
     bin_sums_cross = np.zeros(num_bins)
