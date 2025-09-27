@@ -250,46 +250,48 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         nbrs = NearestNeighbors(n_neighbors=1, metric="haversine").fit(filament_coords)
         distances, indices = nbrs.kneighbors(bg_coords)
         
-#        # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
-#        print(f"Minimum distance found: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
-#        print(f"Maximum distance found: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
+        # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
+        print(f"Minimum distance found: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
+        print(f"Maximum distance found: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
     
-#        # Find a reasonable percentile to set as your max bin
-#        valid_distances = distances[np.where(distances > 0)]
-#        max_bin_limit = np.percentile(valid_distances, 95)
-#        print(f"95th percentile distance: {np.degrees(max_bin_limit) * 60:.2f} arcmin")
-#        # === END TEMPORARY CODE ===
+        # Find a reasonable percentile to set as your max bin
+        valid_distances = distances[np.where(distances > 0)]
+        max_bin_limit = np.percentile(valid_distances, 95)
+        print(f"95th percentile distance: {np.degrees(max_bin_limit) * 60:.2f} arcmin")
+        # === END TEMPORARY CODE ===
         
         matched_filament_points = filament_coords[indices[:, 0]]
         
         
         
-        ########################################  Plots to check  ##############################################
-        # Plot the background coordinates in gray
-        plt.figure(figsize=(10, 8))
-        plt.scatter(np.radians(bg_ra), np.radians(bg_dec), s=1, c='gray', alpha=0.1)
-        # Plot the filaments color-coded by label
-        colors = plt.cm.tab20(np.linspace(0, 1, len(unique_labels)))
-        for i, label in enumerate(unique_labels):
-            filament_points_to_plot = np.column_stack((ra_values[labels == label], dec_values[labels == label]))
-            plt.scatter(filament_points_to_plot[:, 0], filament_points_to_plot[:, 1], s=5, color=colors[i], alpha=0.8)
+#        ########################################  Plots to check  ##############################################
+#        # Plot the background coordinates in gray
+#        plt.figure(figsize=(10, 8))
+#        plt.scatter(np.radians(bg_ra), np.radians(bg_dec), s=1, c='gray', alpha=0.1)
+#        # Plot the filaments color-coded by label
+#        colors = plt.cm.tab20(np.linspace(0, 1, len(unique_labels)))
+#        for i, label in enumerate(unique_labels):
+#            filament_points_to_plot = np.column_stack((ra_values[labels == label], dec_values[labels == label]))
+#            plt.scatter(filament_points_to_plot[:, 0], filament_points_to_plot[:, 1], s=5, color=colors[i], alpha=0.8)
         
-        plt.xlabel('RA ')
-        plt.ylabel('Dec')
-        plt.title('Filaments and Background Galaxies')
+#        plt.xlabel('RA ')
+#        plt.ylabel('Dec')
+#        plt.title('Filaments and Background Galaxies')
         
-        # Ensure the output directory exists
-        plot_dir = 'filaments'
-        if not os.path.exists(plot_dir):
-            os.makedirs(plot_dir)
+#        # Ensure the output directory exists
+#        plot_dir = 'filaments'
+#        if not os.path.exists(plot_dir):
+#            os.makedirs(plot_dir)
         
-        # Save the plot
-        plt.savefig(os.path.join(plot_dir, 'filaments_and_background.png'))
-        plt.close()
+#        # Save the plot
+#        plt.savefig(os.path.join(plot_dir, 'filaments_and_background.png'))
+#        plt.close()
         
-        print(f"Filament plot saved to {os.path.join(plot_dir, 'filaments_and_background.png')}")
+#        print(f"Filament plot saved to {os.path.join(plot_dir, 'filaments_and_background.png')}")
         
-        ########################################################################################
+#        ########################################################################################
+        
+        # return
         
         ###  This method is not wrong ####
         
