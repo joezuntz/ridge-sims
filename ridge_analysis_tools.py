@@ -215,13 +215,16 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 #        weights[valid_mask],
 #    )
 
-    bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
+    ra_values = np.radians(ra_values)
+    dec_values = np.radians(dec_values)
+    bg_ra = np.radians(bg_ra) 
+    bg_dec= np.radians(bg_dec)
+    bg_coords = np.column_stack((bg_ra, bg_dec))
     if bg_coords.shape[0] == 0:
         print(f"[rank {comm.rank if comm else 0}] WARNING: No background sources passed cuts! Skipping shear computation.")
         return
         
-    bg_ra = np.radians(bg_ra) 
-    bg_dec= np.radians(bg_dec)
+    
     max_distance = 0
     bin_sums_plus = np.zeros(num_bins)
     bin_sums_cross = np.zeros(num_bins)
