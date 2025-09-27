@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 
 # --- Configuration ---
-filament_dir = "example_zl04_mesh5e5/filaments/shrinked_filaments"
-noise_shear_dir = "example_zl04_mesh5e5/noise/shrinked_ridges_shear"
+filament_dir = "example_zl04_mesh5e5/filaments"
+noise_shear_dir = "example_zl04_mesh5e5/noise"
 plot_dir = "example_zl04_mesh5e5/shrinked_shear_plots"
 os.makedirs(plot_dir, exist_ok=True)
 
