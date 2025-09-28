@@ -244,14 +244,22 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         
         # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
         if comm is None or comm.rank == 0:
-            # Plot the background coordinates in gray
+            # 1. Plot the background coordinates in gray (bg_coords is already in radians)
             plt.figure(figsize=(10, 8))
-            plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.1)
-            # Plot the filaments color-coded by label
-            colors = plt.cm.tab20(np.linspace(0, 1, len(unique_labels)))
-            for i, label in enumerate(unique_labels):
-                filament_points_to_plot = np.column_stack((ra_values[labels == label], dec_values[labels == label]))
-                plt.scatter(np.radians(filament_points_to_plot[:, 0]), np.radians(filament_points_to_plot[:, 1]), s=5, color=colors[i], alpha=0.8)            
+            plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.1, label='Background Galaxies')
+
+            # 2. Plot all filament points in a single, fast scatter call
+            all_filament_ra_rad = np.radians(ra_values[labels != -1])
+            all_filament_dec_rad = np.radians(dec_values[labels != -1])
+            
+            plt.scatter(
+                all_filament_ra_rad, 
+                all_filament_dec_rad, 
+                s=5, 
+                color='red', 
+                alpha=0.8, 
+                label='Filament Points'
+            )            
             plt.xlabel('RA (rad)')
             plt.ylabel('Dec (rad)')
             plt.title('Filaments and Background Galaxies')            
