@@ -217,7 +217,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
     ra_values = np.radians(ra_values)
     dec_values = np.radians(dec_values)
-    bg_ra = np.radians(bg_ra) 
+    bg_ra = np.radians(bg_ra) + np.pi
     bg_dec= np.radians(bg_dec)
     bg_coords = np.column_stack((bg_ra, bg_dec))
     if bg_coords.shape[0] == 0:
