@@ -215,8 +215,6 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 #        weights[valid_mask],
 #    )
 
-#    ra_values = np.radians(ra_values)
-#    dec_values = np.radians(dec_values)
     bg_ra = np.radians(bg_ra) 
     bg_dec= np.radians(bg_dec)
     bg_coords = np.column_stack((bg_ra, bg_dec))
@@ -245,15 +243,15 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         distances, indices = nbrs.kneighbors(bg_coords)
         
         # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
-        if comm is None or comm.rank == 0:
-            print(f"Minimum distance found: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
-            print(f"Maximum distance found: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
+#        if comm is None or comm.rank == 0:
+#            print(f"Minimum distance found: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
+#            print(f"Maximum distance found: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
             
-            print(f"Filament RA range: {ra_values.min():.3f} – {ra_values.max():.3f}")
-            print(f"BG RA range:       {bg_ra.min():.3f} – {bg_ra.max():.3f}")
+#            print(f"Filament RA range: {ra_values.min():.3f} – {ra_values.max():.3f}")
+#            print(f"BG RA range:       {bg_ra.min():.3f} – {bg_ra.max():.3f}")
         
-            print(f"Filament Dec range: {dec_values.min():.3f} – {dec_values.max():.3f} ")
-            print(f"BG Dec range:       {bg_dec.min():.3f} – {bg_dec.max():.3f} ")
+#            print(f"Filament Dec range: {dec_values.min():.3f} – {dec_values.max():.3f} ")
+#            print(f"BG Dec range:       {bg_dec.min():.3f} – {bg_dec.max():.3f} ")
             
             
 #            # Find a reasonable percentile to set as your max bin
