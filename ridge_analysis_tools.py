@@ -129,7 +129,7 @@ def read_sim_background(bg_file, rows, comm=None):
             s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
 
         bg_ra = f["RA"][s]
-        bg_ra = (bg_ra + 180) % 360
+        #bg_ra = (bg_ra + 180) % 360
         bg_dec = f["DEC"][s]
         g1 = f["G1"][s]
         g2 = f["G2"][s]
@@ -150,7 +150,7 @@ def read_DES_background(bg_file, comm=None):
             s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
 
         bg_ra = f["background"]["ra"][s]
-        bg_ra = (bg_ra + 180) % 360
+        #bg_ra = (bg_ra + 180) % 360
         bg_dec = f["background"]["dec"][s]
         g1 = f["background"]["g1"][s]
         g2 = f["background"]["g2"][s]
