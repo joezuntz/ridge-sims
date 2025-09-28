@@ -244,16 +244,16 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         nbrs = NearestNeighbors(n_neighbors=1, metric="haversine").fit(filament_coords)
         distances, indices = nbrs.kneighbors(bg_coords)
         
-#        # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
-#        if comm is None or comm.rank == 0:
-#            print(f"Minimum distance found: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
-#            print(f"Maximum distance found: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
+        # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
+        if comm is None or comm.rank == 0:
+            print(f"Minimum distance found: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
+            print(f"Maximum distance found: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
             
-#            print(f"Filament RA range: {ra_values.min():.3f} – {ra_values.max():.3f}")
-#            print(f"BG RA range:       {bg_ra.min():.3f} – {bg_ra.max():.3f}")
+            print(f"Filament RA range: {ra_values.min():.3f} – {ra_values.max():.3f}")
+            print(f"BG RA range:       {bg_ra.min():.3f} – {bg_ra.max():.3f}")
         
-#            print(f"Filament Dec range: {dec_values.min():.3f} – {dec_values.max():.3f} ")
-#            print(f"BG Dec range:       {bg_dec.min():.3f} – {bg_dec.max():.3f} ")
+            print(f"Filament Dec range: {dec_values.min():.3f} – {dec_values.max():.3f} ")
+            print(f"BG Dec range:       {bg_dec.min():.3f} – {bg_dec.max():.3f} ")
             
             
 #            # Find a reasonable percentile to set as your max bin
@@ -266,36 +266,36 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         
         
         
-        ########################################  Plots to check  ##############################################
+#        ########################################  Plots to check  ##############################################
         
-        if comm is None or comm.rank == 0:
-            # Plot the background coordinates in gray
-            plt.figure(figsize=(10, 8))
-            plt.scatter(np.radians(bg_ra), np.radians(bg_dec), s=1, c='gray', alpha=0.1)
-            # Plot the filaments color-coded by label
-            colors = plt.cm.tab20(np.linspace(0, 1, len(unique_labels)))
-            for i, label in enumerate(unique_labels):
-                filament_points_to_plot = np.column_stack((ra_values[labels == label], dec_values[labels == label]))
-                plt.scatter(filament_points_to_plot[:, 0], filament_points_to_plot[:, 1], s=5, color=colors[i], alpha=0.8)
+#        if comm is None or comm.rank == 0:
+#            # Plot the background coordinates in gray
+#            plt.figure(figsize=(10, 8))
+#            plt.scatter(np.radians(bg_ra), np.radians(bg_dec), s=1, c='gray', alpha=0.1)
+#            # Plot the filaments color-coded by label
+#            colors = plt.cm.tab20(np.linspace(0, 1, len(unique_labels)))
+#            for i, label in enumerate(unique_labels):
+#                filament_points_to_plot = np.column_stack((ra_values[labels == label], dec_values[labels == label]))
+#                plt.scatter(filament_points_to_plot[:, 0], filament_points_to_plot[:, 1], s=5, color=colors[i], alpha=0.8)
             
-            plt.xlabel('RA ')
-            plt.ylabel('Dec')
-            plt.title('Filaments and Background Galaxies')
+#            plt.xlabel('RA ')
+#            plt.ylabel('Dec')
+#            plt.title('Filaments and Background Galaxies')
             
-            # Ensure the output directory exists
-            plot_dir = 'filaments'
-            if not os.path.exists(plot_dir):
-                os.makedirs(plot_dir)
+#            # Ensure the output directory exists
+#            plot_dir = 'filaments'
+#            if not os.path.exists(plot_dir):
+#                os.makedirs(plot_dir)
             
-            # Save the plot
-            plt.savefig(os.path.join(plot_dir, 'filaments_and_background.png'))
-            plt.close()
+#            # Save the plot
+#            plt.savefig(os.path.join(plot_dir, 'filaments_and_background.png'))
+#            plt.close()
             
-            print(f"Filament plot saved to {os.path.join(plot_dir, 'filaments_and_background.png')}")
+#            print(f"Filament plot saved to {os.path.join(plot_dir, 'filaments_and_background.png')}")
         
-        ########################################################################################
+#        ########################################################################################
         
-    return
+    
         
         ###  This method is not wrong ####
         
