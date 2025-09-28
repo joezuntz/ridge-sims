@@ -59,8 +59,10 @@ for fp in final_percentiles:
                        flip_g1=True, background_type='sim')
 
     # === Loop over noise realizations ===
-    noise_files = sorted([f for f in os.listdir(noise_dir)
-                          if f.startswith("source_catalog_noise_") and f.endswith(".h5")])
+    noise_files = sorted(
+    [f for f in os.listdir(noise_dir) if f.startswith("source_catalog_noise_") and f.endswith(".h5")],
+    key=lambda x: int(x.split("_")[-1].replace(".h5","")))
+
     all_noise_profiles = []
     all_noise_flip_profiles = []
 
