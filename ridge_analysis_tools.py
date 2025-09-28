@@ -171,7 +171,7 @@ def load_background(bg_file, comm=None, rows=None, background_type=None):
 		
 
 def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=20, comm=comm,
-                       flip_g1=False, flip_g2=False, background_type=None,, plot_output_dir=None):  
+                       flip_g1=False, flip_g2=False, background_type=None,plot_output_dir=None):  
     start_time = time.time()
 
     # Load filament data
