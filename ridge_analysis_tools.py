@@ -171,7 +171,7 @@ def load_background(bg_file, comm=None, rows=None, background_type=None):
 		
 
 def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=20, comm=comm,
-                       flip_g1=False, flip_g2=False, background_type=None):  
+                       flip_g1=False, flip_g2=False, background_type=None,, plot_output_dir=None):  
     start_time = time.time()
 
     # Load filament data
@@ -243,21 +243,29 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         distances, indices = nbrs.kneighbors(bg_coords)
         
         # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
-#        if comm is None or comm.rank == 0:
-#            print(f"Minimum distance found: {np.degrees(np.min(distances)) * 60:.2f} arcmin")
-#            print(f"Maximum distance found: {np.degrees(np.max(distances)) * 60:.2f} arcmin")
+        if comm is None or comm.rank == 0:
+            # Plot the background coordinates in gray
+            plt.figure(figsize=(10, 8))
+            plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.1)
+            # Plot the filaments color-coded by label
+            colors = plt.cm.tab20(np.linspace(0, 1, len(unique_labels)))
+            for i, label in enumerate(unique_labels):
+                filament_points_to_plot = np.column_stack((ra_values[labels == label], dec_values[labels == label]))
+                plt.scatter(np.radians(filament_points_to_plot[:, 0]), np.radians(filament_points_to_plot[:, 1]), s=5, color=colors[i], alpha=0.8)            
+            plt.xlabel('RA (rad)')
+            plt.ylabel('Dec (rad)')
+            plt.title('Filaments and Background Galaxies')            
+            # Ensure the output directory exists
+            plot_dir = plot_output_dir if plot_output_dir else 'filaments_plots'
+            if not os.path.exists(plot_dir):
+                os.makedirs(plot_dir)            
+            # Save the plot
+            plot_file_path = os.path.join(plot_dir, 'filaments_and_background_test.png')
+            plt.savefig(plot_file_path)
+            plt.close()            
+            print(f"Filament plot saved to {plot_file_path}")
             
-#            print(f"Filament RA range: {ra_values.min():.3f} – {ra_values.max():.3f}")
-#            print(f"BG RA range:       {bg_ra.min():.3f} – {bg_ra.max():.3f}")
-        
-#            print(f"Filament Dec range: {dec_values.min():.3f} – {dec_values.max():.3f} ")
-#            print(f"BG Dec range:       {bg_dec.min():.3f} – {bg_dec.max():.3f} ")
-            
-            
-#            # Find a reasonable percentile to set as your max bin
-#            valid_distances = distances[np.where(distances > 0)]
-#            max_bin_limit = np.percentile(valid_distances, 95)
-#            print(f"95th percentile distance: {np.degrees(max_bin_limit) * 60:.2f} arcmin")
+        return # STOP CODE AFTER PLOT
         # === END TEMPORARY CODE ===
         
         matched_filament_points = filament_coords[indices[:, 0]]
