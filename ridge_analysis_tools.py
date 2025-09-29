@@ -219,7 +219,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 #        weights[valid_mask],
 #    )
 
-    bg_ra = np.radians(bg_ra)
+    bg_ra = np.radians(bg_ra)% (2 * np.pi)
     bg_dec= np.radians(bg_dec)
     
     
