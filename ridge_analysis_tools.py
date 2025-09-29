@@ -140,39 +140,29 @@ def save_filaments_to_hdf5(ra_dec, labels, filename, dataset_name="data"):
 
 
 
-def read_sim_background(bg_file, rows, comm=None):
-    """
-    Read background galaxies from simulated catalog (HDF5), 
-    loading only every 100th point within the assigned slice.
-    """
-    
-    SUBSAMPLE_STEP = 100 # Define the step size for subsampling
-    
+def read_sim_background(bg_file, comm=None, full=False):
+    SUBSAMPLE_STEP = 100
     with h5py.File(bg_file, "r") as f:
-        
-        # 1. Determine the slice based on MPI (or the whole catalog)
-        if comm is None:
-            # Load the entire catalog for non-MPI run
-            s_start = 0
-            s_end = rows
-        else:
-            # Load the portion assigned to this MPI rank
-            row_per_process = rows // comm.size
-            s_start = comm.rank * row_per_process
-            s_end = (comm.rank + 1) * row_per_process
+        total_rows = f["RA"].shape[0]
 
-        # 2. Add the subsampling step (::100) to the slice
-        s = slice(s_start, s_end, SUBSAMPLE_STEP)
-        
-        # 3. Read the data using the new step-slice
-        bg_ra = f["RA"][s]
-        bg_ra = (bg_ra + 180) % 360
+        if full:  # always load everything for plotting
+            s = slice(None)
+        else:
+            if comm is None:
+                s = slice(0, total_rows, SUBSAMPLE_STEP)
+            else:
+                row_per_process = total_rows // comm.size
+                s_start = comm.rank * row_per_process
+                s_end = (comm.rank + 1) * row_per_process
+                s = slice(s_start, s_end, SUBSAMPLE_STEP)
+
+        bg_ra = (f["RA"][s] + 180) % 360
         bg_dec = f["DEC"][s]
         g1 = f["G1"][s]
         g2 = f["G2"][s]
         z_true = f["Z_TRUE"][s]
         weights = f["weight"][s] if "weight" in f else np.ones_like(bg_ra)
-        
+
     return bg_ra, bg_dec, g1, g2, z_true, weights
 
 
@@ -196,15 +186,23 @@ def read_DES_background(bg_file, comm=None):
     return bg_ra, bg_dec, g1, g2, None, weights  # DES has no z_true, return None
 
 
-def load_background(bg_file, comm=None, rows=None, background_type=None):
-    """Dispatch background reader based on catalog type."""
+#def load_background(bg_file, comm=None, rows=None, background_type=None):
+#    """Dispatch background reader based on catalog type."""
+#    if background_type == "sim":
+#        return read_sim_background(bg_file, rows, comm=comm)
+#    elif background_type == "DES":
+#        return read_DES_background(bg_file, comm=comm)
+#    else:
+#        raise ValueError(f"Unknown background_type: {background_type}")
+		
+def load_background(bg_file, comm=None, background_type=None, full=False):
     if background_type == "sim":
-        return read_sim_background(bg_file, rows, comm=comm)
+        return read_sim_background(bg_file, comm=comm, full=full)
     elif background_type == "DES":
-        return read_DES_background(bg_file, comm=comm)
+        return read_DES_background(bg_file, comm=comm, full=full)
     else:
         raise ValueError(f"Unknown background_type: {background_type}")
-		
+
 		
 
 def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=20, comm=comm,
@@ -224,11 +222,36 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
     print(f"Processing {len(unique_labels)} non-empty filaments (out of {len(np.unique(labels))} total labels)")
 
 
+#    bg_ra, bg_dec, g1_values, g2_values, z_true, weights = load_background(
+#    bg_data, comm=comm, rows=rows, background_type=background_type)
+    
     bg_ra, bg_dec, g1_values, g2_values, z_true, weights = load_background(
-    bg_data, comm=comm, rows=rows, background_type=background_type)
-    
-    
+    bg_data, comm=comm, background_type=background_type, full=False)
 	
+    
+    
+    # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
+    
+    # For plotting: full dataset 
+    if comm is None or comm.rank == 0:
+        bg_ra_full, bg_dec_full, *_ = load_background(
+            bg_data, comm=None, background_type=background_type, full=True
+        )
+        ra_values_full = ra_values
+        dec_values_full = dec_values
+    
+        plt.figure(figsize=(10, 8))
+        plt.scatter(np.radians(bg_ra_full), np.radians(bg_dec_full), s=1, c="gray", alpha=0.1)
+        plt.scatter(ra_values_full, dec_values_full, s=5, c="red", alpha=0.6)
+        plt.xlabel("RA (rad)")
+        plt.ylabel("Dec (rad)")
+        plt.title("Filaments and Background Galaxies (Full)")
+        plt.savefig("filaments_and_background_full.png")
+        plt.close()
+
+    return # STOP CODE AFTER PLOT
+    # === END TEMPORARY CODE ===
+    
     # ========= SIGN-FLIP ==========
     if flip_g1:
         g1_values = -g1_values
@@ -255,7 +278,6 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
     bg_ra = np.radians(bg_ra)
     bg_dec= np.radians(bg_dec)
     
-    
     bg_coords = np.column_stack((bg_ra, bg_dec))
     if bg_coords.shape[0] == 0:
         print(f"[rank {comm.rank if comm else 0}] WARNING: No background sources passed cuts! Skipping shear computation.")
@@ -281,65 +303,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         nbrs = NearestNeighbors(n_neighbors=1, metric="haversine").fit(filament_coords)
         distances, indices = nbrs.kneighbors(bg_coords)
         
-        # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
-        # --- Plotting Block with MPI Gather (Full Field Visualization) ---
-        if comm is not None:
-            # Collect local bg_coords onto rank 0
-            all_bg_ra = comm.gather(bg_coords[:, 0], root=0) 
-            all_bg_dec = comm.gather(bg_coords[:, 1], root=0)
-            
-            # Collect local filament coords onto rank 0
-            filament_ra_rad = np.radians(ra_values[labels != -1])
-            filament_dec_rad = np.radians(dec_values[labels != -1])
-            all_filament_ra = comm.gather(filament_ra_rad, root=0)
-            all_filament_dec = comm.gather(filament_dec_rad, root=0)
-    
-        else: # If comm is None, use local data directly
-            all_bg_ra = [bg_coords[:, 0]]
-            all_bg_dec = [bg_coords[:, 1]]
-            filament_ra_rad = ra_values[labels != -1]
-            filament_dec_rad = dec_values[labels != -1]
-            all_filament_ra = [filament_ra_rad]
-            all_filament_dec = [filament_dec_rad]
-    
-        if comm is None or comm.rank == 0:
-            
-            # Combine the lists of arrays into single arrays
-            full_bg_ra = np.concatenate(all_bg_ra)
-            full_bg_dec = np.concatenate(all_bg_dec)
-            full_filament_ra = np.concatenate(all_filament_ra)
-            full_filament_dec = np.concatenate(all_filament_dec)
-            
-            plt.figure(figsize=(10, 8))
-            
-            # Plot full gathered background data
-            plt.scatter(full_bg_ra, full_bg_dec, s=1, c='gray', alpha=0.1, label='Background Galaxies')
-            
-            # Plot full gathered filament data
-            plt.scatter(
-                full_filament_ra, 
-                full_filament_dec, 
-                s=5, 
-                color='red', 
-                alpha=0.8, 
-                label='Filament Points'
-            )
-        
-            plt.xlabel('RA (rad)')
-            plt.ylabel('Dec (rad)')
-            plt.title('Filaments and Background Galaxies')            
-            # Ensure the output directory exists
-            plot_dir = plot_output_dir if plot_output_dir else 'filaments_plots'
-            if not os.path.exists(plot_dir):
-                os.makedirs(plot_dir)            
-            # Save the plot
-            plot_file_path = os.path.join(plot_dir, 'filaments_and_background_test.png')
-            plt.savefig(plot_file_path)
-            plt.close()            
-            print(f"Filament plot saved to {plot_file_path}")
-            
-        return # STOP CODE AFTER PLOT
-        # === END TEMPORARY CODE ===
+
         
         matched_filament_points = filament_coords[indices[:, 0]]
         
