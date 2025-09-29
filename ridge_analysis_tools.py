@@ -217,6 +217,12 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
     bg_ra = np.radians(bg_ra) # % (2 * np.pi) 
     bg_dec= np.radians(bg_dec)
+    # if filament ra_values are large (> 2π) they were likely stored in degrees accidentally — convert
+    if np.nanmax(ra_values) > 2 * np.pi:
+        ra_values = np.radians(ra_values)
+    if np.nanmax(dec_values) > 2 * np.pi:
+        dec_values = np.radians(dec_values)
+    
     bg_coords = np.column_stack((bg_ra, bg_dec))
     if bg_coords.shape[0] == 0:
         print(f"[rank {comm.rank if comm else 0}] WARNING: No background sources passed cuts! Skipping shear computation.")
@@ -246,7 +252,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         if comm is None or comm.rank == 0:
             # 1. Plot the background coordinates in gray 
             plt.figure(figsize=(10, 8))
-            plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.1, label='Background Galaxies')
+            plt.scatter(bg_ra, bg_dec, s=1, c='gray', alpha=0.1, label='Background Galaxies')
 
             # 2. Plot all filament points 
             all_filament_ra_rad = ra_values[labels != -1]
