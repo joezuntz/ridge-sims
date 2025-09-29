@@ -240,7 +240,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         bg_ra = np.radians(bg_ra)
         bg_dec= np.radians(bg_dec)
         bg_coords = np.column_stack((bg_ra, bg_dec))
-        plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.1, label='Background Galaxies')
+        plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.8, label='Background Galaxies')
 
         # 2. Plot all filament points             
         all_filament_ra  = ra_values[labels != -1]
