@@ -138,7 +138,7 @@ def save_filaments_to_hdf5(ra_dec, labels, filename, dataset_name="data"):
 
 #    return bg_ra, bg_dec, g1, g2, z_true, weights
 
-def read_sim_background_stride(bg_file, stride=100):
+def read_sim_background(bg_file, stride=100):
     """
     Read background galaxies from simulated catalog (HDF5).
     Loads the full dataset but only keeps every `stride`-th row.
