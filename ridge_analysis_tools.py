@@ -119,26 +119,40 @@ def save_filaments_to_hdf5(ra_dec, labels, filename, dataset_name="data"):
         hdf.create_dataset(dataset_name, data=structured_data)
 
 
-def read_sim_background(bg_file, rows, comm=None):
-    """Read background galaxies from simulated catalog (HDF5)."""
-    with h5py.File(bg_file, "r") as f:
-        if comm is None:
-            s = slice(None)
-        else:
-            row_per_process = rows // comm.size
-            s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
+#def read_sim_background(bg_file, rows, comm=None):
+#    """Read background galaxies from simulated catalog (HDF5)."""
+#    with h5py.File(bg_file, "r") as f:
+#        if comm is None:
+#            s = slice(None)
+#        else:
+#            row_per_process = rows // comm.size
+#            s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
 
-        bg_ra = f["RA"][s]
-        #bg_ra = (bg_ra + 180) % 360
-        bg_dec = f["DEC"][s]
-        g1 = f["G1"][s]
-        g2 = f["G2"][s]
-        z_true = f["Z_TRUE"][s]
-        weights = f["weight"][s] if "weight" in f else np.ones_like(bg_ra)
+#        bg_ra = f["RA"][s]
+#        bg_ra = (bg_ra + 180) % 360
+#        bg_dec = f["DEC"][s]
+#        g1 = f["G1"][s]
+#        g2 = f["G2"][s]
+#        z_true = f["Z_TRUE"][s]
+#        weights = f["weight"][s] if "weight" in f else np.ones_like(bg_ra)
+
+#    return bg_ra, bg_dec, g1, g2, z_true, weights
+
+def read_sim_background_stride(bg_file, stride=100):
+    """
+    Read background galaxies from simulated catalog (HDF5).
+    Loads the full dataset but only keeps every `stride`-th row.
+    """
+    with h5py.File(bg_file, "r") as f:
+        bg_ra = f["RA"][::stride]
+        bg_ra = (bg_ra + 180) % 360   # keep same shift convention
+        bg_dec = f["DEC"][::stride]
+        g1 = f["G1"][::stride]
+        g2 = f["G2"][::stride]
+        z_true = f["Z_TRUE"][::stride]
+        weights = f["weight"][::stride] if "weight" in f else np.ones_like(bg_ra)
 
     return bg_ra, bg_dec, g1, g2, z_true, weights
-
-
 
 
 
@@ -229,46 +243,46 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         return
     
     
-    # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
+#    # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
         
-    if comm is None or comm.rank == 0:
-        # 1. Plot the background coordinates in gray 
-        plt.figure(figsize=(10, 8))
-        plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.8, label='Background Galaxies')
+#    if comm is None or comm.rank == 0:
+#        # 1. Plot the background coordinates in gray 
+#        plt.figure(figsize=(10, 8))
+#        plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.8, label='Background Galaxies')
 
-        # 2. Plot all filament points             
-        all_filament_ra  = ra_values[labels != -1]
-        all_filament_dec = dec_values[labels != -1] 
+#        # 2. Plot all filament points             
+#        all_filament_ra  = ra_values[labels != -1]
+#        all_filament_dec = dec_values[labels != -1] 
 
         
-        plt.scatter(
-            all_filament_ra, 
-            all_filament_dec,
-            s=5,
-            color='red',
-            alpha=0.8,
-            label='Filament Points'
-        )
+#        plt.scatter(
+#            all_filament_ra, 
+#            all_filament_dec,
+#            s=5,
+#            color='red',
+#            alpha=0.8,
+#            label='Filament Points'
+#        )
         
-        plt.xlabel('RA (rad)')
-        plt.ylabel('Dec (rad)')
-        plt.title('Filaments and Background Galaxies')
+#        plt.xlabel('RA (rad)')
+#        plt.ylabel('Dec (rad)')
+#        plt.title('Filaments and Background Galaxies')
 
-        # Ensure the output directory exists 
-        plot_dir = plot_output_dir if plot_output_dir else 'filaments_plots'
-        if not os.path.exists(plot_dir):
-            os.makedirs(plot_dir)
+#        # Ensure the output directory exists 
+#        plot_dir = plot_output_dir if plot_output_dir else 'filaments_plots'
+#        if not os.path.exists(plot_dir):
+#            os.makedirs(plot_dir)
 
-        # Save the plot 
-        plot_file_path = os.path.join(plot_dir, 'filaments_and_background_test.png')
-        plt.savefig(plot_file_path)
+#        # Save the plot 
+#        plot_file_path = os.path.join(plot_dir, 'filaments_and_background_test.png')
+#        plt.savefig(plot_file_path)
 
-        plt.close()
+#        plt.close()
 
-        print(f"Filament plot saved to {plot_file_path}")
+#        print(f"Filament plot saved to {plot_file_path}")
 
-    return # STOP CODE AFTER PLOT        
-    # === END TEMPORARY CODE ===
+#    return # STOP CODE AFTER PLOT        
+#    # === END TEMPORARY CODE ===
     
     
     
