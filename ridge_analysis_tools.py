@@ -248,7 +248,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         if comm is None or comm.rank == 0:
             # 1. Plot the background coordinates in gray 
             plt.figure(figsize=(10, 8))
-            plt.scatter(bg_ra, bg_dec, s=1, c='gray', alpha=0.1, label='Background Galaxies')
+            plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.1, label='Background Galaxies')
 
             # 2. Plot all filament points 
             all_filament_ra_rad = ra_values[labels != -1]
