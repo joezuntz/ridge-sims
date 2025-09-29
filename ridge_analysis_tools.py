@@ -129,7 +129,7 @@ def read_sim_background(bg_file, rows, comm=None):
             s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
 
         bg_ra = f["RA"][s]
-        #bg_ra = (bg_ra + 180) % 360
+        bg_ra = (bg_ra + 180) % 360
         bg_dec = f["DEC"][s]
         g1 = f["G1"][s]
         g2 = f["G2"][s]
@@ -150,7 +150,7 @@ def read_DES_background(bg_file, comm=None):
             s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
 
         bg_ra = f["background"]["ra"][s]
-        #bg_ra = (bg_ra + 180) % 360
+        bg_ra = (bg_ra + 180) % 360
         bg_dec = f["background"]["dec"][s]
         g1 = f["background"]["g1"][s]
         g2 = f["background"]["g2"][s]
@@ -215,7 +215,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 #        weights[valid_mask],
 #    )
 
-    bg_ra = np.radians(bg_ra) 
+    bg_ra = np.radians(bg_ra) # % (2 * np.pi) 
     bg_dec= np.radians(bg_dec)
     bg_coords = np.column_stack((bg_ra, bg_dec))
     if bg_coords.shape[0] == 0:
@@ -249,8 +249,8 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
             plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.1, label='Background Galaxies')
 
             # 2. Plot all filament points 
-            all_filament_ra_rad = np.radians(ra_values[labels != -1])
-            all_filament_dec_rad = np.radians(dec_values[labels != -1])
+            all_filament_ra_rad = ra_values[labels != -1]
+            all_filament_dec_rad = dec_values[labels != -1]
             
             plt.scatter(
                 all_filament_ra_rad, 
