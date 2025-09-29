@@ -219,8 +219,8 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 #        weights[valid_mask],
 #    )
 
-    bg_ra = np.radians(bg_ra)
-    bg_dec= np.radians(bg_dec)
+    #bg_ra = np.radians(bg_ra)
+    #bg_dec= np.radians(bg_dec)
     
     
     bg_coords = np.column_stack((bg_ra, bg_dec))
@@ -234,12 +234,6 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
     if comm is None or comm.rank == 0:
         # 1. Plot the background coordinates in gray 
         plt.figure(figsize=(10, 8))
-        
-        bg_ra, bg_dec, g1_values, g2_values, z_true, weights = load_background(
-        bg_data, comm=comm, rows=rows, background_type=background_type)
-        bg_ra = np.radians(bg_ra)
-        bg_dec= np.radians(bg_dec)
-        bg_coords = np.column_stack((bg_ra, bg_dec))
         plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.8, label='Background Galaxies')
 
         # 2. Plot all filament points             
