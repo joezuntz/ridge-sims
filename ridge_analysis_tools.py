@@ -179,7 +179,7 @@ def read_DES_background(bg_file, comm=None):
 def load_background(bg_file, comm=None, rows=None, background_type=None):
     """Dispatch background reader based on catalog type."""
     if background_type == "sim":
-        return read_sim_background(bg_file, rows, comm=comm)
+        return read_sim_background(bg_file, stride=100)#read_sim_background(bg_file, rows, comm=comm)
     elif background_type == "DES":
         return read_DES_background(bg_file, comm=comm)
     else:
