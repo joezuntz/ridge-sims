@@ -254,14 +254,14 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
             all_filament_ra_rad = ra_values[labels != -1]
             all_filament_dec_rad = dec_values[labels != -1]
             
-            plt.scatter(
-                all_filament_ra_rad, 
-                all_filament_dec_rad, 
-                s=5, 
-                color='red', 
-                alpha=0.8, 
-                label='Filament Points'
-            )            
+#            plt.scatter(
+#                all_filament_ra_rad, 
+#                all_filament_dec_rad, 
+#                s=5, 
+#                color='red', 
+#                alpha=0.8, 
+#                label='Filament Points'
+#            )            
             plt.xlabel('RA (rad)')
             plt.ylabel('Dec (rad)')
             plt.title('Filaments and Background Galaxies')            
