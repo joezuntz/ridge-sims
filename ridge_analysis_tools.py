@@ -243,46 +243,46 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         return
     
     
-#    # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
+    # === TEMPORARY CODE TO CHECK DISTANCE DISTRIBUTION ===
         
-#    if comm is None or comm.rank == 0:
-#        # 1. Plot the background coordinates in gray 
-#        plt.figure(figsize=(10, 8))
-#        plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.8, label='Background Galaxies')
+    if comm is None or comm.rank == 0:
+        # 1. Plot the background coordinates in gray 
+        plt.figure(figsize=(10, 8))
+        plt.scatter(bg_coords[:, 0], bg_coords[:, 1], s=1, c='gray', alpha=0.8, label='Background Galaxies')
 
-#        # 2. Plot all filament points             
-#        all_filament_ra  = ra_values[labels != -1]
-#        all_filament_dec = dec_values[labels != -1] 
+        # 2. Plot all filament points             
+        all_filament_ra  = ra_values[labels != -1]
+        all_filament_dec = dec_values[labels != -1] 
 
         
-#        plt.scatter(
-#            all_filament_ra, 
-#            all_filament_dec,
-#            s=5,
-#            color='red',
-#            alpha=0.8,
-#            label='Filament Points'
-#        )
+        plt.scatter(
+            all_filament_ra, 
+            all_filament_dec,
+            s=5,
+            color='red',
+            alpha=0.8,
+            label='Filament Points'
+        )
         
-#        plt.xlabel('RA (rad)')
-#        plt.ylabel('Dec (rad)')
-#        plt.title('Filaments and Background Galaxies')
+        plt.xlabel('RA (rad)')
+        plt.ylabel('Dec (rad)')
+        plt.title('Filaments and Background Galaxies')
 
-#        # Ensure the output directory exists 
-#        plot_dir = plot_output_dir if plot_output_dir else 'filaments_plots'
-#        if not os.path.exists(plot_dir):
-#            os.makedirs(plot_dir)
+        # Ensure the output directory exists 
+        plot_dir = plot_output_dir if plot_output_dir else 'filaments_plots'
+        if not os.path.exists(plot_dir):
+            os.makedirs(plot_dir)
 
-#        # Save the plot 
-#        plot_file_path = os.path.join(plot_dir, 'filaments_and_background_test.png')
-#        plt.savefig(plot_file_path)
+        # Save the plot 
+        plot_file_path = os.path.join(plot_dir, 'filaments_and_background_test.png')
+        plt.savefig(plot_file_path)
 
-#        plt.close()
+        plt.close()
 
-#        print(f"Filament plot saved to {plot_file_path}")
+        print(f"Filament plot saved to {plot_file_path}")
 
-#    return # STOP CODE AFTER PLOT        
-#    # === END TEMPORARY CODE ===
+    return # STOP CODE AFTER PLOT        
+    # === END TEMPORARY CODE ===
     
     
     
