@@ -162,25 +162,54 @@ from ridge_analysis_tools import *
 
 
 
-if __name__ == "__main__":
-    # BG file
-    base_sim_dir = "lhc_run_sims"
-    run_id = 1
-    BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
+#if __name__ == "__main__":
+#    # BG file
+#    base_sim_dir = "lhc_run_sims"
+#    run_id = 1
+#    BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
-    background_type = "sim"   # or "DES"
-    output_plot = "example_zl04_mesh5e5/background_only.png"
+#    background_type = "sim"   # or "DES"
+#    output_plot = "example_zl04_mesh5e5/background_only.png"
 
-    # For sim background, need number of rows
-    rows = None
-    if background_type == "sim":
-        with h5py.File(BG_data, "r") as f:
-            rows = f["RA"].shape[0]
+#    # For sim background, need number of rows
+#    rows = None
+#    if background_type == "sim":
+#        with h5py.File(BG_data, "r") as f:
+#            rows = f["RA"].shape[0]
 
-    # Load background
-    bg_ra, bg_dec, g1, g2, z_true, weights = load_background(
-        BG_data, rows=rows, background_type=background_type
-    )
+#    # Load background
+#    bg_ra, bg_dec, g1, g2, z_true, weights = load_background(
+#        BG_data, rows=rows, background_type=background_type
+#    )
+
+## --- Load filaments ---
+#filament_dir = "example_zl04_mesh5e5/filaments"
+#filament_h5 = os.path.join(filament_dir, "filaments_p15.h5")    
+
+#with h5py.File(filament_h5, "r") as hdf:
+#    dataset = hdf["data"]
+#    ra_values = dataset["RA"][:] 
+#    dec_values = dataset["DEC"][:]
+#    labels = dataset["Filament_Label"][:]
+
+##for label in unique_labels:
+##        filament_mask = labels == label
+##        filament_coords = np.column_stack((ra_values[filament_mask], dec_values[filament_mask]))
+        
+        
+
+## === PLOT BACKGROUND + FILAMENTS ===
+#plt.figure(figsize=(8, 6))
+#plt.scatter(np.radians(bg_ra), np.radians(bg_dec), s=2, c="gray", alpha=0.5)
+#plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7)
+#plt.xlabel("RA ")
+#plt.ylabel("DEC")
+#plt.title(" Filament Positions")
+#plot_file = "example_zl04_mesh5e5/BG-filaments.png"
+#plt.savefig(plot_file, dpi=200)
+#plt.close()
+#print(f"Saved background+filament plot: {plot_file}")
+# ===================================
 
 #    # === PLOT BACKGROUND ONLY ===
 #    plt.figure(figsize=(8, 6))
@@ -193,15 +222,7 @@ if __name__ == "__main__":
 #    print(f"Saved background-only plot: {output_plot}")
 
 
-# --- Load filaments ---
-filament_dir = "example_zl04_mesh5e5/filaments"
-filament_h5 = os.path.join(filament_dir, "filaments_p15.h5")    
 
-with h5py.File(filament_h5, "r") as hdf:
-    dataset = hdf["data"]
-    ra_values = dataset["RA"][:] 
-    dec_values = dataset["DEC"][:]
-    labels = dataset["Filament_Label"][:]
 
 ## --- Diagnostics ---
 #print("Filaments RA range:", ra_fil.min(), ra_fil.max())
@@ -227,18 +248,6 @@ with h5py.File(filament_h5, "r") as hdf:
 #filament_coords = np.column_stack((ra_values, dec_values))
 #bg_coords = np.radians(np.column_stack((bg_ra, bg_dec)))
 
-# === PLOT BACKGROUND + FILAMENTS ===
-plt.figure(figsize=(8, 6))
-plt.scatter(np.radians(bg_ra), np.radians(bg_dec), s=2, c="gray", alpha=0.5)
-plt.scatter(ra_values, dec_values, s=5, c="red", alpha=0.7)
-plt.xlabel("RA ")
-plt.ylabel("DEC")
-plt.title(" Filament Positions")
-plot_file = "example_zl04_mesh5e5/BG-filaments.png"
-plt.savefig(plot_file, dpi=200)
-plt.close()
-print(f"Saved background+filament plot: {plot_file}")
-# ===================================
 
 
 
@@ -374,3 +383,43 @@ print(f"Saved background+filament plot: {plot_file}")
 #    plt.savefig(combined_plot_path, dpi=200)
 #    plt.close()
 #    print(f"Saved combined background+filament plot")
+
+
+
+
+
+def read_sim_background(bg_file, stride=1000):
+    """
+    Read background galaxies from simulated catalog (HDF5).
+    Loads the full dataset but only keeps every `stride`-th row.
+    """
+    with h5py.File(bg_file, "r") as f:
+        bg_ra = f["RA"][::stride]
+        bg_ra = (bg_ra + 180) % 360  
+        bg_dec = f["DEC"][::stride]
+        g1 = f["G1"][::stride]
+        g2 = f["G2"][::stride]
+        z_true = f["Z_TRUE"][::stride]
+        weights = f["weight"][::stride] if "weight" in f else np.ones_like(bg_ra)
+
+    return bg_ra, bg_dec, g1, g2, z_true, weights
+
+
+# --- Parameters ---
+output_dir = "example_zl04_mesh5e5/usefule_plots"
+data_dir = "example_zl04_mesh5e5/noise"
+os.makedirs(output_dir, exist_ok=True)
+realization_idx = 0   # pick which realization to plot
+file_path = os.path.join(data_dir, f"noise_{realization_idx:02d}.h5")
+
+# --- Load one realization ---
+ra, dec, g1, g2, z_true, weights = read_sim_background(file_path, stride=500)
+
+# --- Plot galaxies with shear as vectors ---
+plt.figure(figsize=(8, 6))
+plt.quiver(np.radians(ra), np.radians(dec), g1, g2, angles="xy", scale=50, width=0.003, alpha=0.6)
+plt.xlabel("RA ")
+plt.ylabel("DEC")
+plt.title(f"Noise Realization {realization_idx}")
+plt.gca().invert_xaxis()  # optional: RA increases to the left
+plt.show()
