@@ -410,8 +410,7 @@ output_dir = "example_zl04_mesh5e5/usefule_plots"
 data_dir = "example_zl04_mesh5e5/noise"
 os.makedirs(output_dir, exist_ok=True)
 realization_idx = 0   # pick which realization to plot
-file_path = os.path.join(data_dir, f"noise_{realization_idx:02d}.h5")
-
+file_path = os.path.join(output_dir, f"source_catalog_noise_{realization_idx:02d}.h5")
 # --- Load one realization ---
 ra, dec, g1, g2, z_true, weights = read_sim_background(file_path, stride=500)
 
@@ -422,4 +421,8 @@ plt.xlabel("RA ")
 plt.ylabel("DEC")
 plt.title(f"Noise Realization {realization_idx}")
 plt.gca().invert_xaxis()  # optional: RA increases to the left
-plt.show()
+plot_path = os.path.join(output_dir, f"noise_realization_{realization_idx:02d}.png")
+plt.savefig(plot_path, dpi=200, bbox_inches="tight")
+plt.close()
+
+print(f"Saved plot: {plot_path}")
