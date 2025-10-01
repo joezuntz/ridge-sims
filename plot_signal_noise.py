@@ -195,7 +195,7 @@ for case, (suffix, shear_csv) in cases.items():
         continue
 
     noise_files = [
-        os.path.join(noise_shear_dir, f"shear_noise_p{final_percentile:02d}_r{i:02d}{suffix}.csv")
+        os.path.join(noise_shear_dir, f"shear_noise_p{final_percentile:02d}_{i:02d}{suffix}.csv")
         for i in range(num_realizations)
     ]
     run_analysis(case, shear_csv, noise_files, suffix)
