@@ -6,7 +6,7 @@ import scipy.stats as stats
 # --- Configuration ---
 filament_dir = "example_zl04_mesh5e5/filaments"
 noise_shear_dir = "example_zl04_mesh5e5/noise"
-plot_dir = "example_zl04_mesh5e5/shrinked_shear_plots"
+plot_dir = "example_zl04_mesh5e5/shear_plots"
 os.makedirs(plot_dir, exist_ok=True)
 
 final_percentile = 15
