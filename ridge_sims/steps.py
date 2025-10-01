@@ -72,7 +72,12 @@ def step3(config):
 
     # Load the number density information
     sample = load_sample_information(config.lens_type, config.combined)
-
+    
+    # if we want no noise in sims
+    if not config.include_shape_noise:
+        print("Shape noise disabled: setting sigma_e[:] = 1e-3")
+        sample.sigma_e[:] = 1e-3
+        
     # Load the results of the previous step
     with open(config.g_ell_file, "rb") as f:
         gls = pickle.load(f)
