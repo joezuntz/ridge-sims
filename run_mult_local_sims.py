@@ -7,8 +7,8 @@ from ridge_sims.config import Config
 if __name__ == "__main__":
     # --- Configuration for direct execution ---
     if len(sys.argv) == 1:  # run without arguments
-        num_runs = 50
-        base_sim_dir = "lhc_run_sims_50"
+        num_runs = 10
+        base_sim_dir = "lhc_run_sims_zero_err_10"
         first_run_dir = os.path.join(base_sim_dir, "run_1")
         first_run_shell_cl_file = os.path.join(first_run_dir, "shell_cls.npy")
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
             seed = run_id
             np.random.seed(seed)
 
-            config = Config(sim_dir=run_dir, seed=seed)
+            config = Config(sim_dir=run_dir, seed=seed, include_shape_noise=False)
             config.save()
 
             print(f"Starting local run {run_id} in directory: {run_dir} with seed: {seed}")
