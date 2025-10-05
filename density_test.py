@@ -97,7 +97,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label):
         coordinates = load_coordinates(base_sim_dir, run_id)
 
         # Run filament finder
-        ridges, initial_density, final_density = find_filaments(
+        ridges, initial_density, final_density = dredge_scms.find_filaments(
             coordinates,
             bandwidth=np.radians(bandwidth),
             convergence=np.radians(convergence),
