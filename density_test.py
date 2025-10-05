@@ -29,7 +29,7 @@ def load_coordinates(base_sim_dir, run_id, shift=True):
     coordinates = np.radians(coordinates)
     return coordinates
 
-base_sim_dir = "lhc_run_sims"
+base_sim_dir = "lhc_run_sims_zero_err_10"
 
 
 def results_plot(density_map, ridges, plot_filename):
@@ -72,64 +72,174 @@ def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, fina
 
 
 
-
-def main():
-    bandwidth = 0.5
+def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label):
+    """
+    Run the full filament-finding + plotting for a given bandwidth, simulation base, and run IDs.
+    Results are grouped under the same bandwidth + base label directory.
+    """
+    # --- Parameters ---
     neighbours = 5000
     convergence = 1e-5
     seed = 3482364
     mesh_size = int(5e5)
-    base_sim_dir = "lhc_run_sims"
-    run_id = 1
-    checkpoint_dir = "example_zl04_mesh5e5/checkpoints"
-    
-    coordinates = load_coordinates(base_sim_dir, run_id)
 
-    ridges, initial_density, final_density = dredge_scms.find_filaments(
-        coordinates,
-        bandwidth=np.radians(bandwidth),
-        convergence=np.radians(convergence),
-        distance_metric='haversine',
-        n_neighbors=neighbours,
-        comm=COMM_WORLD,
-        checkpoint_dir=checkpoint_dir,
-        resume=True,
-        seed=seed,
-        mesh_size=mesh_size
-    )
+    # --- Directory structure ---
+    home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
+    os.makedirs(home_dir, exist_ok=True)
+    checkpoint_dir = os.path.join(home_dir, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
 
-    if COMM_WORLD.rank == 0:
-        final_percentiles = [15] # [0, 10, 25, 40, 50, 60, 75, 85, 90, 95]
-        initial_percentile = 0
+    for run_id in run_ids:
+        if COMM_WORLD.rank == 0:
+            print(f"\n[rank 0] Starting run_{run_id} for base={base_label}, bandwidth={bandwidth}\n")
 
-        # Build density map once (outside the loop)
-        density_map = build_density_map(base_sim_dir, run_id, 512)
+        # Load coordinates
+        coordinates = load_coordinates(base_sim_dir, run_id)
 
-        # directory for plots
-        plot_dir = "example_zl04_mesh5e5/plots_by_final_percentile"
-        os.makedirs(plot_dir, exist_ok=True)
+        # Run filament finder
+        ridges, initial_density, final_density = find_filaments(
+            coordinates,
+            bandwidth=np.radians(bandwidth),
+            convergence=np.radians(convergence),
+            distance_metric='haversine',
+            n_neighbors=neighbours,
+            comm=COMM_WORLD,
+            checkpoint_dir=checkpoint_dir,
+            resume=True,
+            seed=seed,
+            mesh_size=mesh_size
+        )
 
-        for fp in final_percentiles:
-            ridges_cut = redo_cuts(ridges, initial_density, final_density,
-                                   initial_percentile=initial_percentile,
-                                   final_percentile=fp)
+        # Output (rank 0 only)
+        if COMM_WORLD.rank == 0:
+            final_percentiles = [15]
+            initial_percentile = 0
 
-            # Save ridges
-            out_dir = f"example_zl04_mesh5e5/Ridges_final_p{fp:02d}"
-            os.makedirs(out_dir, exist_ok=True)
+            # Density map for this run
+            density_map = build_density_map(base_sim_dir, run_id, 512)
 
-            h5_filename = os.path.join(out_dir, f"ridges_p{fp:02d}.h5")
-            with h5py.File(h5_filename, 'w') as f:
-                f.create_dataset("ridges", data=ridges_cut)
-                f.create_dataset("initial_density", data=initial_density)
-                f.create_dataset("final_density", data=final_density)
+            plot_dir = os.path.join(home_dir, "plots_by_final_percentile")
+            os.makedirs(plot_dir, exist_ok=True)
 
-            print(f"[rank 0] Saved ridges for final_percentile={fp} to {h5_filename}")
+            for fp in final_percentiles:
+                ridges_cut = redo_cuts(
+                    ridges, initial_density, final_density,
+                    initial_percentile=initial_percentile,
+                    final_percentile=fp
+                )
 
-            # plots
-            plot_path = os.path.join(plot_dir, f"Ridges_plot_p{fp:02d}.png")
-            results_plot(density_map, ridges_cut, plot_path)
+                # Save ridges (by run ID)
+                out_dir = os.path.join(home_dir, f"Ridges_final_p{fp:02d}")
+                os.makedirs(out_dir, exist_ok=True)
+                h5_filename = os.path.join(out_dir, f"{base_label}_run_{run_id}_ridges_p{fp:02d}.h5")
+
+                with h5py.File(h5_filename, 'w') as f:
+                    f.create_dataset("ridges", data=ridges_cut)
+                    f.create_dataset("initial_density", data=initial_density)
+                    f.create_dataset("final_density", data=final_density)
+
+                print(f"[rank 0] Saved ridges → {h5_filename}")
+
+                # Plot
+                plot_path = os.path.join(plot_dir, f"{base_label}_run_{run_id}_Ridges_plot_p{fp:02d}.png")
+                results_plot(density_map, ridges_cut, plot_path)
+                print(f"[rank 0] Saved plot: {plot_path}")
+
+
+def main():
+    # --- Simulation bases ---
+    sim_bases = {
+        "zero_err": "lhc_run_sims_zero_err_10",   # zero-error simulations
+        "normal": "lhc_run_sims"                  # normal (noisy) simulations
+    }
+
+    # --- Run IDs ---
+    run_ids = range(1, 10)  # run_1 through run_9
+
+    for base_label, base_sim_dir in sim_bases.items():
+        # Choose bandwidths depending on the base
+        if base_label == "zero_err":
+            bandwidths = [0.3, 0.1]   # this is just so we can have the option to choose for later use!
+        else:
+            bandwidths = [0.3, 0.1]       
+
+        for bw in bandwidths:
+            run_filament_pipeline(
+                bandwidth=bw,
+                base_sim_dir=base_sim_dir,
+                run_ids=run_ids,
+                base_label=base_label
+            )
 
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+### Works only for limited options -> directory names are to be adapted 
+
+#def main():
+#    bandwidth = 0.3
+#    neighbours = 5000
+#    convergence = 1e-5
+#    seed = 3482364
+#    mesh_size = int(5e5)
+#    base_sim_dir = "lhc_run_sims_zero_err_10"
+#    run_id = 1
+#    home_dir = "example_zl04_mesh5e5_err0/ band03"
+    
+#    checkpoint_dir = os.path.join(home_dir, "checkpoints")
+    
+#    coordinates = load_coordinates(base_sim_dir, run_id)
+
+#    ridges, initial_density, final_density = dredge_scms.find_filaments(
+#        coordinates,
+#        bandwidth=np.radians(bandwidth),
+#        convergence=np.radians(convergence),
+#        distance_metric='haversine',
+#        n_neighbors=neighbours,
+#        comm=COMM_WORLD,
+#        checkpoint_dir=checkpoint_dir,
+#        resume=True,
+#        seed=seed,
+#        mesh_size=mesh_size
+#    )
+
+#    if COMM_WORLD.rank == 0:
+#        final_percentiles = [15] # [0, 10, 25, 40, 50, 60, 75, 85, 90, 95]
+#        initial_percentile = 0
+
+#        # Build density map once (outside the loop)
+#        density_map = build_density_map(base_sim_dir, run_id, 512)
+
+#        # directory for plots
+#        plot_dir = "example_zl04_mesh5e5/plots_by_final_percentile"
+#        os.makedirs(plot_dir, exist_ok=True)
+
+#        for fp in final_percentiles:
+#            ridges_cut = redo_cuts(ridges, initial_density, final_density,
+#                                   initial_percentile=initial_percentile,
+#                                   final_percentile=fp)
+
+#            # Save ridges
+#            out_dir = f"example_zl04_mesh5e5/Ridges_final_p{fp:02d}"
+#            os.makedirs(out_dir, exist_ok=True)
+
+#            h5_filename = os.path.join(out_dir, f"ridges_p{fp:02d}.h5")
+#            with h5py.File(h5_filename, 'w') as f:
+#                f.create_dataset("ridges", data=ridges_cut)
+#                f.create_dataset("initial_density", data=initial_density)
+#                f.create_dataset("final_density", data=final_density)
+
+#            print(f"[rank 0] Saved ridges for final_percentile={fp} to {h5_filename}")
+
+#            # plots
+#            plot_path = os.path.join(plot_dir, f"Ridges_plot_p{fp:02d}.png")
+#            results_plot(density_map, ridges_cut, plot_path)
+
+
+#if __name__ == "__main__":
+#    main()
