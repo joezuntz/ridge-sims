@@ -388,46 +388,96 @@ from ridge_analysis_tools import *
 
 
 
-def read_sim_background(bg_file, stride=1000):
-    """
-    Read background galaxies from simulated catalog (HDF5).
-    Loads the full dataset but only keeps every `stride`-th row.
-    """
-    with h5py.File(bg_file, "r") as f:
-        bg_ra = f["RA"][::stride]
-        bg_ra = (bg_ra + 180) % 360  
-        bg_dec = f["DEC"][::stride]
-        g1 = f["G1"][::stride]
-        g2 = f["G2"][::stride]
-        z_true = f["Z_TRUE"][::stride]
-        weights = f["weight"][::stride] if "weight" in f else np.ones_like(bg_ra)
+#def read_sim_background(bg_file, stride=1000):
+#    """
+#    Read background galaxies from simulated catalog (HDF5).
+#    Loads the full dataset but only keeps every `stride`-th row.
+#    """
+#    with h5py.File(bg_file, "r") as f:
+#        bg_ra = f["RA"][::stride]
+#        bg_ra = (bg_ra + 180) % 360  
+#        bg_dec = f["DEC"][::stride]
+#        g1 = f["G1"][::stride]
+#        g2 = f["G2"][::stride]
+#        z_true = f["Z_TRUE"][::stride]
+#        weights = f["weight"][::stride] if "weight" in f else np.ones_like(bg_ra)
 
-    return bg_ra, bg_dec, g1, g2, z_true, weights
+#    return bg_ra, bg_dec, g1, g2, z_true, weights
 
 
-# --- Parameters ---
-output_dir = "example_zl04_mesh5e5/usefule_plots"
-data_dir   = "example_zl04_mesh5e5/noise"
-os.makedirs(output_dir, exist_ok=True)
+## --- Parameters ---
+#output_dir = "example_zl04_mesh5e5/usefule_plots"
+#data_dir   = "example_zl04_mesh5e5/noise"
+#os.makedirs(output_dir, exist_ok=True)
 
-realization_idx = 0  
-file_path = os.path.join(data_dir, f"source_catalog_noise_{realization_idx:02d}.h5")
+#realization_idx = 0  
+#file_path = os.path.join(data_dir, f"source_catalog_noise_{realization_idx:02d}.h5")
 
-# --- Load one realization ---
-ra, dec, g1, g2, z_true, weights = read_sim_background(file_path, stride=500)
+## --- Load one realization ---
+#ra, dec, g1, g2, z_true, weights = read_sim_background(file_path, stride=500)
 
-# --- Plot galaxies with shear as vectors ---
+## --- Plot galaxies with shear as vectors ---
+#plt.figure(figsize=(8, 6))
+#plt.quiver(np.radians(ra), np.radians(dec), g1, g2,
+#           angles="xy", scale=50, width=0.003, alpha=0.6)
+#plt.xlabel("RA")
+#plt.ylabel("DEC")
+#plt.title(f"Noise Realization {realization_idx}")
+
+
+## --- Save plot ---
+#plot_path = os.path.join(output_dir, f"noise_realization_{realization_idx:02d}.png")
+#plt.savefig(plot_path, dpi=200, bbox_inches="tight")
+#plt.close()
+
+#print(f"Saved plot: {plot_path}")
+
+
+
+
+##############################################
+################ RIDGES PLOTS ##################
+##############################################
+
+
+# --- Configuration ---
+base_label = "zero_err"
+bandwidth = 0.3
+run_id = 1
+fp = 15  # percentile tag 
+
+# ridge file
+home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
+ridges_file = os.path.join(
+    home_dir,
+    f"Ridges_final_p{fp:02d}",
+    f"{base_label}_run_{run_id}_ridges_p{fp:02d}.h5"
+)
+
+print(f"Loading ridge coordinates from:\n  {ridges_file}")
+
+# --- Load ridges ---
+with h5py.File(ridges_file, "r") as f:
+    ridges = f["ridges"][:]
+
+print(f"Loaded ridges: {ridges.shape}")
+
+ra = ridges[:, 1]  
+dec = ridges[:, 0]
+
+# --- scatter plot ---
 plt.figure(figsize=(8, 6))
-plt.quiver(np.radians(ra), np.radians(dec), g1, g2,
-           angles="xy", scale=50, width=0.003, alpha=0.6)
-plt.xlabel("RA")
-plt.ylabel("DEC")
-plt.title(f"Noise Realization {realization_idx}")
+plt.scatter(ra, dec, s=0.3, color="red", alpha=0.6)
+plt.xlabel("Right Ascension [rad]")
+plt.ylabel("Declination [rad]")
+plt.title(f"Ridge coordinates – zero_err, run_{run_id}, bw={bandwidth}")
+plt.grid(alpha=0.3)
 
-
-# --- Save plot ---
-plot_path = os.path.join(output_dir, f"noise_realization_{realization_idx:02d}.png")
-plt.savefig(plot_path, dpi=200, bbox_inches="tight")
+# --- Save the plot ---
+plot_path = f"useful_plots/ridges_zero_err_run{run_id}_bw{bandwidth}.png"
+plt.savefig(plot_path, bbox_inches="tight", dpi=300)
 plt.close()
 
-print(f"Saved plot: {plot_path}")
+print("Ridge coordinate plot saved to {plot_path}")
+
+
