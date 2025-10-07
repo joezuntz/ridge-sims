@@ -474,7 +474,7 @@ plt.title(f"Ridge coordinates – zero_err, run_{run_id}, bw={bandwidth}")
 plt.grid(alpha=0.3)
 
 # --- Save the plot ---
-plot_path = f"useful_plots/ridges_zero_err_run{run_id}_bw{bandwidth}.png"
+plot_path = f"plots/ridges_zero_err_run{run_id}_bw{bandwidth}.png"
 plt.savefig(plot_path, bbox_inches="tight", dpi=300)
 plt.close()
 
