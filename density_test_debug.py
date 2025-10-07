@@ -89,9 +89,26 @@ def inspect_ridges(base_dir, base_label, run_id, final_percentile=15):
     # Rebuild density map
     density_map = load_density_map(base_dir, run_id)
 
-    # Plot
-    plot_name = f"ridges_debug_run{run_id}_p{final_percentile:02d}.png"
-    results_plot(density_map, ridges_cut, plot_name)
+    # Create output directory for plots
+    out_plot_dir = os.path.join("lhc_run_sims_zero_err_10/debug_plots", f"{base_label}_run_{run_id}")
+    os.makedirs(out_plot_dir, exist_ok=True)
+
+    # --- Plot all ridges ---
+    plot_all = os.path.join(out_plot_dir, f"all_ridges_run{run_id}.png")
+    results_plot(density_map, ridges, plot_all, title=f"All Ridges — {base_label} run_{run_id}")
+
+    # --- Plot cut ridges ---
+    plot_cut = os.path.join(out_plot_dir, f"cut_ridges_run{run_id}_p{final_percentile:02d}.png")
+    results_plot(density_map, ridges_cut, plot_cut,
+                 title=f"Cut Ridges (>{final_percentile}%) — {base_label} run_{run_id}")
+
+
+if __name__ == "__main__":
+    base_sim_dir = "lhc_run_sims_zero_err_10"
+    base_label = "zero_err"
+    run_id = 1  # pick any run you want to inspect
+
+    inspect_ridges(base_sim_dir, base_label, run_id, final_percentile=15)
 
 
 if __name__ == "__main__":
