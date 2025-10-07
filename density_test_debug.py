@@ -71,7 +71,7 @@ def inspect_ridges(base_dir, base_label, run_id, final_percentile=15):
     """
     Load existing ridges + densities, apply safe cuts, and plot.
     """
-    ridges_dir = f"simulation_ridges/{base_label}/band_0.1/Ridges_final_p{final_percentile:02d}"
+    ridges_dir = f"simulation_ridges/{base_label}/band_0.3/Ridges_final_p{final_percentile:02d}"
     h5_file = os.path.join(ridges_dir, f"{base_label}_run_{run_id}_ridges_p{final_percentile:02d}.h5")
 
     if not os.path.exists(h5_file):
@@ -111,9 +111,3 @@ if __name__ == "__main__":
     inspect_ridges(base_sim_dir, base_label, run_id, final_percentile=15)
 
 
-if __name__ == "__main__":
-    base_sim_dir = "lhc_run_sims_zero_err_10"
-    base_label = "zero_err"
-    run_id = 1  # pick any run you want to inspect
-
-    inspect_ridges(base_sim_dir, base_label, run_id, final_percentile=15)
