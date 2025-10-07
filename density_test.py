@@ -159,7 +159,7 @@ def main():
     for base_label, base_sim_dir in sim_bases.items():
         # Choose bandwidths depending on the base
         if base_label == "zero_err":
-            bandwidths = [0.3, 0.1]   # this is just so we can have the option to choose for later use!
+            bandwidths = [0.1]   # this is just so we can have the option to choose for later use!
         else:
             bandwidths = [0.3, 0.1]       
 
