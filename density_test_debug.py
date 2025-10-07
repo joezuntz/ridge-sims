@@ -19,7 +19,7 @@ def results_plot(density_map, ridges, plot_filename):
     healpy.projplot(ridges_ra, ridges_dec, 'r.', markersize=1, lonlat=True)
     plt.savefig(plot_filename, bbox_inches='tight', dpi=300)
     plt.close()
-    print(f"✅ Saved plot → {plot_filename}")
+    print(f"Saved plot → {plot_filename}")
 
 
 def redo_cuts_safe(ridges, initial_density, final_density,
