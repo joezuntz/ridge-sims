@@ -61,12 +61,40 @@ def build_density_map(base_sim_dir, run_id, nside, smoothing_degrees=0.5):
     np.add.at(m, pix, 1)
     m1 = healpy.smoothing(m, fwhm=np.radians(smoothing_degrees), verbose=False)
     return m1
+    
+# This introduces a mismatche array 
 
-def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, final_percentile=25):
+#def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, final_percentile=25):
+#    cut1 = initial_density > np.percentile(initial_density, initial_percentile)
+#    cut2 = final_density > np.percentile(final_density, final_percentile)
+#    return ridges[cut1 & cut2]
+
+# fix: 
+
+def redo_cuts(ridges, initial_density, final_density,
+              initial_percentile=0, final_percentile=25):
+    # Ensure all arrays have same length
+    n_min = min(len(ridges), len(initial_density), len(final_density))
+    if len({len(ridges), len(initial_density), len(final_density)}) != 1:
+        print(f"[WARNING] Length mismatch detected: "
+              f"ridges={len(ridges)}, init={len(initial_density)}, final={len(final_density)}")
+        print(f"[INFO] Truncating all arrays to {n_min} entries to match lengths.")
+
+    # Truncate arrays safely using min length
+    ridges = ridges[:n_min]
+    initial_density = initial_density[:n_min]
+    final_density = final_density[:n_min]
+
+    # Compute percentile cuts
     cut1 = initial_density > np.percentile(initial_density, initial_percentile)
     cut2 = final_density > np.percentile(final_density, final_percentile)
-    return ridges[cut1 & cut2]
 
+    ridges_cut = ridges[cut1 & cut2]
+
+    print(f"[DEBUG] Final ridges_cut length = {len(ridges_cut)} "
+          f"(initial: {len(ridges)}, cuts: {cut1.sum()}, {cut2.sum()})")
+
+    return ridges_cut
 
 
 
@@ -84,7 +112,8 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label):
     mesh_size = int(5e5)
 
     # --- Directory structure ---
-    home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
+    #home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
+    home_dir = f"simulation_ridges_comparative_analysis/{base_label}/band_{bandwidth:.1f}"
     os.makedirs(home_dir, exist_ok=True)
     checkpoint_dir = os.path.join(home_dir, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -159,7 +188,7 @@ def main():
     for base_label, base_sim_dir in sim_bases.items():
         # Choose bandwidths depending on the base
         if base_label == "zero_err":
-            bandwidths = [0.1]   # this is just so we can have the option to choose for later use!
+            bandwidths = [0.3, 0.1]     # this structure is just so we can have the option to choose for later use!
         else:
             bandwidths = [0.3, 0.1]       
 
