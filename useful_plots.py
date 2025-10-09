@@ -440,44 +440,92 @@ from ridge_analysis_tools import *
 ##############################################
 
 
-# --- Configuration ---
-base_label = "zero_err"
-bandwidth = 0.3
-run_id = 1
-fp = 15  # percentile tag 
+## --- Configuration ---
+#base_label = "zero_err"
+#bandwidth = 0.3
+#run_id = 1
+#fp = 15  # percentile tag 
 
-# ridge file
-home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
-ridges_file = os.path.join(
-    home_dir,
-    f"Ridges_final_p{fp:02d}",
-    f"{base_label}_run_{run_id}_ridges_p{fp:02d}.h5"
-)
+## ridge file
+#home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
+#ridges_file = os.path.join(
+#    home_dir,
+#    f"Ridges_final_p{fp:02d}",
+#    f"{base_label}_run_{run_id}_ridges_p{fp:02d}.h5"
+#)
 
-print(f"Loading ridge coordinates from:\n  {ridges_file}")
+#print(f"Loading ridge coordinates from:\n  {ridges_file}")
 
-# --- Load ridges ---
-with h5py.File(ridges_file, "r") as f:
-    ridges = f["ridges"][:]
+## --- Load ridges ---
+#with h5py.File(ridges_file, "r") as f:
+#    ridges = f["ridges"][:]
 
-print(f"Loaded ridges: {ridges.shape}")
+#print(f"Loaded ridges: {ridges.shape}")
 
-ra = ridges[:, 1]  
-dec = ridges[:, 0]
+#ra = ridges[:, 1]  
+#dec = ridges[:, 0]
 
-# --- scatter plot ---
+## --- scatter plot ---
+#plt.figure(figsize=(8, 6))
+#plt.scatter(ra, dec, s=0.3, color="red", alpha=0.6)
+#plt.xlabel("Right Ascension [rad]")
+#plt.ylabel("Declination [rad]")
+#plt.title(f"Ridge coordinates – zero_err, run_{run_id}, bw={bandwidth}")
+#plt.grid(alpha=0.3)
+
+## --- Save the plot ---
+#plot_path = f"plots/ridges_zero_err_run{run_id}_bw{bandwidth}.png"
+#plt.savefig(plot_path, bbox_inches="tight", dpi=300)
+#plt.close()
+
+#print("Ridge coordinate plot saved to {plot_path}")
+
+
+
+##############################################
+################ SHEAR PLOTS ##################
+##############################################
+
+
+
+import pandas as pd
+
+# === Configuration ===
+filament_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1"
+fp = 15  # percentile
+
+# === Input files ===
+shear_csv = os.path.join(filament_dir, f"shear_p{fp:02d}.csv")
+shear_flip_csv = os.path.join(filament_dir, f"shear_p{fp:02d}_flipG1.csv")
+
+# === Load the data ===
+def load_shear_data(path):
+    data = pd.read_csv(path)
+    return (
+        data["Bin_Center"],
+        data["Weighted_g_plus"],
+        data["Weighted_g_cross"],
+    )
+
+r, g_plus, g_cross = load_shear_data(shear_csv)
+r_flip, g_plus_flip, g_cross_flip = load_shear_data(shear_flip_csv)
+
+# === Plot configuration ===
 plt.figure(figsize=(8, 6))
-plt.scatter(ra, dec, s=0.3, color="red", alpha=0.6)
-plt.xlabel("Right Ascension [rad]")
-plt.ylabel("Declination [rad]")
-plt.title(f"Ridge coordinates – zero_err, run_{run_id}, bw={bandwidth}")
-plt.grid(alpha=0.3)
+plt.title("Shear Profiles (Zero-error Shrinked Ridge)")
+plt.plot(r, g_plus, label=r"$g_+$", lw=2)
+plt.plot(r, g_cross, label=r"$g_\times$", lw=2, ls="--")
+plt.plot(r_flip, g_plus_flip, label=r"$g_+^{(\mathrm{flipG1})}$", lw=2, color="C2")
+plt.plot(r_flip, g_cross_flip, label=r"$g_\times^{(\mathrm{flipG1})}$", lw=2, ls="--", color="C3")
 
-# --- Save the plot ---
-plot_path = f"plots/ridges_zero_err_run{run_id}_bw{bandwidth}.png"
-plt.savefig(plot_path, bbox_inches="tight", dpi=300)
-plt.close()
+plt.axhline(0, color="gray", lw=1)
+plt.xlabel("Distance [arcmin or Mpc/h]")
+plt.ylabel("Weighted Shear")
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
 
-print("Ridge coordinate plot saved to {plot_path}")
-
+# === Save and show ===
+plt.savefig(os.path.join(filament_dir, f"shear_profiles_p{fp:02d}.png"), dpi=200)
+plt.show()
 
