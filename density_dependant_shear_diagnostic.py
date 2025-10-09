@@ -14,14 +14,14 @@ except ImportError:
     comm = None
 
 # Load background data for shear
-base_sim_dir = "lhc_run_sims"
+base_sim_dir = "lhc_run_sims_zero_err_10"
 run_id = 1
 BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
 
 #filament_dir = "example/filaments"
 #filament_dir = "example_zl04/filaments"
-filament_dir = "example_zl04_mesh5e5/filaments/shrinked_filaments" # added sub-directory for filaments created from shrinked ridges
+filament_dir = f"simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_{run_id}" 
 os.makedirs(filament_dir, exist_ok=True)
 
 final_percentiles = [15] #[0, 10, 25, 40, 50, 60, 75, 85, 90, 95]
@@ -29,8 +29,10 @@ for fp in final_percentiles:
     if comm is None or comm.rank == 0:
         print(f"[rank 0] Processing filaments for final_percentile={fp}")
         #h5_file = f"example_zl04_mesh5e5/Ridges_final_p{fp:02d}/ridges_p{fp:02d}.h5"
-        h5_file = f"example_zl04_mesh5e5/shrinked_ridges/ridges_p{fp:02d}_shrinked.h5" # the shrinked ridge file 
         #h5_file = f"example/Ridges_final_p{fp:02d}/ridges_p{fp:02d}.h5"
+        
+        h5_file = f"simulation_ridges_comparative_analysis/zero_err/band_0.1/Shrinked_Ridges_final_p15/zero_err_run_1_ridges_p15_shrinked.h5 " # the shrinked ridge file 
+        
         with h5py.File(h5_file, 'r') as f:
             Ridges = f["ridges"][:]
 
@@ -48,7 +50,7 @@ for fp in final_percentiles:
     # Shear processing (all ranks)
     filament_h5 = os.path.join(filament_dir, f"filaments_p{fp:02d}.h5")
     shear_csv = os.path.join(filament_dir, f"shear_p{fp:02d}.csv")
-
+    shear_flip_csv = os.path.join(filament_dir, f"shear_p{fp:02d}_flipG1.csv")
     
     # Run with normal signs
     process_shear_sims(filament_h5, BG_data, output_shear_file=shear_csv, background_type='sim')
