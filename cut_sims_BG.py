@@ -2,9 +2,9 @@ import os
 import h5py
 import numpy as np
 
-base_sim_dir = "lhc_run_sims_50"
+base_sim_dir = "lhc_run_sims_zero_err_10"
 
-for run_id in range(1, 9):  # runs 1 through 8 for now
+for run_id in range(1, 10):  
     bg_data_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_0.npy")
     output_file_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
