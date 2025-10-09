@@ -120,17 +120,24 @@ def compute_shear_for_ridges(ridges_h5, bg_data, output_dir):
 def main():
     for band in bands:
         for run_id in run_ids:
-            for variant in ["normal", "zero_error"]:
+            for variant in ["normal", "zero_err"]:  # fixed name
                 if comm is None or comm.rank == 0:
                     print(f"\n--- Running {band}/{variant}/run_{run_id} ---")
 
-                base_dir = os.path.join(base_root, variant, band, f"run_{run_id}")
+                base_dir = os.path.join(base_root, variant, band)
                 shear_calc_dir = os.path.join(base_dir, "shear_calc")
                 os.makedirs(shear_calc_dir, exist_ok=True)
 
                 for ridge_type in ["raw_ridges", "shrinked_ridges"]:
-                    ridge_base = f"{'Ridges_final_p15' if ridge_type == 'raw_ridges' else 'Shrinked_Ridges_final_p15'}"
-                    ridge_h5 = os.path.join(base_dir, ridge_base, f"ridges_p15.h5")
+                    if ridge_type == "raw_ridges":
+                        ridge_subdir = "Ridges_final_p15"
+                        ridge_filename = f"{variant}_run_{run_id}_ridges_p15.h5"
+                    else:
+                        ridge_subdir = "Shrinked_Ridges_final_p15"
+                        ridge_filename = f"{variant}_run_{run_id}_ridges_p15_shrinked.h5"
+
+                    ridge_h5 = os.path.join(base_dir, ridge_subdir, ridge_filename)
+
                     if not os.path.exists(ridge_h5):
                         if comm is None or comm.rank == 0:
                             print(f"[WARN] Ridge file not found: {ridge_h5}, skipping.")
