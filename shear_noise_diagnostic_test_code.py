@@ -142,32 +142,33 @@ def compute_shear_for_ridges(ridges_h5, bg_data, output_dir):
 def main():
     for band in bands:
         for run_id in run_ids:
-            for variant in ["normal", "zero_err"]:
+            for variant in ["normal", "zero_error"]:
                 if comm is None or comm.rank == 0:
                     print(f"\n--- Running {band}/{variant}/run_{run_id} ---")
-
+    
                 base_dir = os.path.join(base_root, variant, band)
                 shear_calc_dir = os.path.join(base_dir, "shear_calc")
                 os.makedirs(shear_calc_dir, exist_ok=True)
-
+    
+                # --- Background file path ---
+                if variant == "zero_error":
+                    bg_data = os.path.join("lhc_run_sims_zero_err_10", f"run_{run_id}", "source_catalog_cutzl04.h5")
+                else:
+                    bg_data = os.path.join("lhc_run_sims", f"run_{run_id}", "source_catalog_cutzl04.h5")
+    
                 for ridge_type in ["raw_ridges", "shrinked_ridges"]:
-                    if ridge_type == "raw_ridges":
-                        ridge_subdir = "Ridges_final_p15"
-                        ridge_filename = f"{variant}_run_{run_id}_ridges_p15.h5"
-                    else:
-                        ridge_subdir = "Shrinked_Ridges_final_p15"
-                        ridge_filename = f"{variant}_run_{run_id}_ridges_p15_shrinked.h5"
-
-                    ridge_h5 = os.path.join(base_dir, ridge_subdir, ridge_filename)
-
+                    ridge_base = (
+                        "Ridges_final_p15" if ridge_type == "raw_ridges" else "Shrinked_Ridges_final_p15"
+                    )
+                    ridge_h5 = os.path.join(base_dir, ridge_base, f"{variant}_run_{run_id}_ridges_p15.h5")
                     if not os.path.exists(ridge_h5):
                         if comm is None or comm.rank == 0:
                             print(f"[WARN] Ridge file not found: {ridge_h5}, skipping.")
                         continue
-
-                    bg_data = os.path.join(base_dir, "source_catalog_cutzl04.h5")
+    
                     output_dir = os.path.join(shear_calc_dir, f"{ridge_type}_shear")
                     compute_shear_for_ridges(ridge_h5, bg_data, output_dir)
+
 
 
 if __name__ == "__main__":
