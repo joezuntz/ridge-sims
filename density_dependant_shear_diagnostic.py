@@ -31,7 +31,7 @@ for fp in final_percentiles:
         #h5_file = f"example_zl04_mesh5e5/Ridges_final_p{fp:02d}/ridges_p{fp:02d}.h5"
         #h5_file = f"example/Ridges_final_p{fp:02d}/ridges_p{fp:02d}.h5"
         
-        h5_file = f"simulation_ridges_comparative_analysis/zero_err/band_0.1/Shrinked_Ridges_final_p15/zero_err_run_1_ridges_p15_shrinked.h5 " # the shrinked ridge file 
+        h5_file = f"simulation_ridges_comparative_analysis/zero_err/band_0.1/Shrinked_Ridges_final_p15/zero_err_run_1_ridges_p15_shrinked.h5" # the shrinked ridge file 
         
         with h5py.File(h5_file, 'r') as f:
             Ridges = f["ridges"][:]
