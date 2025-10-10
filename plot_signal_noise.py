@@ -9,7 +9,9 @@ filament_dir = home_dir # os.path.join(home_dir, "filaments")
 noise_shear_dir = os.path.join(home_dir, "shear")
 plot_dir = os.path.join(home_dir, "shear_plots")
 os.makedirs(plot_dir, exist_ok=True)
-
+if not os.path.exists(plot_dir):
+    print(f"[Warning] Missing shear file for {case} case: {plot_dir}")
+    continue
 final_percentile = 15
 num_realizations = 300
 
@@ -195,8 +197,15 @@ for case, (suffix, shear_csv) in cases.items():
         print(f"[Warning] Missing shear file for {case} case: {shear_csv}")
         continue
 
-    noise_files = [
-        os.path.join(noise_shear_dir, f"shear_noise_p{final_percentile:02d}_{i:02d}{suffix}.csv")
-        for i in range(num_realizations)
-    ]
+    # Automatically detect all existing noise files for this case
+    noise_files = sorted(
+        [
+            os.path.join(noise_shear_dir, f)
+            for f in os.listdir(noise_shear_dir)
+            if f.startswith(f"shear_noise_p{final_percentile:02d}_") and f.endswith(f"{suffix}.csv")
+        ],
+        key=lambda x: int(os.path.basename(x).split("_")[-1].replace(suffix + ".csv", ""))
+    )
+    
+    print(f"[Info] Found {len(noise_files)} noise files for {case} case.")
     run_analysis(case, shear_csv, noise_files, suffix)
