@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
-
+import re
 # --- Configuration ---
 home_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1"
 filament_dir = home_dir # os.path.join(home_dir, "filaments")
@@ -182,6 +182,8 @@ def run_analysis(case_label, shear_csv, noise_files, plot_suffix):
     print(f"Finished analysis for {case_label}. Plots saved with suffix '{plot_suffix}'.")
 
 
+
+
 # ==============================================================#
 # Run both normal and flipG1 cases
 # ==============================================================#
@@ -196,14 +198,26 @@ for case, (suffix, shear_csv) in cases.items():
         continue
 
     # Automatically detect all existing noise files for this case
-    noise_files = sorted(
-        [
-            os.path.join(noise_shear_dir, f)
-            for f in os.listdir(noise_shear_dir)
-            if f.startswith(f"shear_noise_p{final_percentile:02d}_") and f.endswith(f"{suffix}.csv")
-        ],
-        key=lambda x: int(os.path.basename(x).split("_")[-1].replace(suffix + ".csv", ""))
-    )
-    
-    print(f"[Info] Found {len(noise_files)} noise files for {case} case.")
+    noise_files = [
+        os.path.join(noise_shear_dir, f)
+        for f in os.listdir(noise_shear_dir)
+        if f.startswith(f"shear_noise_p{final_percentile:02d}_") and f.endswith(f"{suffix}.csv")
+    ]
+
+    # --- robust numeric sorting ---
+    def extract_index(fname):
+        # Match patterns like _001.csv or _001_flipG1.csv
+        match = re.search(r"_(\d+)(?:_flipG1)?\.csv$", fname)
+        return int(match.group(1)) if match else -1
+
+    noise_files = sorted(noise_files, key=extract_index)
+
+    print(f"[Info] Found {len(noise_files)} noise files for {case} case:")
+    if noise_files:
+        print("   ", [os.path.basename(nf) for nf in noise_files[:5]], "..." if len(noise_files) > 5 else "")
+
+    if not noise_files:
+        print(f"[Warning] No noise files found for {case} case — skipping.")
+        continue
+
     run_analysis(case, shear_csv, noise_files, suffix)
