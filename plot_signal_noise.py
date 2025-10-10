@@ -9,9 +9,7 @@ filament_dir = home_dir # os.path.join(home_dir, "filaments")
 noise_shear_dir = os.path.join(home_dir, "shear")
 plot_dir = os.path.join(home_dir, "shear_plots")
 os.makedirs(plot_dir, exist_ok=True)
-if not os.path.exists(plot_dir):
-    print(f"[Warning] Missing shear file for {case} case: {plot_dir}")
-    continue
+
 final_percentile = 15
 num_realizations = 300
 
