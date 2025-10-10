@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 
 # --- Configuration ---
-filament_dir = "example_zl04_mesh5e5/filaments"
-noise_shear_dir = "example_zl04_mesh5e5/noise/shear"
-plot_dir = "example_zl04_mesh5e5/shear_plots"
+home_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1"
+filament_dir = home_dir # os.path.join(home_dir, "filaments")
+noise_shear_dir = os.path.join(home_dir, "shear")
+plot_dir = os.path.join(home_dir, "shear_plots")
 os.makedirs(plot_dir, exist_ok=True)
 
 final_percentile = 15
