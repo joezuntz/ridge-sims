@@ -488,45 +488,128 @@ from ridge_analysis_tools import *
 
 
 
-import pandas as pd
+#import pandas as pd
 
-# === Configuration ===
-filament_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1"
-fp = 15  # percentile
+## === Configuration ===
+#filament_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1"
+#fp = 15  # percentile
 
-# === Input files ===
-shear_csv = os.path.join(filament_dir, f"shear_p{fp:02d}.csv")
-shear_flip_csv = os.path.join(filament_dir, f"shear_p{fp:02d}_flipG1.csv")
+## === Input files ===
+#shear_csv = os.path.join(filament_dir, f"shear_p{fp:02d}.csv")
+#shear_flip_csv = os.path.join(filament_dir, f"shear_p{fp:02d}_flipG1.csv")
 
-# === Load the data ===
-def load_shear_data(path):
-    data = pd.read_csv(path)
-    return (
-        data["Bin_Center"],
-        data["Weighted_g_plus"],
-        data["Weighted_g_cross"],
-    )
+## === Load the data ===
+#def load_shear_data(path):
+#    data = pd.read_csv(path)
+#    return (
+#        data["Bin_Center"],
+#        data["Weighted_g_plus"],
+#        data["Weighted_g_cross"],
+#    )
 
-r, g_plus, g_cross = load_shear_data(shear_csv)
-r_flip, g_plus_flip, g_cross_flip = load_shear_data(shear_flip_csv)
+#r, g_plus, g_cross = load_shear_data(shear_csv)
+#r_flip, g_plus_flip, g_cross_flip = load_shear_data(shear_flip_csv)
 
-# === Plot configuration ===
-plt.figure(figsize=(8, 6))
-plt.title("Shear Profiles (Zero-error Shrinked Ridge)")
-plt.plot(r, g_plus, label=r"$g_+$", lw=2)
-plt.plot(r, g_cross, label=r"$g_\times$", lw=2, ls="--")
-plt.plot(r_flip, g_plus_flip, label=r"$g_+^{(\mathrm{flipG1})}$", lw=2, color="C2")
-plt.plot(r_flip, g_cross_flip, label=r"$g_\times^{(\mathrm{flipG1})}$", lw=2, ls="--", color="C3")
+## === Plot configuration ===
+#plt.figure(figsize=(8, 6))
+#plt.title("Shear Profiles (Zero-error Shrinked Ridge)")
+#plt.plot(r, g_plus, label=r"$g_+$", lw=2)
+#plt.plot(r, g_cross, label=r"$g_\times$", lw=2, ls="--")
+#plt.plot(r_flip, g_plus_flip, label=r"$g_+^{(\mathrm{flipG1})}$", lw=2, color="C2")
+#plt.plot(r_flip, g_cross_flip, label=r"$g_\times^{(\mathrm{flipG1})}$", lw=2, ls="--", color="C3")
 
-plt.axhline(0, color="gray", lw=1)
-plt.xlabel("Distance [arcmin]")
-plt.ylabel("Weighted Shear")
-plt.legend()
-plt.grid(True, alpha=0.3)
+#plt.axhline(0, color="gray", lw=1)
+#plt.xlabel("Distance [arcmin]")
+#plt.ylabel("Weighted Shear")
+#plt.legend()
+#plt.grid(True, alpha=0.3)
+#plt.tight_layout()
+
+## === Save and show ===
+#plt.savefig(os.path.join(filament_dir, f"shear_profiles_p{fp:02d}.png"), dpi=200)
+#plt.show()
+
+##simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1/shear_profiles_p15.png
+
+
+
+
+############################################
+########### G1 and G2 ######################
+############################################
+
+import os
+import h5py
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --- background reader ---
+def read_sim_background(bg_file, stride=1000):
+    """
+    Read background galaxies from simulated catalog (HDF5).
+    Loads the full dataset but only keeps every `stride`-th row.
+    """
+    with h5py.File(bg_file, "r") as f:
+        bg_ra = f["RA"][::stride]
+        bg_ra = (bg_ra + 180) % 360  
+        bg_dec = f["DEC"][::stride]
+        g1 = f["G1"][::stride]
+        g2 = f["G2"][::stride]
+        z_true = f["Z_TRUE"][::stride]
+        weights = f["weight"][::stride] if "weight" in f else np.ones_like(bg_ra)
+
+    return bg_ra, bg_dec, g1, g2, z_true, weights
+
+
+# --- Configuration ---
+base_sim_dir = "lhc_run_sims_zero_err_10"
+run_id = 1
+bg_file = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
+
+output_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1/useful_plots"
+os.makedirs(output_dir, exist_ok=True)
+
+# --- Load data ---
+bg_ra, bg_dec, g1, g2, z_true, weights = read_sim_background(bg_file, stride=1000)
+print(f"Loaded {len(g1)} background galaxies (every 1000th sample).")
+
+# ============================================================
+# Plot 1: g1 vs g2 scatter
+# ============================================================
+plt.figure(figsize=(6, 6))
+plt.scatter(g1, g2, s=3, alpha=0.5, c="royalblue")
+plt.axhline(0, color='gray', lw=1, ls='--')
+plt.axvline(0, color='gray', lw=1, ls='--')
+plt.xlabel(r"$g_1$")
+plt.ylabel(r"$g_2$")
+plt.title("Shear components $g_1$ vs $g_2$")
+plt.grid(True, ls="--", alpha=0.3)
 plt.tight_layout()
+save_path1 = os.path.join(output_dir, "scatter_g1_vs_g2.png")
+plt.savefig(save_path1, dpi=300)
+plt.close()
+print(f"Saved {save_path1}")
 
-# === Save and show ===
-plt.savefig(os.path.join(filament_dir, f"shear_profiles_p{fp:02d}.png"), dpi=200)
-plt.show()
+# ============================================================
+# Plot 2: RA–Dec map for g1 and g2 (side-by-side subplots)
+# ============================================================
+fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
-#simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1/shear_profiles_p15.png
+sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=3, cmap="coolwarm", alpha=0.6)
+ax[0].set_title(r"$g_1$ distribution")
+ax[0].set_xlabel("RA [deg]")
+ax[0].set_ylabel("Dec [deg]")
+plt.colorbar(sc1, ax=ax[0], label=r"$g_1$")
+
+sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=3, cmap="coolwarm", alpha=0.6)
+ax[1].set_title(r"$g_2$ distribution")
+ax[1].set_xlabel("RA [deg]")
+plt.colorbar(sc2, ax=ax[1], label=r"$g_2$")
+
+plt.tight_layout()
+save_path2 = os.path.join(output_dir, "sky_g1_g2_maps.png")
+plt.savefig(save_path2, dpi=300)
+plt.close()
+print(f"Saved {save_path2}")
+
+
