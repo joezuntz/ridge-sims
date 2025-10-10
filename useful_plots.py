@@ -519,7 +519,7 @@ plt.plot(r_flip, g_plus_flip, label=r"$g_+^{(\mathrm{flipG1})}$", lw=2, color="C
 plt.plot(r_flip, g_cross_flip, label=r"$g_\times^{(\mathrm{flipG1})}$", lw=2, ls="--", color="C3")
 
 plt.axhline(0, color="gray", lw=1)
-plt.xlabel("Distance [arcmin or Mpc/h]")
+plt.xlabel("Distance [arcmin]")
 plt.ylabel("Weighted Shear")
 plt.legend()
 plt.grid(True, alpha=0.3)
@@ -529,3 +529,4 @@ plt.tight_layout()
 plt.savefig(os.path.join(filament_dir, f"shear_profiles_p{fp:02d}.png"), dpi=200)
 plt.show()
 
+#simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1/shear_profiles_p15.png
