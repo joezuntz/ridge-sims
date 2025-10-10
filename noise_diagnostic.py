@@ -6,7 +6,7 @@ import time
 from ridge_analysis_tools import *
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
-
+import re
 try:
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
@@ -14,17 +14,18 @@ except ImportError:
     comm = None
 
 # === Input paths ===
-base_sim_dir = "lhc_run_sims"
+base_sim_dir = "lhc_run_sims_zero_err_10"
 run_id = 1
 BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
 # Noise realizations directory
 noise_dir = "example_zl04_mesh5e5/noise"
-shear_noise_dir = os.path.join(noise_dir, "shear")
+noise_shear = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1"
+shear_noise_dir = os.path.join(noise_shear, "shear")
 os.makedirs(shear_noise_dir, exist_ok=True)
 
 # Filament output directory
-filament_dir = "example_zl04_mesh5e5/filaments"
+filament_dir = f"simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_{run_id}" 
 os.makedirs(filament_dir, exist_ok=True)
 
 # === Run for chosen percentiles ===
@@ -32,7 +33,7 @@ final_percentiles = [15]   # can loop over multiple percentiles if needed
 for fp in final_percentiles:
     if comm is None or comm.rank == 0:
         print(f"[rank 0] Processing filaments for final_percentile={fp}")
-        h5_file = f"example_zl04_mesh5e5/Ridges_final_p{fp:02d}/ridges_p{fp:02d}.h5"
+        h5_file = f"simulation_ridges_comparative_analysis/zero_err/band_0.1/Shrinked_Ridges_final_p15/zero_err_run_1_ridges_p15_shrinked.h5"
         with h5py.File(h5_file, 'r') as f:
             Ridges = f["ridges"][:]
 
@@ -59,9 +60,32 @@ for fp in final_percentiles:
                        flip_g1=True, background_type='sim')
 
     # === Loop over noise realizations ===
-    noise_files = sorted(
-    [f for f in os.listdir(noise_dir) if f.startswith("source_catalog_noise_") and f.endswith(".h5")],
-    key=lambda x: int(x.split("_")[-1].replace(".h5","")))
+    # === Automatically select a subset of noise realizations ===
+    # You can control how many to take:
+    n_realizations_to_use = 50 
+    start_realization = 1       # or set to any number to start from there
+    
+    # Find all available noise files
+    all_noise_files = sorted(
+        [f for f in os.listdir(noise_dir)
+         if re.match(r"source_catalog_noise_\d+\.h5", f)],
+        key=lambda x: int(re.search(r"(\d+)\.h5", x).group(1))
+    )
+    
+    # Extract realization numbers
+    all_ids = [int(re.search(r"(\d+)\.h5", f).group(1)) for f in all_noise_files]
+    
+    # Filter based on start index and limit how many to use
+    selected_ids = [rid for rid in all_ids if rid >= start_realization][:n_realizations_to_use]
+    
+    # Build list of existing files
+    noise_files = [
+        f"source_catalog_noise_{rid}.h5"
+        for rid in selected_ids
+        if os.path.exists(os.path.join(noise_dir, f"source_catalog_noise_{rid}.h5"))
+    ]
+    
+    print(f"Processing {len(noise_files)} noise realizations: {selected_ids}")
 
     all_noise_profiles = []
     all_noise_flip_profiles = []
