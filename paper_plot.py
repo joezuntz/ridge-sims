@@ -94,8 +94,8 @@ def load_ridges_from_h5(path):
 ridge_file = "simulation_ridges_comparative_analysis/zero_err/band_0.1/Ridges_final_p15/zero_err_run_1_ridges_p15.h5"
 ridges = load_ridges_from_h5(ridge_file)
 # === 1. Select region ===
-ra_min, ra_max = 3.2, 3.5       
-dec_min, dec_max = -1.0, -0.8
+ra_min, ra_max = 3.35, 3.50       
+dec_min, dec_max = -1.0, -0.925
 mask = (ridges[:,1] >= ra_min) & (ridges[:,1] <= ra_max) & \
        (ridges[:,0] >= dec_min) & (ridges[:,0] <= dec_max)
 subset = ridges[mask]
@@ -129,8 +129,8 @@ plt.figure(figsize=(6,6))
 for i, j in mst.edges():
     x = [subset[i,1], subset[j,1]]
     y = [subset[i,0], subset[j,0]]
-    plt.plot(x, y, color='gray', lw=0.5, alpha=0.6)
-plt.scatter(subset[:,1], subset[:,0], s=4, color='black', alpha=0.6)
+    plt.plot(x, y, color='gray', lw=0.5, alpha=1)
+plt.scatter(subset[:,1], subset[:,0], s=4, color='black', alpha=1)
 plt.scatter(subset[branches,1], subset[branches,0], color='red', s=2)
 plt.xlabel("RA")
 plt.ylabel("DEC")
