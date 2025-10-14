@@ -94,7 +94,7 @@ def load_ridges_from_h5(path):
 ridge_file = "simulation_ridges_comparative_analysis/zero_err/band_0.1/Ridges_final_p15/zero_err_run_1_ridges_p15.h5"
 ridges = load_ridges_from_h5(ridge_file)
 # === 1. Select region ===
-ra_min, ra_max = 3.2, 3.5   
+ra_min, ra_max = 2.0, 5.0     
 dec_min, dec_max = -1.0, -0.8
 mask = (ridges[:,1] >= ra_min) & (ridges[:,1] <= ra_max) & \
        (ridges[:,0] >= dec_min) & (ridges[:,0] <= dec_max)
