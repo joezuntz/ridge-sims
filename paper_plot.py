@@ -6,6 +6,21 @@ from sklearn.cluster import DBSCAN
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
 import h5py
+import os, sys
+
+
+
+############################################################
+############################################################
+
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.getcwd())
+
+
+############################################################
+############################################################
+
+
 # === MST & DBSCAN functions ===
 def build_mst(points, k=10):
     tree = KDTree(points)
@@ -76,7 +91,7 @@ def load_ridges_from_h5(path):
 
 
 
-ridge_file = "WL_Mehraveh/ridge-sims/simulation_ridges_comparative_analysis/zero_err/band_0.1/Ridges_final_p15/zero_err_run_1_ridges_p15.h5"
+ridge_file = "simulation_ridges_comparative_analysis/zero_err/band_0.1/Ridges_final_p15/zero_err_run_1_ridges_p15.h5"
 ridges = load_ridges_from_h5(ridge_file)
 # === 1. Select region ===
 ra_min, ra_max = 3.2, 3.5   
@@ -94,9 +109,6 @@ labels = segment_filaments_with_dbscan(subset, segments, eps=0.02, min_samples=5
 
 # === 3. PLOTS ===
 
-
-
-import os
 
 # --- Define output folder ---
 output_dir = os.path.join("simulation_ridges_comparative_analysis", "paper_plots")
