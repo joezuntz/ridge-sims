@@ -5,7 +5,7 @@ from sklearn.neighbors import KDTree
 from sklearn.cluster import DBSCAN
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
-
+import h5py
 # === MST & DBSCAN functions ===
 def build_mst(points, k=10):
     tree = KDTree(points)
