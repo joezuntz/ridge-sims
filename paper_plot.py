@@ -94,7 +94,7 @@ def load_ridges_from_h5(path):
 ridge_file = "simulation_ridges_comparative_analysis/zero_err/band_0.1/Ridges_final_p15/zero_err_run_1_ridges_p15.h5"
 ridges = load_ridges_from_h5(ridge_file)
 # === 1. Select region ===
-ra_min, ra_max = 2.0, 5.0     
+ra_min, ra_max = 3.2, 3.5       
 dec_min, dec_max = -1.0, -0.8
 mask = (ridges[:,1] >= ra_min) & (ridges[:,1] <= ra_max) & \
        (ridges[:,0] >= dec_min) & (ridges[:,0] <= dec_max)
@@ -117,7 +117,7 @@ os.makedirs(output_dir, exist_ok=True)
 
 # (a) Ridge points
 plt.figure(figsize=(6,6))
-plt.scatter(subset[:,1], subset[:,0], s=4, color='black')
+plt.scatter(subset[:,1], subset[:,0], s=2, color='black')
 plt.xlabel("RA ")
 plt.ylabel("DEC")
 #plt.title("Ridge Points")
@@ -131,11 +131,11 @@ for i, j in mst.edges():
     y = [subset[i,0], subset[j,0]]
     plt.plot(x, y, color='gray', lw=0.5, alpha=0.6)
 plt.scatter(subset[:,1], subset[:,0], s=4, color='black', alpha=0.6)
-plt.scatter(subset[branches,1], subset[branches,0], color='red', s=15, label='Branches')
+plt.scatter(subset[branches,1], subset[branches,0], color='red', s=2)
 plt.xlabel("RA")
 plt.ylabel("DEC")
 #plt.title("MST with Branch Points")
-plt.legend()
+
 #plt.gca().invert_xaxis()
 plt.savefig(os.path.join(output_dir, "mst_branches.png"), dpi=300)
 
@@ -145,12 +145,11 @@ unique_labels = np.unique(labels)
 for lab in unique_labels:
     mask = labels == lab
     if lab == -1:
-        plt.scatter(subset[mask,1], subset[mask,0], color='lightgray', s=5, label='Noise')
+        plt.scatter(subset[mask,1], subset[mask,0], color='lightgray', s=1, label='Noise')
     else:
-        plt.scatter(subset[mask,1], subset[mask,0], s=5, label=f"Filament {lab}")
+        plt.scatter(subset[mask,1], subset[mask,0], s=1)
 plt.xlabel("RA")
 plt.ylabel("DEC")
 #plt.title("Segmented filament")
-plt.legend(markerscale=3, bbox_to_anchor=(1.05, 1), loc='upper left')
 #plt.gca().invert_xaxis()
 plt.savefig(os.path.join(output_dir, "dbscan_filaments.png"), dpi=300)
