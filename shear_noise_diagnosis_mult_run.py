@@ -159,7 +159,7 @@ def process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp):
     all_noise_profiles = []
     all_noise_flip_profiles = []
 
-    # 'shear_noise_dir' is already defined as 'noise_shear_dir'
+    # loop over noise
     for nf in noise_files:
         try:
             realization_id = int(nf.split("_")[-1].replace(".h5", ""))
@@ -175,7 +175,7 @@ def process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp):
         shear_noise_flip_csv_i = os.path.join(noise_shear_dir, f"shear_noise_p{fp:02d}_{realization_id_str}_flipG1.csv")
 
         # Compute shear for this noise realization
-        # CORRECTED: Used 'filaments_h5' instead of 'filament_h5'
+        
         process_shear_sims(filaments_h5, noise_file, output_shear_file=shear_noise_csv_i, background_type='sim')
         process_shear_sims(filaments_h5, noise_file, output_shear_file=shear_noise_flip_csv_i,
                            flip_g1=True, background_type='sim')
@@ -205,8 +205,7 @@ def process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp):
         g_plus_subtracted_flip = shear_data_flip[:, 2] - mean_noise_flip[:, 2]
         g_cross_subtracted_flip = shear_data_flip[:, 3] - mean_noise_flip[:, 3]
 
-        # VITAL CORRECTION: Use filament_segments_dir for output of subtracted files
-        # (This was the undefined variable 'filament_dir' in your original code)
+        
         
         # Save subtracted signal        
         subtracted_data = np.column_stack((
@@ -261,12 +260,12 @@ def main():
     base_label = "zero_err"
     bandwidth = 0.1
     run_id = 1
-    fp = 15  # percentile
+    fp = 15  # final percentile
 
     # The band_path is the base directory for the entire bandwidth run
     band_path = os.path.join(base_root, base_label, f"band_{bandwidth}")
     
-    # Build path to the ridge file (Shrinked) - This is the INPUT FILE location
+    # Build path to the ridge file (Shrinked) -> This is the INPUT FILE location
     ridge_dir = os.path.join(band_path, f"Shrinked_Ridges_final_p{fp}")
     ridge_file = os.path.join(ridge_dir, f"{base_label}_run_{run_id}_ridges_p{fp}_shrinked.h5")
 
