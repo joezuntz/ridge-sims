@@ -93,6 +93,16 @@ segments = split_mst_at_branches(mst, branches)
 labels = segment_filaments_with_dbscan(subset, segments, eps=0.02, min_samples=5)
 
 # === 3. PLOTS ===
+
+
+
+import os
+
+# --- Define output folder ---
+output_dir = os.path.join("simulation_ridges_comparative_analysis", "paper_plots")
+os.makedirs(output_dir, exist_ok=True)
+
+
 # (a) Ridge points
 plt.figure(figsize=(6,6))
 plt.scatter(subset[:,1], subset[:,0], s=4, color='black')
@@ -100,7 +110,7 @@ plt.xlabel("RA ")
 plt.ylabel("DEC")
 #plt.title("Ridge Points")
 #plt.gca().invert_xaxis()  
-plt.show()
+plt.savefig(os.path.join(output_dir, "ridges_points.png"), dpi=300)
 
 # (b) MST + branch points
 plt.figure(figsize=(6,6))
@@ -115,7 +125,7 @@ plt.ylabel("DEC")
 #plt.title("MST with Branch Points")
 plt.legend()
 #plt.gca().invert_xaxis()
-plt.show()
+plt.savefig(os.path.join(output_dir, "mst_branches.png"), dpi=300)
 
 # (c) DBSCAN-labeled filaments
 plt.figure(figsize=(6,6))
@@ -131,4 +141,4 @@ plt.ylabel("DEC")
 #plt.title("Segmented filament")
 plt.legend(markerscale=3, bbox_to_anchor=(1.05, 1), loc='upper left')
 #plt.gca().invert_xaxis()
-plt.show()
+plt.savefig(os.path.join(output_dir, "dbscan_filaments.png"), dpi=300)
