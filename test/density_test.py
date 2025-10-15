@@ -1,10 +1,27 @@
-import os
+import os, sys
 import numpy as np
 import h5py
 import dredge_scms
 import healpy
 import matplotlib.pyplot as plt
 from mpi4py.MPI import COMM_WORLD
+
+
+############################################################
+############################################################
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.getcwd())
+
+
+############################################################
+############################################################
+
+
+
+
+
+
 
 def load_coordinates(base_sim_dir, run_id, shift=True):
     """
@@ -113,7 +130,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label):
 
     # --- Directory structure ---
     #home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
-    home_dir = f"simulation_ridges_comparative_analysis/{base_label}/band_{bandwidth:.1f}"
+    home_dir = f"simulation_ridges_comparative_analysis_test/{base_label}/band_{bandwidth:.1f}"
     os.makedirs(home_dir, exist_ok=True)
     checkpoint_dir = os.path.join(home_dir, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
