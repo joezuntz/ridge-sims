@@ -4,43 +4,69 @@ import numpy as np
 from ridge_sims.steps import step1, step2, step3
 from ridge_sims.config import Config
 
+
+
+
+
+############################################################
+############################################################
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.getcwd())
+
+
+############################################################
+############################################################
+
+
+
+
+
 if __name__ == "__main__":
     # --- Configuration for direct execution ---
     if len(sys.argv) == 1:  # run without arguments
-        num_runs = 10
-        base_sim_dir = "lhc_run_sims_zero_err_10"
-        first_run_dir = os.path.join(base_sim_dir, "run_1")
-        first_run_shell_cl_file = os.path.join(first_run_dir, "shell_cls.npy")
 
-        for run_id in range(1, num_runs + 1):
-            run_dir = os.path.join(base_sim_dir, f"run_{run_id}")
-            seed = run_id
-            np.random.seed(seed)
+        # Run both noise configurations automatically
+        for include_shape_noise in [False, True]:
+            base_sim_dir = (
+                "lhc_run_sims_zero_err_10"
+                if not include_shape_noise
+                else "lhc_run_sims_with_err_10"
+            )
 
-            config = Config(sim_dir=run_dir, seed=seed, include_shape_noise=False)
-            config.save()
+            num_runs = 10
+            first_run_dir = os.path.join(base_sim_dir, "run_1")
+            first_run_shell_cl_file = os.path.join(first_run_dir, "shell_cls.npy")
 
-            print(f"Starting local run {run_id} in directory: {run_dir} with seed: {seed}")
+            for run_id in range(1, num_runs + 1):
+                run_dir = os.path.join(base_sim_dir, f"run_{run_id}")
+                seed = run_id
+                np.random.seed(seed)
 
-            if run_id == 1:
-                # For the first run, always execute step 1
-                print(f"Running step 1 for the first run.")
-                step1(config)
-                config.shell_cl_file = first_run_shell_cl_file
-            else:
-                # For subsequent runs, check if the shell_cl file from the first run exists
-                if os.path.exists(first_run_shell_cl_file):
-                    print(f"Found shell_cl file from the first run at {first_run_shell_cl_file}. Skipping step 1.")
+                # Pass flag to Config
+                config = Config(sim_dir=run_dir, seed=seed, include_shape_noise=include_shape_noise)
+                config.save()
+
+                print(f"\n=== include_shape_noise={include_shape_noise} | run {run_id} ===")
+
+                if run_id == 1:
+                    print("Running step 1 for the first run.")
+                    step1(config)
                     config.shell_cl_file = first_run_shell_cl_file
                 else:
-                    print(f"Warning: shell_cl file from the first run not found. Running step 1 for run {run_id}.")
-                    step1(config)
-                    config.shell_cl_file = first_run_shell_cl_file # Still point to the expected location
+                    if os.path.exists(first_run_shell_cl_file):
+                        print(f"Found shell_cl file from the first run at {first_run_shell_cl_file}. Skipping step 1.")
+                        config.shell_cl_file = first_run_shell_cl_file
+                    else:
+                        print(f"Warning: shell_cl file from the first run not found. Running step 1 for run {run_id}.")
+                        step1(config)
+                        config.shell_cl_file = first_run_shell_cl_file
 
-            step2(config)
-            step3(config)
+                step2(config)
+                step3(config)
 
-            print(f"Finished local run {run_id}")
+                print(f"Finished local run {run_id} for include_shape_noise={include_shape_noise}")
+
 
     # --- Configuration for Slurm execution ---
     elif len(sys.argv) == 4:
