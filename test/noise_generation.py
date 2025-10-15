@@ -1,7 +1,20 @@
-import os
+import os,sys
 import h5py
 import numpy as np
 from ridge_analysis_tools import *
+
+
+
+
+############################################################
+############################################################
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.getcwd())
+
+
+############################################################
+############################################################
 
 
 

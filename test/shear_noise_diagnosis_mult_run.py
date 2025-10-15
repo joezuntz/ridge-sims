@@ -6,13 +6,13 @@ Produces, per bandwidth:
     raw_ridges_shear/
       filament_segments/
       noise_shear/
-    shrinked_ridges_shear/
+    contracted_ridges_shear/
       filament_segments/
       noise_shear/
 .
 """
 
-import os
+import os, sys
 import re
 import time
 import glob
@@ -23,10 +23,23 @@ from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
 
+
+############################################################
+############################################################
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.getcwd())
+
+
+############################################################
+############################################################
+
+
+
 # ------------------------
 # Config
 # ------------------------
-base_root = "simulation_ridges_comparative_analysis"   # Base folder: zero_err/normal folders
+base_root = "simulation_ridges_comparative_analysis_test"   # Base folder: zero_err/normal folders
 noise_dir = "example_zl04_mesh5e5/noise"               # Noise realizations folder
 final_percentiles = [15]                               # percentiles to process
 nside_for_plots = 512
@@ -67,7 +80,7 @@ def ensure_dirs(*paths):
 # ------------------------
 def process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp):
     """
-    ridge_file: path to original ridge .h5 (raw or shrinked)
+    ridge_file: path to original ridge .h5 (raw or contracted)
     base_label: "zero_err" or "normal"
     band_path: full path to the band directory (e.g., base_root/zero_err/band_0.1)
     run_id: integer run id
@@ -76,14 +89,14 @@ def process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp):
     # Setup shear_calc directories: for ref: directly under band_path 
     shear_calc_dir = os.path.join(band_path, "shear_calc")
     raw_dir = os.path.join(shear_calc_dir, "raw_ridges_shear")
-    shrink_dir = os.path.join(shear_calc_dir, "shrinked_ridges_shear")
+    contracted_dir = os.path.join(shear_calc_dir, "contracted_ridges_shear")
 
-    # Determine whether this ridge_file is raw or shrinked by parent folder name    
+    # Determine whether this ridge_file is raw or contracted by parent folder name    
     parent_folder = os.path.basename(os.path.dirname(ridge_file))
-    is_shrink = "Shrinked" in os.path.basename(os.path.dirname(ridge_file)) or "_shrinked" in os.path.basename(ridge_file)
+    is_contracted = "contracted" in os.path.basename(os.path.dirname(ridge_file)) or "_contracted" in os.path.basename(ridge_file)
 
-    target_group = "shrinked_ridges_shear" if is_shrink else "raw_ridges_shear"
-    target_base = shrink_dir if is_shrink else raw_dir
+    target_group = "contracted_ridges_shear" if is_contracted else "raw_ridges_shear"
+    target_base = contracted_dir if is_contracted else raw_dir
 
     filament_segments_dir = os.path.join(target_base, "filament_segments")
     noise_shear_dir = os.path.join(target_base, "noise_shear")
@@ -265,9 +278,9 @@ def main():
     # The band_path is the base directory for the entire bandwidth run
     band_path = os.path.join(base_root, base_label, f"band_{bandwidth}")
     
-    # Build path to the ridge file (Shrinked) -> This is the INPUT FILE location
-    ridge_dir = os.path.join(band_path, f"Shrinked_Ridges_final_p{fp}")
-    ridge_file = os.path.join(ridge_dir, f"{base_label}_run_{run_id}_ridges_p{fp}_shrinked.h5")
+    # Build path to the ridge file (contracteded) -> This is the INPUT FILE location
+    ridge_dir = os.path.join(band_path, f"contracted_Ridges_final_p{fp}")
+    ridge_file = os.path.join(ridge_dir, f"{base_label}_run_{run_id}_ridges_p{fp}_contracted.h5")
 
     if not os.path.exists(ridge_file):
         raise FileNotFoundError(f" Ridge file not found: {ridge_file}")
@@ -278,7 +291,7 @@ def main():
     print(f"   run_id = {run_id}")
     print(f"   percentile = {fp}")
 
-    # Run the main processing on the shrinked ridges    
+    # Run the main processing on the contracted ridges    
     # NOTE: band_path is passed as the root for creating the shear_calc directory.
     process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp)
 
@@ -322,14 +335,14 @@ if __name__ == "__main__":
 #                continue
 #            band_path = os.path.join(base_path, band_folder)
 
-#            # Look for both raw and shrinked ridge folders
+#            # Look for both raw and contracted ridge folders
 #            ridge_folders = []
 #            raw_ridges_dir = os.path.join(band_path, "Ridges_final_p15")
 #            if os.path.isdir(raw_ridges_dir):
 #                ridge_folders.append(raw_ridges_dir)
-#            shrinked_ridges_dir = os.path.join(band_path, "Shrinked_Ridges_final_p15")
-#            if os.path.isdir(shrinked_ridges_dir):
-#                ridge_folders.append(shrinked_ridges_dir)
+#            contracted_ridges_dir = os.path.join(band_path, "contracted_Ridges_final_p15")
+#            if os.path.isdir(contracted_ridges_dir):
+#                ridge_folders.append(contracted_ridges_dir)
 
 #            if len(ridge_folders) == 0:
 #                continue
@@ -344,7 +357,7 @@ if __name__ == "__main__":
 
 #            print(f"\n[INFO] Processing base={base_label} band={band_folder}, ridge_dirs={ridge_folders}")
 
-#            # Process each ridge folder (raw or shrinked)
+#            # Process each ridge folder (raw or contracted)
 #            for rdir in ridge_folders:
 #                # list ridge files
 #                ridge_files = sorted([f for f in os.listdir(rdir) if f.endswith(".h5")])
