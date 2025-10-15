@@ -23,7 +23,7 @@ base_sim_dir = "lhc_run_sims"
 run_id = 1
 bg_data_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
-output_dir = "example_zl04_mesh5e5/noise"
+output_dir = "simulation_ridges_comparative_analysis_test/noise"
 os.makedirs(output_dir, exist_ok=True)
 
 # Loop to generate 300 different noise realizations

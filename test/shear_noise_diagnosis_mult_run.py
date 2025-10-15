@@ -40,7 +40,7 @@ sys.path.insert(0, os.getcwd())
 # Config
 # ------------------------
 base_root = "simulation_ridges_comparative_analysis_test"   # Base folder: zero_err/normal folders
-noise_dir = "example_zl04_mesh5e5/noise"               # Noise realizations folder
+noise_dir = "simulation_ridges_comparative_analysis_test/noise"               # Noise realizations folder
 final_percentiles = [15]                               # percentiles to process
 nside_for_plots = 512
 
