@@ -196,7 +196,7 @@ def main():
     # --- Simulation bases ---
     sim_bases = {
         "zero_err": "lhc_run_sims_zero_err_10",   # zero-error simulations
-        "normal": "lhc_run_sims"                  # normal (noisy) simulations
+        "normal": "lhc_run_sims_with_err_10"                  # normal (noisy) simulations
     }
 
     # --- Run IDs ---

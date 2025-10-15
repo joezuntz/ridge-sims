@@ -19,7 +19,7 @@ sys.path.insert(0, os.getcwd())
 
 
 # --- Application ---
-base_sim_dir = "lhc_run_sims"
+base_sim_dir = "lhc_run_sims_with_err_10"
 run_id = 1
 bg_data_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 

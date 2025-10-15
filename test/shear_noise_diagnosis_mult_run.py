@@ -47,7 +47,7 @@ nside_for_plots = 512
 #  base_label -> Simulation directory for BG catalogs
 sim_bases_map = {
     "zero_err": "lhc_run_sims_zero_err_10",
-    "normal": "lhc_run_sims"
+    "normal": "lhc_run_sims_with_err_10"
 }
 
 # background catalog template -- uses run_id
