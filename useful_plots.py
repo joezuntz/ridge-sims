@@ -601,7 +601,7 @@ print(f"Loaded {len(g1)} background galaxies (every 1000th sample).")
 
 ra_center = np.mean(bg_ra)
 dec_center = np.mean(bg_dec)
-zoom_size = 10.0  # degrees
+zoom_size = 5.0  # degrees
 
 ra_min, ra_max = ra_center - zoom_size / 2, ra_center + zoom_size / 2
 dec_min, dec_max = dec_center - zoom_size / 2, dec_center + zoom_size / 2
@@ -611,7 +611,7 @@ dec_min, dec_max = dec_center - zoom_size / 2, dec_center + zoom_size / 2
 fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
 # g1 map
-sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=0.5, cmap="coolwarm", alpha=1)
+sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=0.1, cmap="coolwarm", alpha=1)
 ax[0].set_xlim(ra_min, ra_max)
 ax[0].set_ylim(dec_min, dec_max)
 ax[0].set_title(r"$g_1$ distribution (10° × 10° zoom)")
@@ -620,7 +620,7 @@ ax[0].set_ylabel("Dec [deg]")
 plt.colorbar(sc1, ax=ax[0], label=r"$g_1$")
 
 # g2 map
-sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=0.5, cmap="coolwarm", alpha=1)
+sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=0.1, cmap="coolwarm", alpha=1)
 ax[1].set_xlim(ra_min, ra_max)
 ax[1].set_ylim(dec_min, dec_max)
 ax[1].set_title(r"$g_2$ distribution (10° × 10° zoom)")
@@ -629,7 +629,7 @@ plt.colorbar(sc2, ax=ax[1], label=r"$g_2$")
 
 plt.tight_layout()
 
-save_path2 = os.path.join(output_dir, "sky_g1_g2_maps_zoom10deg.png")
+save_path2 = os.path.join(output_dir, "sky_g1_g2_maps_zoom5deg.png")
 plt.savefig(save_path2, dpi=300)
 plt.close()
 print(f"Saved {save_path2}")
