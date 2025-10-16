@@ -544,7 +544,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # --- background reader ---
-def read_sim_background(bg_file, stride=500):
+def read_sim_background(bg_file, stride=10):
     """
     Read background galaxies from simulated catalog (HDF5).
     Loads the full dataset but only keeps every `stride`-th row.
@@ -611,16 +611,16 @@ dec_min, dec_max = dec_center - zoom_size / 2, dec_center + zoom_size / 2
 fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
 # g1 map
-sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=0.8, cmap="coolwarm", alpha=1)
+sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=0.5, cmap="coolwarm", alpha=1)
 ax[0].set_xlim(ra_min, ra_max)
 ax[0].set_ylim(dec_min, dec_max)
-ax[0].set_title(r"$g_1$ distribution (5° × 5° zoom)")
+ax[0].set_title(r"$g_1$ distribution (10° × 10° zoom)")
 ax[0].set_xlabel("RA [deg]")
 ax[0].set_ylabel("Dec [deg]")
 plt.colorbar(sc1, ax=ax[0], label=r"$g_1$")
 
 # g2 map
-sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=0.8, cmap="coolwarm", alpha=1)
+sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=0.5, cmap="coolwarm", alpha=1)
 ax[1].set_xlim(ra_min, ra_max)
 ax[1].set_ylim(dec_min, dec_max)
 ax[1].set_title(r"$g_2$ distribution (10° × 10° zoom)")
