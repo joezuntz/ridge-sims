@@ -570,7 +570,7 @@ output_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_tes
 os.makedirs(output_dir, exist_ok=True)
 
 # --- Load data ---
-bg_ra, bg_dec, g1, g2, z_true, weights = read_sim_background(bg_file, stride=1000)
+bg_ra, bg_dec, g1, g2, z_true, weights = read_sim_background(bg_file, stride=10)
 print(f"Loaded {len(g1)} background galaxies (every 1000th sample).")
 
 ## ============================================================
