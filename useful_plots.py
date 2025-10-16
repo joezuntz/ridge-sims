@@ -544,7 +544,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # --- background reader ---
-def read_sim_background(bg_file, stride=1000):
+def read_sim_background(bg_file, stride=500):
     """
     Read background galaxies from simulated catalog (HDF5).
     Loads the full dataset but only keeps every `stride`-th row.
