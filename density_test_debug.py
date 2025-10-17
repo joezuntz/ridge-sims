@@ -186,7 +186,7 @@ def main():
     }
 
     # --- Run IDs ---
-    run_ids = range(1, 10)  # run_1 through run_9
+    run_ids = range(1, 2)  
 
     for base_label, base_sim_dir in sim_bases.items():
         # Choose bandwidths depending on the base
