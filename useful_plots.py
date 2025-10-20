@@ -544,7 +544,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # --- background reader ---
-def read_sim_background(bg_file, stride=1000):
+def read_sim_background(bg_file, stride=10):
     """
     Read background galaxies from simulated catalog (HDF5).
     Loads the full dataset but only keeps every `stride`-th row.
@@ -570,46 +570,87 @@ output_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_tes
 os.makedirs(output_dir, exist_ok=True)
 
 # --- Load data ---
-bg_ra, bg_dec, g1, g2, z_true, weights = read_sim_background(bg_file, stride=1000)
+bg_ra, bg_dec, g1, g2, z_true, weights = read_sim_background(bg_file, stride=10)
 print(f"Loaded {len(g1)} background galaxies (every 1000th sample).")
 
-# ============================================================
-# Plot 1: g1 vs g2 scatter
-# ============================================================
-plt.figure(figsize=(6, 6))
-plt.scatter(g1, g2, s=3, alpha=0.5, c="royalblue")
-plt.axhline(0, color='gray', lw=1, ls='--')
-plt.axvline(0, color='gray', lw=1, ls='--')
-plt.xlabel(r"$g_1$")
-plt.ylabel(r"$g_2$")
-plt.title("Shear components $g_1$ vs $g_2$")
-plt.grid(True, ls="--", alpha=0.3)
-plt.tight_layout()
-save_path1 = os.path.join(output_dir, "scatter_g1_vs_g2.png")
-plt.savefig(save_path1, dpi=300)
-plt.close()
-print(f"Saved {save_path1}")
+## ============================================================
+## Plot 1: g1 vs g2 scatter
+## ============================================================
+#plt.figure(figsize=(6, 6))
+#plt.scatter(g1, g2, s=3, alpha=0.5, c="royalblue")
+#plt.axhline(0, color='gray', lw=1, ls='--')
+#plt.axvline(0, color='gray', lw=1, ls='--')
+#plt.xlabel(r"$g_1$")
+#plt.ylabel(r"$g_2$")
+#plt.title("Shear components $g_1$ vs $g_2$")
+#plt.grid(True, ls="--", alpha=0.3)
+#plt.tight_layout()
+#save_path1 = os.path.join(output_dir, "scatter_g1_vs_g2.png")
+#plt.savefig(save_path1, dpi=300)
+#plt.close()
+#print(f"Saved {save_path1}")
 
 # ============================================================
 # Plot 2: RA–Dec map for g1 and g2 (side-by-side subplots)
 # ============================================================
+
+
+
+# ----- Define Zoom window --------
+
+
+ra_center = np.mean(bg_ra)
+dec_center = np.mean(bg_dec)
+zoom_size = 5.0  # degrees
+
+ra_min, ra_max = ra_center - zoom_size / 2, ra_center + zoom_size / 2
+dec_min, dec_max = dec_center - zoom_size / 2, dec_center + zoom_size / 2
+
+
+# --- Create plots ---
 fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
-sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=3, cmap="coolwarm", alpha=0.6)
-ax[0].set_title(r"$g_1$ distribution")
+# g1 map
+sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=0.1, cmap="coolwarm", alpha=1)
+ax[0].set_xlim(ra_min, ra_max)
+ax[0].set_ylim(dec_min, dec_max)
+ax[0].set_title(r"$g_1$ distribution (10° × 10° zoom)")
 ax[0].set_xlabel("RA [deg]")
 ax[0].set_ylabel("Dec [deg]")
 plt.colorbar(sc1, ax=ax[0], label=r"$g_1$")
 
-sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=3, cmap="coolwarm", alpha=0.6)
-ax[1].set_title(r"$g_2$ distribution")
+# g2 map
+sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=0.1, cmap="coolwarm", alpha=1)
+ax[1].set_xlim(ra_min, ra_max)
+ax[1].set_ylim(dec_min, dec_max)
+ax[1].set_title(r"$g_2$ distribution (10° × 10° zoom)")
 ax[1].set_xlabel("RA [deg]")
 plt.colorbar(sc2, ax=ax[1], label=r"$g_2$")
 
 plt.tight_layout()
-save_path2 = os.path.join(output_dir, "sky_g1_g2_maps.png")
+
+save_path2 = os.path.join(output_dir, "sky_g1_g2_maps_zoom5deg.png")
 plt.savefig(save_path2, dpi=300)
 plt.close()
 print(f"Saved {save_path2}")
+
+#fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
+
+#sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=0.8, cmap="coolwarm", alpha=0.6)
+#ax[0].set_title(r"$g_1$ distribution")
+#ax[0].set_xlabel("RA [deg]")
+#ax[0].set_ylabel("Dec [deg]")
+#plt.colorbar(sc1, ax=ax[0], label=r"$g_1$")
+
+#sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=0.8, cmap="coolwarm", alpha=0.6)
+#ax[1].set_title(r"$g_2$ distribution")
+#ax[1].set_xlabel("RA [deg]")
+#plt.colorbar(sc2, ax=ax[1], label=r"$g_2$")
+
+#plt.tight_layout()
+#save_path2 = os.path.join(output_dir, "sky_g1_g2_maps.png")
+#plt.savefig(save_path2, dpi=300)
+#plt.close()
+#print(f"Saved {save_path2}")
 
 
