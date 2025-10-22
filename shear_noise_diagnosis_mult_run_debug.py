@@ -129,9 +129,9 @@ def process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp):
     shear_flip_csv = os.path.join(filament_segments_dir, f"shear_run{run_id}_p{fp:02d}_flipG1.csv")
 
     # run on signal (background)    
-    process_shear_sims(filaments_h5, bg_file, output_shear_file=shear_csv, background_type='sim', plot_output_dir=filament_segments_dir)
+    process_shear_sims(filaments_h5, bg_file, output_shear_file=shear_csv, background_type='sim', comm=comm, plot_output_dir=None)
     # flipped signal    
-    process_shear_sims(filaments_h5, bg_file, output_shear_file=shear_flip_csv, flip_g1=True, background_type='sim')
+    process_shear_sims(filaments_h5, bg_file, output_shear_file=shear_flip_csv, flip_g1=True, background_type='sim', comm=comm)
 
     # === Loop over noise realizations ===    
     # === Automatically select a subset of noise realizations ===    
@@ -181,9 +181,9 @@ def process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp):
 
         # Compute shear for this noise realization
         
-        process_shear_sims(filaments_h5, noise_file, output_shear_file=shear_noise_csv_i, background_type='sim')
+        process_shear_sims(filaments_h5, noise_file, output_shear_file=shear_noise_csv_i, background_type='sim', comm=comm)
         process_shear_sims(filaments_h5, noise_file, output_shear_file=shear_noise_flip_csv_i,
-                           flip_g1=True, background_type='sim')
+                           flip_g1=True, background_type='sim', comm=comm)
 
         # Load into memory     
         all_noise_profiles.append(np.loadtxt(shear_noise_csv_i, delimiter=",", skiprows=1))
