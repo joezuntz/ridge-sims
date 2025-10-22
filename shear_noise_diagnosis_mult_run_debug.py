@@ -129,7 +129,7 @@ def process_single_ridge_file(ridge_file, base_label, band_path, run_id, fp):
     shear_flip_csv = os.path.join(filament_segments_dir, f"shear_run{run_id}_p{fp:02d}_flipG1.csv")
 
     # run on signal (background)    
-    process_shear_sims(filaments_h5, bg_file, output_shear_file=shear_csv, background_type='sim', comm=comm, plot_output_dir=None)
+    process_shear_sims(filaments_h5, bg_file, output_shear_file=shear_csv, background_type='sim', comm=comm)
     # flipped signal    
     process_shear_sims(filaments_h5, bg_file, output_shear_file=shear_flip_csv, flip_g1=True, background_type='sim', comm=comm)
 
