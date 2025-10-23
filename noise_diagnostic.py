@@ -14,18 +14,19 @@ except ImportError:
     comm = None
 
 # === Input paths ===
-base_sim_dir = "lhc_run_sims_zero_err_10"
+#base_sim_dir = "lhc_run_sims_zero_err_10"
+base_sim_dir = "lhc_run_sims"
 run_id = 1
 BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
 # Noise realizations directory
 noise_dir = "example_zl04_mesh5e5/noise"
-noise_shear = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1"
+noise_shear = "simulation_ridges_comparative_analysis_debug/normal/band_0.1/shear_test_run_{run_id}"
 shear_noise_dir = os.path.join(noise_shear, "shear")
 os.makedirs(shear_noise_dir, exist_ok=True)
 
 # Filament output directory
-filament_dir = f"simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_{run_id}" 
+filament_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/shear_test_run_{run_id}" 
 os.makedirs(filament_dir, exist_ok=True)
 
 # === Run for chosen percentiles ===
@@ -33,7 +34,7 @@ final_percentiles = [15]   # can loop over multiple percentiles if needed
 for fp in final_percentiles:
     if comm is None or comm.rank == 0:
         print(f"[rank 0] Processing filaments for final_percentile={fp}")
-        h5_file = f"simulation_ridges_comparative_analysis/zero_err/band_0.1/Shrinked_Ridges_final_p15/zero_err_run_1_ridges_p15_shrinked.h5"
+        h5_file = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/contracted_Ridges_final_p15/normal_run_1_ridges_p15_contracted.h5"
         with h5py.File(h5_file, 'r') as f:
             Ridges = f["ridges"][:]
 
@@ -55,9 +56,12 @@ for fp in final_percentiles:
     shear_flip_csv = os.path.join(filament_dir, f"shear_p{fp:02d}_flipG1.csv")
 
     # --- Run with signal ---
-    process_shear_sims(filament_h5, BG_data, output_shear_file=shear_csv, background_type='sim', plot_output_dir=filament_dir)
-    process_shear_sims(filament_h5, BG_data, output_shear_file=shear_flip_csv,
-                       flip_g1=True, background_type='sim')
+    process_shear_sims(filament_h5, bg_data, output_shear_file=shear_csv, k=1, num_bins=20, comm=comm,
+                       flip_g1=False, flip_g2=False, background_type=None, nside_coverage=32,
+                       min_distance_arcmin=1.0, max_distance_arcmin=60.0)
+    process_shear_sims(filament_h5, bg_data, output_shear_file = shear_flip_csv, k=1, num_bins=20, comm=comm,
+                       flip_g1=True, flip_g2=False, background_type=None, nside_coverage=32,
+                       min_distance_arcmin=1.0, max_distance_arcmin=60.0)
 
     # === Loop over noise realizations ===
     # === Automatically select a subset of noise realizations ===
@@ -99,9 +103,12 @@ for fp in final_percentiles:
         shear_noise_flip_csv_i = os.path.join(shear_noise_dir, f"shear_noise_p{fp:02d}_{realization_id}_flipG1.csv")
 
         # Compute shear for this noise realization
-        process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_csv_i, background_type='sim')
-        process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_flip_csv_i,
-                           flip_g1=True, background_type='sim')
+        process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_csv_i, k=1, num_bins=20, comm=comm,
+                       flip_g1=False, flip_g2=False, background_type=None, nside_coverage=32,
+                       min_distance_arcmin=1.0, max_distance_arcmin=60.0)
+        process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_flip_csv_i, k=1, num_bins=20, comm=comm,
+                       flip_g1=True, flip_g2=False, background_type=None, nside_coverage=32,
+                       min_distance_arcmin=1.0, max_distance_arcmin=60.0)
 
         # Load into memory 
         all_noise_profiles.append(np.loadtxt(shear_noise_csv_i, delimiter=",", skiprows=1))
