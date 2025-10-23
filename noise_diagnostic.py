@@ -57,10 +57,10 @@ for fp in final_percentiles:
 
     # --- Run with signal ---
     process_shear_sims(filament_h5, BG_data, output_shear_file=shear_csv, k=1, num_bins=20, comm=comm,
-                       flip_g1=False, flip_g2=False, background_type=None, nside_coverage=32,
+                       flip_g1=False, flip_g2=False, background_type='sim', nside_coverage=32,
                        min_distance_arcmin=1.0, max_distance_arcmin=60.0)
     process_shear_sims(filament_h5, BG_data, output_shear_file = shear_flip_csv, k=1, num_bins=20, comm=comm,
-                       flip_g1=True, flip_g2=False, background_type=None, nside_coverage=32,
+                       flip_g1=True, flip_g2=False, background_type='sim', nside_coverage=32,
                        min_distance_arcmin=1.0, max_distance_arcmin=60.0)
 
     # === Loop over noise realizations ===
@@ -104,10 +104,10 @@ for fp in final_percentiles:
 
         # Compute shear for this noise realization
         process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_csv_i, k=1, num_bins=20, comm=comm,
-                       flip_g1=False, flip_g2=False, background_type=None, nside_coverage=32,
+                       flip_g1=False, flip_g2=False, background_type='sim', nside_coverage=32,
                        min_distance_arcmin=1.0, max_distance_arcmin=60.0)
         process_shear_sims(filament_h5, noise_file, output_shear_file=shear_noise_flip_csv_i, k=1, num_bins=20, comm=comm,
-                       flip_g1=True, flip_g2=False, background_type=None, nside_coverage=32,
+                       flip_g1=True, flip_g2=False, background_type='sim', nside_coverage=32,
                        min_distance_arcmin=1.0, max_distance_arcmin=60.0)
 
         # Load into memory 
