@@ -278,7 +278,7 @@ def get_nearby_sources(raf, decf, pixel_regions, nside_coverage):
             weight.append(w_s)
 
     if len(ra) == 0:
-        return None, None, None, None, None
+        return None, None, None, None, None, None, None # Add 2xNone because othewise it has problem unpacking all 7 argument
 
     ra = np.concatenate(ra)
     dec = np.concatenate(dec)
