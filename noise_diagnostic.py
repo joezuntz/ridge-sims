@@ -21,7 +21,7 @@ BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5
 
 # Noise realizations directory
 noise_dir = "example_zl04_mesh5e5/noise"
-noise_shear = "simulation_ridges_comparative_analysis_debug/normal/band_0.1/shear_test_run_{run_id}"
+noise_shear = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/shear_test_run_{run_id}"
 shear_noise_dir = os.path.join(noise_shear, "shear")
 os.makedirs(shear_noise_dir, exist_ok=True)
 
