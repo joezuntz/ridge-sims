@@ -56,10 +56,10 @@ for fp in final_percentiles:
     shear_flip_csv = os.path.join(filament_dir, f"shear_p{fp:02d}_flipG1.csv")
 
     # --- Run with signal ---
-    process_shear_sims(filament_h5, bg_data, output_shear_file=shear_csv, k=1, num_bins=20, comm=comm,
+    process_shear_sims(filament_h5, BG_data, output_shear_file=shear_csv, k=1, num_bins=20, comm=comm,
                        flip_g1=False, flip_g2=False, background_type=None, nside_coverage=32,
                        min_distance_arcmin=1.0, max_distance_arcmin=60.0)
-    process_shear_sims(filament_h5, bg_data, output_shear_file = shear_flip_csv, k=1, num_bins=20, comm=comm,
+    process_shear_sims(filament_h5, BG_data, output_shear_file = shear_flip_csv, k=1, num_bins=20, comm=comm,
                        flip_g1=True, flip_g2=False, background_type=None, nside_coverage=32,
                        min_distance_arcmin=1.0, max_distance_arcmin=60.0)
 
