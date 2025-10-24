@@ -222,10 +222,17 @@ for i in range(len(y_positions) - 1):
     y_start = y_positions[i]
     y_end = y_positions[i + 1] + box_h
     ax.annotate(
-        "",
-        xy=(x_mid, y_end + 0.1),
-        xytext=(x_mid, y_start - 0.1),
-        arrowprops=dict(arrowstyle="->", lw=1.8, color="black",shrinkA),
+    "",
+    xy=(x_mid, y_end + 0.1),          # arrow tip (near the next box)
+    xytext=(x_mid, y_start - 0.1),    # arrow tail (below the previous box)
+    arrowprops=dict(
+    arrowstyle="->",
+    lw=1.8,
+    color="black",
+    mutation_scale=20,
+    shrinkA=12,
+    shrinkB=12,
+    ),
     )
 
 # Limits
