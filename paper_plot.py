@@ -93,7 +93,7 @@ def load_ridges_from_h5(path):
 ############################################################
 # === MAIN EXECUTION ===
 ############################################################
-home_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/Ridges_final_p15"
+home_dir = f"simulation_ridges_comparative_analysis_debug/normal_mesh_x2/band_0.1/Ridges_final_p15"
 ridge_file = os.path.join(home_dir,f"normal_run_1_ridges_p15.h5")
 ridges = load_ridges_from_h5(ridge_file)
 
