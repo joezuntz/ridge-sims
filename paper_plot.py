@@ -93,8 +93,8 @@ def load_ridges_from_h5(path):
 ############################################################
 # === MAIN EXECUTION ===
 ############################################################
-
-ridge_file = "simulation_ridges_comparative_analysis/zero_err/band_0.1/Ridges_final_p15/zero_err_run_1_ridges_p15.h5"
+home_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/Ridges_final_p15"
+ridge_file = os.path.join(home_dir,f"normal_run_1_ridges_p15.h5")
 ridges = load_ridges_from_h5(ridge_file)
 
 # === 1. Select region ===
@@ -213,4 +213,4 @@ flowchart_path = os.path.join(output_dir, "pipeline_overview.png")
 plt.savefig(flowchart_path, dpi=300, bbox_inches='tight')
 plt.close()
 
-print(f"flowchart saved to: {fancy_path}")
+print(f"flowchart saved to: {flowchart_path}")
