@@ -225,7 +225,7 @@ for i in range(len(y_positions) - 1):
         "",
         xy=(x_mid, y_end + 0.1),
         xytext=(x_mid, y_start - 0.1),
-        arrowprops=dict(arrowstyle="->", lw=1.8, color="black"),
+        arrowprops=dict(arrowstyle="->", lw=1.8, color="black",shrinkA),
     )
 
 # Limits
