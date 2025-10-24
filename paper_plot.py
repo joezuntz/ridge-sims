@@ -163,54 +163,80 @@ img_paths = [
 ]
 titles = ["Ridge Points", "MST + Branches construction", "DBSCAN Filaments"]
 
-fig, ax = plt.subplots(figsize=( 4, 10))
+
+# Create vertical figure
+fig, ax = plt.subplots(figsize=(4, 10))
 ax.axis("off")
 
-x_positions = 0
-y_pos = [0, 4.2, 8.4]
+x_pos = 0
+y_positions = [8.4, 4.2, 0.0]  # from top to bottom
 box_w, box_h = 3.2, 3.2
 
-for x, img_path, title in zip(x_positions, img_paths, titles):
+# Draw boxes + images
+for y, img_path, title in zip(y_positions, img_paths, titles):
     img = mpimg.imread(img_path)
+
     # Drop shadow
     shadow = patches.FancyBboxPatch(
-        (x+0.1, y_pos-0.1), box_w, box_h,
+        (x_pos + 0.1, y - 0.1),
+        box_w,
+        box_h,
         boxstyle="round,pad=0.02",
-        linewidth=0, facecolor="gray", alpha=0.3, zorder=1
+        linewidth=0,
+        facecolor="gray",
+        alpha=0.3,
+        zorder=1,
     )
     ax.add_patch(shadow)
+
     # Main box
     box = patches.FancyBboxPatch(
-        (x, y_pos), box_w, box_h,
+        (x_pos, y),
+        box_w,
+        box_h,
         boxstyle="round,pad=0.02",
-        linewidth=1.2, edgecolor="black",
-        facecolor="white", zorder=2
+        linewidth=1.2,
+        edgecolor="black",
+        facecolor="white",
+        zorder=2,
     )
     ax.add_patch(box)
-    # Image inside
-    ax.imshow(img, extent=(x, x+box_w, y_pos, y_pos+box_h), zorder=3)
-    # Title
-    ax.text(x + box_w/2, y_pos - 0.4, title, ha='center', va='bottom', fontsize=11, weight='semibold')
 
-# Arrows
-for i in range(2):
-    x_start = x_positions[i] + box_w
-    x_end = x_positions[i+1]
-    y_mid = y_pos + box_h/2
-    ax.annotate(
-        "",
-        xy=(x_end - 0.1, y_mid),
-        xytext=(x_start + 0.1, y_mid),
-        arrowprops=dict(arrowstyle="->", lw=1.8, color="black", shrinkA=0, shrinkB=0),
+    # Image inside
+    ax.imshow(img, extent=(x_pos, x_pos + box_w, y, y + box_h), zorder=3)
+
+    # Title
+    ax.text(
+        x_pos + box_w / 2,
+        y - 0.4,
+        title,
+        ha="center",
+        va="bottom",
+        fontsize=11,
+        weight="semibold",
     )
 
-ax.set_xlim(-0.5, 12)
-ax.set_ylim(-1, 4)
-ax.set_aspect('equal')
+# Arrows between boxes
+for i in range(len(y_positions) - 1):
+    x_mid = x_pos + box_w / 2
+    y_start = y_positions[i]
+    y_end = y_positions[i + 1] + box_h
+    ax.annotate(
+        "",
+        xy=(x_mid, y_end + 0.1),
+        xytext=(x_mid, y_start - 0.1),
+        arrowprops=dict(arrowstyle="->", lw=1.8, color="black"),
+    )
+
+# Limits
+ax.set_xlim(-0.5, box_w + 0.5)
+ax.set_ylim(-1, max(y_positions) + box_h + 1)
+ax.set_aspect("equal")
 plt.tight_layout()
 
+# Save
 flowchart_path = os.path.join(output_dir, "pipeline_overview.png")
-plt.savefig(flowchart_path, dpi=300, bbox_inches='tight')
+plt.savefig(flowchart_path, dpi=300, bbox_inches="tight")
 plt.close()
 
-print(f"flowchart saved to: {flowchart_path}")
+print(f"Flowchart saved to: {flowchart_path}")
