@@ -221,7 +221,7 @@ for i in range(len(y_positions) - 1):
     x_mid = x_pos + box_w/2
 
     # y_tail should be ABOVE y_tip for a downward arrow
-    y_tail = y_positions[i] - 0.2                          # just below upper box
+    y_tail = y_positions[i] - 0.6                          # just below upper box
     y_tip  = y_positions[i+1] + box_h + 0.2                # just above lower box
 
     # sanity: ensure tail is higher than tip; if not, swap
