@@ -219,8 +219,8 @@ for y, img_path, title in zip(y_positions, img_paths, titles):
 # Arrows between boxes
 for i in range(len(y_positions) - 1):
     x_mid = x_pos + box_w / 2
-    y_start = y_positions[i]
-    y_end = y_positions[i + 1] + box_h
+    y_start = y_positions[i] - 0.8    # start arrow lower (moves arrow down)
+    y_end   = y_positions[i + 1] + box_h + 0.3  # small lift at target
     ax.annotate(
     "",
     xy=(x_mid, y_end + 0.1),          # arrow tip (near the next box)
