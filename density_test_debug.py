@@ -112,11 +112,11 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label):
     neighbours = 5000
     convergence = 1e-5
     seed = 3482364
-    mesh_size = int(5e5)
+    mesh_size = int(2*5e5)
 
     # --- Directory structure ---
     #home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
-    home_dir = f"simulation_ridges_comparative_analysis_debug/{base_label}/band_{bandwidth:.1f}"
+    home_dir = f"simulation_ridges_comparative_analysis_debug/{base_label}_mesh_x2/band_{bandwidth:.1f}"
     os.makedirs(home_dir, exist_ok=True)
     checkpoint_dir = os.path.join(home_dir, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
