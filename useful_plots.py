@@ -470,7 +470,9 @@ plt.title(f"Ridge Coordinates, bw={bandwidth}")
 plt.grid(alpha=0.3)
 
 # --- Save the plot ---
-plot_path = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots/ridges_run{run_id}_bw{bandwidth}.png"
+plot_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots"
+os.makedirs(output_dir, exist_ok=True)
+plot_path = os.path.join(plot_dir, f"ridges_run{run_id}_bw{bandwidth}.png")
 plt.savefig(plot_path, bbox_inches="tight", dpi=300)
 plt.close()
 
