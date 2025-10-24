@@ -163,11 +163,11 @@ img_paths = [
 ]
 titles = ["Ridge Points", "MST + Branches construction", "DBSCAN Filaments"]
 
-fig, ax = plt.subplots(figsize=(10, 4))
+fig, ax = plt.subplots(figsize=( 4, 10))
 ax.axis("off")
 
-x_positions = [0, 4.2, 8.4]
-y_pos = 0
+x_positions = 0
+y_pos = [0, 4.2, 8.4]
 box_w, box_h = 3.2, 3.2
 
 for x, img_path, title in zip(x_positions, img_paths, titles):
@@ -190,7 +190,7 @@ for x, img_path, title in zip(x_positions, img_paths, titles):
     # Image inside
     ax.imshow(img, extent=(x, x+box_w, y_pos, y_pos+box_h), zorder=3)
     # Title
-    ax.text(x + box_w/2, y_pos - 0.4, title, ha='center', va='top', fontsize=11, weight='semibold')
+    ax.text(x + box_w/2, y_pos - 0.4, title, ha='center', va='bottom', fontsize=11, weight='semibold')
 
 # Arrows
 for i in range(2):
