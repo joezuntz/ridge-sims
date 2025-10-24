@@ -112,7 +112,7 @@ segments = split_mst_at_branches(mst, branches)
 labels = segment_filaments_with_dbscan(subset, segments, eps=0.02, min_samples=5)
 
 # === 3. PLOTS ===
-output_dir = os.path.join("simulation_ridges_comparative_analysis", "paper_plots")
+output_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots"
 os.makedirs(output_dir, exist_ok=True)
 
 # (a) Ridge points
