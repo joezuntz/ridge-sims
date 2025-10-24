@@ -441,44 +441,40 @@ from ridge_analysis_tools import *
 
 
 ## --- Configuration ---
-#base_label = "zero_err"
-#bandwidth = 0.3
-#run_id = 1
-#fp = 15  # percentile tag 
+base_label = "zero_err"
+bandwidth = 0.1
+run_id = 1
+fp = 15  # percentile tag 
 
-## ridge file
-#home_dir = f"simulation_ridges/{base_label}/band_{bandwidth:.1f}"
-#ridges_file = os.path.join(
-#    home_dir,
-#    f"Ridges_final_p{fp:02d}",
-#    f"{base_label}_run_{run_id}_ridges_p{fp:02d}.h5"
-#)
+# ridge file
+home_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/contracted_Ridges_final_p15"
+ridges_file = os.path.join(home_dir,f"normal_run_1_ridges_p15_contracted.h5")
 
-#print(f"Loading ridge coordinates from:\n  {ridges_file}")
+print(f"Loading ridge coordinates from:\n  {ridges_file}")
 
-## --- Load ridges ---
-#with h5py.File(ridges_file, "r") as f:
-#    ridges = f["ridges"][:]
+# --- Load ridges ---
+with h5py.File(ridges_file, "r") as f:
+    ridges = f["ridges"][:]
 
-#print(f"Loaded ridges: {ridges.shape}")
+print(f"Loaded ridges: {ridges.shape}")
 
-#ra = ridges[:, 1]  
-#dec = ridges[:, 0]
+ra = ridges[:, 1]  
+dec = ridges[:, 0]
 
-## --- scatter plot ---
-#plt.figure(figsize=(8, 6))
-#plt.scatter(ra, dec, s=0.3, color="red", alpha=0.6)
-#plt.xlabel("Right Ascension [rad]")
-#plt.ylabel("Declination [rad]")
-#plt.title(f"Ridge coordinates – zero_err, run_{run_id}, bw={bandwidth}")
-#plt.grid(alpha=0.3)
+# --- scatter plot ---
+plt.figure(figsize=(8, 6))
+plt.scatter(ra, dec, s=0.1, color="orange", alpha=0.6)
+plt.xlabel("Right Ascension")
+plt.ylabel("Declination")
+plt.title(f"Ridge Coordinates, bw={bandwidth}")
+plt.grid(alpha=0.3)
 
-## --- Save the plot ---
-#plot_path = f"plots/ridges_zero_err_run{run_id}_bw{bandwidth}.png"
-#plt.savefig(plot_path, bbox_inches="tight", dpi=300)
-#plt.close()
+# --- Save the plot ---
+plot_path = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots/ridges_run{run_id}_bw{bandwidth}.png"
+plt.savefig(plot_path, bbox_inches="tight", dpi=300)
+plt.close()
 
-#print("Ridge coordinate plot saved to {plot_path}")
+print("Ridge coordinate plot saved to {plot_path}")
 
 
 
@@ -538,40 +534,64 @@ from ridge_analysis_tools import *
 ########### G1 and G2 ######################
 ############################################
 
-import os
-import h5py
-import numpy as np
-import matplotlib.pyplot as plt
+#import os
+#import h5py
+#import numpy as np
+#import matplotlib.pyplot as plt
 
-# --- background reader ---
-def read_sim_background(bg_file, stride=10):
-    """
-    Read background galaxies from simulated catalog (HDF5).
-    Loads the full dataset but only keeps every `stride`-th row.
-    """
-    with h5py.File(bg_file, "r") as f:
-        bg_ra = f["RA"][::stride]
-        bg_ra = (bg_ra + 180) % 360  
-        bg_dec = f["DEC"][::stride]
-        g1 = f["G1"][::stride]
-        g2 = f["G2"][::stride]
-        z_true = f["Z_TRUE"][::stride]
-        weights = f["weight"][::stride] if "weight" in f else np.ones_like(bg_ra)
+## --- background reader ---
+#def read_sim_background(bg_file, stride=10):
+#    """
+#    Read background galaxies from simulated catalog (HDF5).
+#    Loads the full dataset but only keeps every `stride`-th row.
+#    """
+#    with h5py.File(bg_file, "r") as f:
+#        bg_ra = f["RA"][::stride]
+#        bg_ra = (bg_ra + 180) % 360  
+#        bg_dec = f["DEC"][::stride]
+#        g1 = f["G1"][::stride]
+#        g2 = f["G2"][::stride]
+#        z_true = f["Z_TRUE"][::stride]
+#        weights = f["weight"][::stride] if "weight" in f else np.ones_like(bg_ra)
 
-    return bg_ra, bg_dec, g1, g2, z_true, weights
+#    return bg_ra, bg_dec, g1, g2, z_true, weights
 
 
-# --- Configuration ---
-base_sim_dir = "lhc_run_sims_zero_err_10"
-run_id = 1
-bg_file = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
+## --- Configuration ---
+#base_sim_dir = "lhc_run_sims_zero_err_10"
+#run_id = 1
+#bg_file = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
-output_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1/useful_plots"
-os.makedirs(output_dir, exist_ok=True)
+#output_dir = "simulation_ridges_comparative_analysis/zero_err/band_0.1/shear_test_run_1/useful_plots"
+#os.makedirs(output_dir, exist_ok=True)
 
-# --- Load data ---
-bg_ra, bg_dec, g1, g2, z_true, weights = read_sim_background(bg_file, stride=10)
-print(f"Loaded {len(g1)} background galaxies (every 1000th sample).")
+## --- Load data ---
+#bg_ra, bg_dec, g1, g2, z_true, weights = read_sim_background(bg_file, stride=10)
+#print(f"Loaded {len(g1)} background galaxies (every 1000th sample).")
+
+
+
+## Apply cuts
+#z_mask = z_true_full > 0.4 & z_true_full < 0.45
+#valid_mask = (
+#    np.isfinite(bg_ra_full)
+#    & np.isfinite(bg_dec_full)
+#    & np.isfinite(g1_values_full)
+#    & np.isfinite(g2_values_full)
+#    & np.isfinite(weights_full)
+#    & z_mask
+#)
+
+## Filtered arrays
+#bg_ra_filtered = bg_ra_full[valid_mask]
+#bg_dec_filtered = bg_dec_full[valid_mask]
+#g1_values_filtered = g1_values_full[valid_mask]
+#g2_values_filtered = g2_values_full[valid_mask]
+#z_true_filtered = z_true_full[valid_mask]
+#weights_filtered = weights_full[valid_mask]
+
+
+
 
 ## ============================================================
 ## Plot 1: g1 vs g2 scatter
@@ -599,40 +619,40 @@ print(f"Loaded {len(g1)} background galaxies (every 1000th sample).")
 # ----- Define Zoom window --------
 
 
-ra_center = np.mean(bg_ra)
-dec_center = np.mean(bg_dec)
-zoom_size = 5.0  # degrees
+#ra_center = np.mean(bg_ra)
+#dec_center = np.mean(bg_dec)
+#zoom_size = 5.0  # degrees
 
-ra_min, ra_max = ra_center - zoom_size / 2, ra_center + zoom_size / 2
-dec_min, dec_max = dec_center - zoom_size / 2, dec_center + zoom_size / 2
+#ra_min, ra_max = ra_center - zoom_size / 2, ra_center + zoom_size / 2
+#dec_min, dec_max = dec_center - zoom_size / 2, dec_center + zoom_size / 2
 
 
-# --- Create plots ---
-fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
+## --- Create plots ---
+#fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
-# g1 map
-sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=0.1, cmap="coolwarm", alpha=1)
-ax[0].set_xlim(ra_min, ra_max)
-ax[0].set_ylim(dec_min, dec_max)
-ax[0].set_title(r"$g_1$ distribution (10° × 10° zoom)")
-ax[0].set_xlabel("RA [deg]")
-ax[0].set_ylabel("Dec [deg]")
-plt.colorbar(sc1, ax=ax[0], label=r"$g_1$")
+## g1 map
+#sc1 = ax[0].scatter(bg_ra, bg_dec, c=g1, s=0.1, cmap="coolwarm", alpha=1)
+#ax[0].set_xlim(ra_min, ra_max)
+#ax[0].set_ylim(dec_min, dec_max)
+#ax[0].set_title(r"$g_1$ distribution (10° × 10° zoom)")
+#ax[0].set_xlabel("RA [deg]")
+#ax[0].set_ylabel("Dec [deg]")
+#plt.colorbar(sc1, ax=ax[0], label=r"$g_1$")
 
-# g2 map
-sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=0.1, cmap="coolwarm", alpha=1)
-ax[1].set_xlim(ra_min, ra_max)
-ax[1].set_ylim(dec_min, dec_max)
-ax[1].set_title(r"$g_2$ distribution (10° × 10° zoom)")
-ax[1].set_xlabel("RA [deg]")
-plt.colorbar(sc2, ax=ax[1], label=r"$g_2$")
+## g2 map
+#sc2 = ax[1].scatter(bg_ra, bg_dec, c=g2, s=0.1, cmap="coolwarm", alpha=1)
+#ax[1].set_xlim(ra_min, ra_max)
+#ax[1].set_ylim(dec_min, dec_max)
+#ax[1].set_title(r"$g_2$ distribution (10° × 10° zoom)")
+#ax[1].set_xlabel("RA [deg]")
+#plt.colorbar(sc2, ax=ax[1], label=r"$g_2$")
 
-plt.tight_layout()
+#plt.tight_layout()
 
-save_path2 = os.path.join(output_dir, "sky_g1_g2_maps_zoom5deg.png")
-plt.savefig(save_path2, dpi=300)
-plt.close()
-print(f"Saved {save_path2}")
+#save_path2 = os.path.join(output_dir, "sky_g1_g2_maps_zoom5deg.png")
+#plt.savefig(save_path2, dpi=300)
+#plt.close()
+#print(f"Saved {save_path2}")
 
 #fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
