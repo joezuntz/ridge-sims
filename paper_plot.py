@@ -216,23 +216,30 @@ for y, img_path, title in zip(y_positions, img_paths, titles):
         weight="semibold",
     )
 
-# Arrows between boxes
+# Arrows between boxes (downward pointing)
 for i in range(len(y_positions) - 1):
-    x_mid = x_pos + box_w / 2
-    y_start = y_positions[i] - 0.8    # start arrow lower (moves arrow down)
-    y_end   = y_positions[i + 1] + box_h + 0.3  # small lift at target
+    x_mid = x_pos + box_w/2
+
+    # y_tail should be ABOVE y_tip for a downward arrow
+    y_tail = y_positions[i] - 0.2                          # just below upper box
+    y_tip  = y_positions[i+1] + box_h + 0.2                # just above lower box
+
+    # sanity: ensure tail is higher than tip; if not, swap
+    if y_tail <= y_tip:
+        y_tail, y_tip = y_tip + 0.2, y_tail - 0.2
+
     ax.annotate(
-    "",
-    xy=(x_mid, y_end + 0.1),          # arrow tip (near the next box)
-    xytext=(x_mid, y_start - 0.1),    # arrow tail (below the previous box)
-    arrowprops=dict(
-    arrowstyle="->",
-    lw=1.8,
-    color="black",
-    mutation_scale=20,
-    shrinkA=12,
-    shrinkB=12,
-    ),
+        "",
+        xy=(x_mid, y_tip),     # arrow tip (lower y -> points down)
+        xytext=(x_mid, y_tail),# arrow tail (higher y)
+        arrowprops=dict(
+            arrowstyle="->",
+            lw=2.0,
+            color="black",
+            mutation_scale=20,
+            shrinkA=6,
+            shrinkB=6,
+        ),
     )
 
 # Limits
