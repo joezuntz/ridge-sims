@@ -2,7 +2,7 @@
 #SBATCH --job-name=lhc_cosmo_sims
 #SBATCH --output=logs/lhc_cosmo_sims_%A_%a.out
 #SBATCH --error=logs/lhc_cosmo_sims_%A_%a.err
-#SBATCH --array=0-39
+#SBATCH --array=0-1
 #SBATCH --time=24:00:00
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=32G
