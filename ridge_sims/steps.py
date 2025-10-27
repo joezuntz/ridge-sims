@@ -71,7 +71,7 @@ def step3(config):
     rng = np.random.default_rng(seed=config.seed)
 
     # Load the number density information
-    sample = load_sample_information(config.lens_type, config.combined)
+    sample = load_sample_information(config.lens_type, config.combined, lsst=config.lsst)
     
     # if we want no noise in sims
     if not config.include_shape_noise:
@@ -83,7 +83,7 @@ def step3(config):
         gls = pickle.load(f)
 
     # Load the overall geographic mask, referred to as a "vis" mask in GLASS.
-    mask = load_mask(config.nside)
+    mask = load_mask(config.nside, lsst=config.lsst)
 
     # Get the cosmology definition object
     _, cosmo = get_parameter_objects(config.h, config.Omega_m, config.Omega_b, config.sigma8)
