@@ -45,12 +45,12 @@ for fp in final_percentiles:
     # Shear processing (all ranks)
     filament_h5 = os.path.join(filament_dir, f"filaments_p{fp:02d}.h5")
     shear_csv = os.path.join(filament_dir, f"shear_p{fp:02d}.csv")
-    #shear_flip_csv = os.path.join(filament_dir, f"shear_p{fp:02d}_flipG1.csv")
+    shear_flip_csv = os.path.join(filament_dir, f"shear_p{fp:02d}_flipG1.csv")
     
     # Run with normal signs
     process_shear_sims(filament_h5, BG_data, output_shear_file=shear_csv, k=1, num_bins=20, comm=comm,
                            flip_g1=False, flip_g2=False, background_type='sim', nside_coverage=32,
                            min_distance_arcmin=1.0, max_distance_arcmin=60.0)
-#    process_shear_sims(filament_h5, BG_data, output_shear_file = shear_flip_csv, k=1, num_bins=20, comm=comm,
-#                       flip_g1=True, flip_g2=False, background_type='sim', nside_coverage=32,
-#                       min_distance_arcmin=1.0, max_distance_arcmin=60.0)
+    process_shear_sims(filament_h5, BG_data, output_shear_file = shear_flip_csv, k=1, num_bins=20, comm=comm,
+                       flip_g1=True, flip_g2=False, background_type='sim', nside_coverage=32,
+                       min_distance_arcmin=1.0, max_distance_arcmin=60.0)
