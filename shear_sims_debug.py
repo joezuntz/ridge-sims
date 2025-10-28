@@ -14,19 +14,19 @@ except ImportError:
     comm = None
 
 # Load background data for shear
-base_sim_dir = "lhc_run_sims"
+base_sim_dir = "lhc_run_sims_zero_err_10"
 run_id = 1
 BG_data = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
 
-filament_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/shear_test_data_{run_id}"  
+filament_dir = f"simulation_ridges_comparative_analysis_debug/zero_err_mesh_x2/band_0.1/shear_test_data_{run_id}"  
 os.makedirs(filament_dir, exist_ok=True)
 
 final_percentiles = [15] #[0, 10, 25, 40, 50, 60, 75, 85, 90, 95]
 for fp in final_percentiles:
     if comm is None or comm.rank == 0:
         print(f"[rank 0] Processing filaments for final_percentile={fp}")
-        h5_file = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/contracted_Ridges_final_p15/normal_run_1_ridges_p15_contracted.h5"
+        h5_file = f"simulation_ridges_comparative_analysis_debug/zero_err_mesh_x2/band_0.1/contracted_Ridges_final_p15/zero_err_run_1_ridges_p15_contracted.h5"
         
         with h5py.File(h5_file, 'r') as f:
             Ridges = f["ridges"][:]
