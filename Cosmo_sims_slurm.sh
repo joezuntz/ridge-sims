@@ -3,7 +3,7 @@
 #SBATCH --output=logs/lhc_cosmo_sims_%A_%a.out
 #SBATCH --error=logs/lhc_cosmo_sims_%A_%a.err
 #SBATCH --array=0-39
-#SBATCH --time=UNLIMITED
+#SBATCH --time=10-00:00:00
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=128G
 
