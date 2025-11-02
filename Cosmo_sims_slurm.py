@@ -9,7 +9,7 @@ from ridge_sims.config import Config
 # Global setup
 # =====================
 
-base_sim_dir = "lhc_cosmo_sims"
+base_sim_dir = "lhc_cosmo_sims_zero_err"
 
 # Fiducial values
 Omega_m_fid = 0.32
@@ -62,7 +62,7 @@ def run_cosmology(category, run_idx):
     sim_dir = os.path.join(base_sim_dir, category, run_id)
     os.makedirs(sim_dir, exist_ok=True)
 
-    config = Config(Omega_m=Omega_m, sigma8=sigma8, sim_dir=sim_dir, seed=run_idx)
+    config = Config(Omega_m=Omega_m, sigma8=sigma8, sim_dir=sim_dir, seed=run_idx, include_shape_noise = False) # make no noise
     config.save()
 
     print(f"Starting cosmology {category}/{run_id}")
