@@ -21,9 +21,13 @@ import dredge_scms
 import healpy
 import matplotlib.pyplot as plt
 from ridge_analysis_tools import * 
-from mpi4py.MPI import COMM_WORLD
 
 
+try:
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+except ImportError:
+    comm = None
 
 
 
