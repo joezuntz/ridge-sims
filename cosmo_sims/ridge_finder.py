@@ -1,3 +1,6 @@
+import os, sys
+
+
 ############################################################
 ############################################################
 
@@ -12,7 +15,7 @@ sys.path.insert(0, os.getcwd())
 
 
 
-import os, sys
+
 import numpy as np
 import h5py
 import dredge_scms
