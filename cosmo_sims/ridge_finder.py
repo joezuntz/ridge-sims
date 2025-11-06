@@ -32,6 +32,9 @@ except ImportError:
     comm = None
 
 
+print("Current working directory:", os.getcwd())
+print("Expected file path:", os.path.abspath(os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")))
+
 
 
 def main():
