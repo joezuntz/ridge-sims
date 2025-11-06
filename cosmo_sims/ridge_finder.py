@@ -39,9 +39,6 @@ def main():
     base_sim_dir = "lhc_cosmo_sims_zero_err"
     output_base = "Cosmo_sim_ridges"
     os.makedirs(output_base, exist_ok=True)
-    print("Current working directory:", os.getcwd())
-    print("Expected file path:", os.path.abspath(os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")))
-
     categories = ["S8", "S8_perp", "Om_fixed", "sigma8_fixed"]
     num_runs = 10
     bandwidth = 0.1
