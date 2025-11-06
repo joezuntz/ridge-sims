@@ -32,7 +32,7 @@ except ImportError:
     comm = None
 
 
-
+sys.path.insert(0, os.getcwd())
 
 
 def main():
