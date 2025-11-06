@@ -32,11 +32,11 @@ except ImportError:
     comm = None
 
 
-sys.path.insert(0, os.getcwd())
+
 
 
 def main():
-    base_sim_dir = "lhc_cosmo_sims_zero_err"
+    base_sim_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "lhc_cosmo_sims_zero_err"))
     output_base = "Cosmo_sim_ridges"
     os.makedirs(output_base, exist_ok=True)
     categories = ["S8", "S8_perp", "Om_fixed", "sigma8_fixed"]
