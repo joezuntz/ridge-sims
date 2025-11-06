@@ -17,6 +17,9 @@ import healpy as hp
 import h5py
 import numpy as np
 
+from mpi4py import MPI
+
+COMM_WORLD = MPI.COMM_WORLD
 
 try:
     from mpi4py import MPI
