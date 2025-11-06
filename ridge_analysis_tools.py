@@ -161,22 +161,22 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids,base_label, home_dir)
         if COMM_WORLD.rank == 0:
             
 
-        # Load coordinates
-        coordinates = load_coordinates(base_sim_dir, run_id)
-
-        # Run filament finder
-        ridges, initial_density, final_density = dredge_scms.find_filaments(
-            coordinates,
-            bandwidth=np.radians(bandwidth),
-            convergence=np.radians(convergence),
-            distance_metric='haversine',
-            n_neighbors=neighbours,
-            comm=COMM_WORLD,
-            checkpoint_dir=checkpoint_dir,
-            resume=True,
-            seed=seed,
-            mesh_size=mesh_size
-        )
+            # Load coordinates
+            coordinates = load_coordinates(base_sim_dir, run_id)
+    
+            # Run filament finder
+            ridges, initial_density, final_density = dredge_scms.find_filaments(
+                coordinates,
+                bandwidth=np.radians(bandwidth),
+                convergence=np.radians(convergence),
+                distance_metric='haversine',
+                n_neighbors=neighbours,
+                comm=COMM_WORLD,
+                checkpoint_dir=checkpoint_dir,
+                resume=True,
+                seed=seed,
+                mesh_size=mesh_size
+            )
 
         # Output (rank 0 only)
         if COMM_WORLD.rank == 0:
