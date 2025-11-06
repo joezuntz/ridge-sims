@@ -43,7 +43,7 @@ def main():
 
     for category in categories:
         for run_idx in range(1, num_runs + 1):
-            if COMM_WORLD.rank == 0:
+            if comm.rank == 0:
                 print(f"\n[rank 0] Starting ridge extraction for {category}/run_{run_idx}")
 
             sim_dir = os.path.join(base_sim_dir, category)
@@ -61,7 +61,7 @@ def main():
                 home_dir=home_dir
             )
 
-    if COMM_WORLD.rank == 0:
+    if comm.rank == 0:
         print("\nAll ridge extraction runs complete.")
 
 
