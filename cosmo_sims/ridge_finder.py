@@ -1,18 +1,17 @@
 import os, sys
 
+# directory of this script
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
-############################################################
-############################################################
+# Go one level up
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.getcwd())
+# Change working dir to script dir
+os.chdir(current_dir)
 
-
-############################################################
-############################################################
-
-
-
+# Add both the current and parent directories to search path
+sys.path.insert(0, current_dir)
+sys.path.insert(0, parent_dir)
 
 
 
