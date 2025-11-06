@@ -1,19 +1,17 @@
 import os, sys
 
-# directory of this script
+# Directory of this script (cosmo_sims)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Go one level up
+# Go one level up 
 parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
 
-# Change working dir to script dir
+# find modules in the parent directory
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# we stay inside cosmo_sims for outputs
 os.chdir(current_dir)
-
-# Add both the current and parent directories to search path
-sys.path.insert(0, current_dir)
-sys.path.insert(0, parent_dir)
-
-
 
 import numpy as np
 import h5py
