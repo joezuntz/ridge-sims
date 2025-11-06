@@ -21,7 +21,9 @@ import dredge_scms
 import healpy
 import matplotlib.pyplot as plt
 from ridge_analysis_tools import * 
+from mpi4py import MPI
 
+COMM_WORLD = MPI.COMM_WORLD
 
 try:
     from mpi4py import MPI
@@ -43,7 +45,7 @@ def main():
 
     for category in categories:
         for run_idx in range(1, num_runs + 1):
-            if comm.rank == 0:
+            if COMM_WORLD.rank == 0:
                 print(f"\n[rank 0] Starting ridge extraction for {category}/run_{run_idx}")
 
             sim_dir = os.path.join(base_sim_dir, category)
@@ -61,7 +63,7 @@ def main():
                 home_dir=home_dir
             )
 
-    if comm.rank == 0:
+    if COMM_WORLD.rank == 0:
         print("\nAll ridge extraction runs complete.")
 
 
