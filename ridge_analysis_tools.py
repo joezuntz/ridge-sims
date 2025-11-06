@@ -25,6 +25,14 @@ except ImportError:
     comm = None
 
 
+
+###################################################
+
+#---------- NOISE GENERATION ----------------------
+
+###################################################
+
+
 def transform_background(background_file, output_hdf5_file, seed):
     """Applies random rotation to shear values and saves the transformed background to an HDF5 file."""
     
@@ -57,6 +65,233 @@ def transform_background(background_file, output_hdf5_file, seed):
             out_file.create_dataset("weight", data=weights)
             
     print(f"Transformed background saved to {output_hdf5_file}")
+
+
+
+
+###############################################################
+
+# ------------------ RIDGE FINDER -----------------------------
+
+##############################################################
+
+
+def load_coordinates(base_sim_dir, run_id, shift=True):
+    """
+    Load coordinates from a catalog file.
+
+    If shift is True, the right ascension (RA) is shifted by 180 degrees.
+    Use shift=True when finding filaments, but not for building density maps.
+    """
+    filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
+    with h5py.File(filename, 'r') as f:
+        ra = f["RA"][:]
+        dec = f["DEC"][:]
+        z_true = f["Z_TRUE"][:]
+    mask = z_true < 0.4
+    ra = ra[mask]
+    dec = dec[mask]
+    if shift:
+        ra = (ra + 180) % 360
+    
+    # Inputs must now be in radians!
+    coordinates = np.column_stack((dec, ra))
+    coordinates = np.radians(coordinates)
+    return coordinates
+
+
+def results_plot(density_map, ridges, plot_filename):
+    """
+    Make a plot of a density map and ridge points on top.
+    """
+    healpy.cartview(density_map, min=0, lonra=[20, 50], latra=[-30, 0],)
+    healpy.graticule()
+
+    ridges = np.degrees(ridges)
+    ridges_ra = ridges[:, 1] - 180
+    ridges_dec = ridges[:, 0]
+    healpy.projplot(ridges_ra, ridges_dec, 'r.', markersize=1, lonlat=True)
+    plt.savefig(plot_filename, bbox_inches='tight', dpi=300)
+
+
+def build_density_map(base_sim_dir, run_id, nside, smoothing_degrees=0.5):
+    """
+    Make a density maps from the coordinates.
+    """
+    # The healpy conventions are different and should not have
+    # the 180 deg shift applied
+    data = load_coordinates(base_sim_dir, run_id, shift=False)
+    dec = np.degrees(data[:, 0])
+    ra = np.degrees(data[:, 1])
+    npix = healpy.nside2npix(nside)
+    pix = healpy.ang2pix(nside, ra, dec, lonlat=True)
+    m = np.zeros(npix, dtype=int)
+    np.add.at(m, pix, 1)
+    m1 = healpy.smoothing(m, fwhm=np.radians(smoothing_degrees), verbose=False)
+    return m1
+    
+
+def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, final_percentile=25):
+    cut1 = initial_density > np.percentile(initial_density, initial_percentile)
+    cut2 = final_density > np.percentile(final_density, final_percentile)
+    return ridges[cut1 & cut2]
+
+
+
+
+def run_filament_pipeline(bandwidth, base_sim_dir, run_ids,base_label, home_dir):
+    """
+    Run the full filament-finding + plotting for a given bandwidth, simulation base, and run IDs.
+    Results are grouped under the same bandwidth + base label directory.
+    """
+    # --- Parameters ---
+    neighbours = 5000
+    convergence = 1e-5
+    seed = 3482364
+    mesh_size = int(2*5e5)
+
+    # --- Directory structure ---
+    
+    
+    os.makedirs(home_dir, exist_ok=True)
+    checkpoint_dir = os.path.join(home_dir, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    for run_id in run_ids:
+        if COMM_WORLD.rank == 0:
+            
+
+        # Load coordinates
+        coordinates = load_coordinates(base_sim_dir, run_id)
+
+        # Run filament finder
+        ridges, initial_density, final_density = dredge_scms.find_filaments(
+            coordinates,
+            bandwidth=np.radians(bandwidth),
+            convergence=np.radians(convergence),
+            distance_metric='haversine',
+            n_neighbors=neighbours,
+            comm=COMM_WORLD,
+            checkpoint_dir=checkpoint_dir,
+            resume=True,
+            seed=seed,
+            mesh_size=mesh_size
+        )
+
+        # Output (rank 0 only)
+        if COMM_WORLD.rank == 0:
+            final_percentiles = [15]
+            initial_percentile = 0
+
+            # Density map for this run
+            density_map = build_density_map(base_sim_dir, run_id, 512)
+
+            plot_dir = os.path.join(home_dir, "plots_by_final_percentile")
+            os.makedirs(plot_dir, exist_ok=True)
+
+            for fp in final_percentiles:
+                ridges_cut = redo_cuts(
+                    ridges, initial_density, final_density,
+                    initial_percentile=initial_percentile,
+                    final_percentile=fp
+                )
+
+                # Save ridges (by run ID)
+                out_dir = os.path.join(home_dir, f"Ridges_final_p{fp:02d}")
+                os.makedirs(out_dir, exist_ok=True)
+                h5_filename = os.path.join(out_dir, f"{base_label}_run_{run_id}_ridges_p{fp:02d}.h5")
+
+                with h5py.File(h5_filename, 'w') as f:
+                    f.create_dataset("ridges", data=ridges_cut)
+                    f.create_dataset("initial_density", data=initial_density)
+                    f.create_dataset("final_density", data=final_density)
+
+                print(f"[rank 0] Saved ridges → {h5_filename}")
+
+                # Plot
+                plot_path = os.path.join(plot_dir, f"{base_label}_run_{run_id}_Ridges_plot_p{fp:02d}.png")
+                results_plot(density_map, ridges_cut, plot_path)
+                print(f"[rank 0] Saved plot: {plot_path}")
+
+###########################################################
+
+# -------------- RIDGE CONTRACTION ------------------------
+
+###########################################################
+#Shrink ridges near survey boundaries
+
+def load_mask(mask_filename, nside):
+    """Load and downgrade a binary mask from .npy list of hit pixels."""
+    input_mask_nside = 4096
+    hit_pix = np.load(mask_filename)
+    mask = np.zeros(hp.nside2npix(input_mask_nside))
+    mask[hit_pix] = 1
+    mask = hp.reorder(mask, n2r=True)
+    mask = hp.ud_grade(mask, nside_out=nside)
+    return mask
+
+
+def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_coverage=1.0):
+    """Return boolean array of ridge points with coverage ≥ min_coverage."""
+    radius = np.radians(radius_arcmin / 60.0)
+    theta_ridges = np.radians(90.0 - ridge_dec)
+    phi_ridges = np.radians(ridge_ra)
+    vec_ridges = hp.ang2vec(theta_ridges, phi_ridges)
+    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
+
+    for i, v in enumerate(vec_ridges):
+        disk_pix = hp.query_disc(nside, v, radius, inclusive=True)
+        if len(disk_pix) == 0:
+            frac = 0.0
+        else:
+            frac = mask[disk_pix].sum() / len(disk_pix)
+        if frac >= min_coverage:
+            keep_idx[i] = True
+    return keep_idx
+
+
+def process_ridge_file(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir):
+    """Apply the filter to one ridge file."""
+    with h5py.File(ridge_file, "r") as f:
+        ridges = f["ridges"][:]
+    ridge_dec = ridges[:, 0]
+    ridge_ra = ridges[:, 1]
+    n_total = len(ridges)
+
+    keep_idx = ridge_edge_filter_disk(
+        ridge_ra, ridge_dec, mask, nside,
+        radius_arcmin=radius_arcmin, min_coverage=min_coverage
+    )
+    ridges_clean = ridges[keep_idx]
+    print(f"[shrink] {os.path.basename(ridge_file)}: kept {len(ridges_clean)}/{n_total}")
+
+    # Save to output folder
+    base_name = os.path.basename(ridge_file).replace(".h5", "_contracted.h5")
+    out_file = os.path.join(output_dir, base_name)
+    with h5py.File(out_file, "w") as f:
+        f.create_dataset("ridges", data=ridges_clean)
+
+    # Plot diagnostic
+    plot_file = out_file.replace(".h5", "_diagnostic.png")
+    plt.figure(figsize=(8, 6))
+    plt.scatter(ridge_ra, ridge_dec, s=1, alpha=0.3, label="All ridges")
+    plt.scatter(ridges_clean[:, 1], ridges_clean[:, 0], s=1, alpha=0.6, label="Filtered ridges")
+    plt.xlabel("RA [deg]")
+    plt.ylabel("Dec [deg]")
+    plt.title(f"contracted ridges\nradius={radius_arcmin} arcmin, min_cov={min_coverage}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(plot_file, dpi=200)
+    plt.close()
+
+    print(f"[plot] Saved diagnostic → {plot_file}")
+
+
+##########################################################
+
+#-------------- RIDGE SEGMENTATION --------------------
+
+##########################################################
 
 def build_mst(points, k=10):
     """Constructs a Minimum Spanning Tree (MST) from given points."""
@@ -120,6 +355,15 @@ def save_filaments_to_hdf5(ra_dec, labels, filename, dataset_name="data"):
         hdf.create_dataset(dataset_name, data=structured_data)
 
 
+
+	
+#################################################################
+
+# ------------------- GET COSMO SIM FILES -----------------------
+
+################################################################
+
+
 def read_sim_background(bg_file, rows, comm=None):
     """Read background galaxies from simulated catalog (HDF5)."""
     with h5py.File(bg_file, "r") as f:
@@ -142,8 +386,6 @@ def read_sim_background(bg_file, rows, comm=None):
 
     return bg_ra, bg_dec, g1, g2, z_true, weights
 
-
-#Une this code to run the temporary plot 
 
 
 #def read_sim_background(bg_file, stride=1000):
@@ -192,7 +434,142 @@ def load_background(bg_file, comm=None, rows=None, background_type=None):
         return read_DES_background(bg_file, comm=comm)
     else:
         raise ValueError(f"Unknown background_type: {background_type}")
-		
+
+
+
+def find_contracted_files(home_dir):
+    """find all '_contracted.h5' ridge files in directory."""
+    contracted_files = []
+    for root, _, files in os.walk(home_dir):
+        for f in files:
+            if f.endswith("_contracted.h5"):
+                contracted_files.append(os.path.join(root, f))
+    return contracted_files
+
+
+def find_background_file(h5_file, base_sim_root):
+    """
+    This is the file structure for all cosmological simulations: 
+    Given a ridge file path like:
+        Cosmo_sim_ridges/S8/run_1/band_0.1/Ridges_final_p15/..._contracted.h5
+    Return the corresponding background catalog path:
+        lhc_cosmo_sims_zero_err/S8/run_1/source_catalog_cutzl04.h5
+    """
+    parts = h5_file.split(os.sep)
+    try:
+        cat_index = parts.index("Cosmo_sim_ridges") + 1
+        category = parts[cat_index]
+        run_folder = parts[cat_index + 1]
+    except (ValueError, IndexError):
+        raise RuntimeError(f"Unexpected ridge file path structure: {h5_file}")
+
+    bg_file = os.path.join(base_sim_root, category, run_folder, "source_catalog_cutzl04.h5")
+    if not os.path.exists(bg_file):
+        raise FileNotFoundError(f"Background file not found: {bg_file}")
+    return bg_file
+    
+    
+# === Locate the .npy background file for a given ridge file
+def find_background_npy(h5_file, base_sim_root):
+    """
+    This is the file structure for all cosmo background files
+    Given a ridge file path like:
+        Cosmo_sim_ridges/S8/run_1/band_0.1/Ridges_final_p15/..._contracted.h5
+    Return the corresponding .npy background file path:
+        lhc_run_sims/S8/run_1/source_catalog_0.npy
+    """
+    parts = h5_file.split(os.sep)
+    try:
+        cat_index = parts.index("Cosmo_sim_ridges") + 1
+        category = parts[cat_index]
+        run_folder = parts[cat_index + 1]
+    except (ValueError, IndexError):
+        raise RuntimeError(f"Unexpected ridge file path structure: {h5_file}")
+
+    npy_file = os.path.join(base_sim_root, category, run_folder, "source_catalog_0.npy")
+    if not os.path.exists(npy_file):
+        raise FileNotFoundError(f"Background .npy file not found: {npy_file}")
+    return npy_file
+
+
+############################################################################
+
+# -------------------- BACKGROUND REDSHIFT CUT -----------------------------
+
+############################################################################
+
+
+# === Convert .npy → filtered .h5 (z>0.4 is applied by default)
+
+def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):
+    """
+    Load .npy catalog, apply z>z_cut and finite-value filters,
+    and save to .h5 with same structure as cosmological shear input.
+    """
+    
+    # Make output file path
+    run_dir = os.path.dirname(npy_path)
+    output_file_path = os.path.join(run_dir, "source_catalog_cutzl04.h5")
+
+    # Load background from the .npy file
+    with h5py.File(npy_file, "r") as file:
+        bg_ra_full = file["RA"][:]
+        bg_dec_full = file["DEC"][:]
+        g1_values_full = file["G1"][:]
+        g2_values_full = file["G2"][:]
+        z_true_full = file["Z_TRUE"][:]
+        weights_full = file["weight"][:] if "weight" in file else np.ones_like(bg_ra_full)
+
+    # Apply the redshift cut and NaN filter
+    z_mask = z_true_full > z_cut
+    valid_mask = (
+        np.isfinite(bg_ra_full)
+        & np.isfinite(bg_dec_full)
+        & np.isfinite(g1_values_full)
+        & np.isfinite(g2_values_full)
+        & np.isfinite(weights_full)
+        & z_mask
+    )
+
+    # Filter the data
+    bg_ra_filtered = bg_ra_full[valid_mask]
+    bg_dec_filtered = bg_dec_full[valid_mask]
+    g1_values_filtered = g1_values_full[valid_mask]
+    g2_values_filtered = g2_values_full[valid_mask]
+    z_true_filtered = z_true_full[valid_mask]
+    weights_filtered = weights_full[valid_mask]
+
+    # Create output directory
+    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+
+    # Save to new HDF5 file
+    with h5py.File(output_file_path, "w") as hf:
+        hf.create_dataset("RA", data=bg_ra_filtered)
+        hf.create_dataset("DEC", data=bg_dec_filtered)
+        hf.create_dataset("G1", data=g1_values_filtered)
+        hf.create_dataset("G2", data=g2_values_filtered)
+        hf.create_dataset("Z_TRUE", data=z_true_filtered)
+        hf.create_dataset("weight", data=weights_filtered)
+
+    print(f"Filtered background data saved → {output_file_path}")
+    print(f"Original: {len(bg_ra_full)} | Filtered: {len(bg_ra_filtered)}")
+    
+
+def convert_all_backgrounds(base_sim_root):
+    """
+    Traverse the simulation directory and convert all .npy backgrounds.
+    """
+    for root, _, files in os.walk(base_sim_root):
+        for f in files:
+            if f == "source_catalog_0.npy":
+                npy_path = os.path.join(root, f)
+                convert_npy_to_filtered_h5(npy_path)
+
+##############################################################################
+
+# ------------------------- RIDGE SHEAR PROCESS -----------------------------------
+
+##############################################################################
 
 def get_position_angle(ra_source, dec_source, ra_filament, dec_filament):
     """
@@ -421,6 +798,54 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
     print(f"Shear processing completed in {time.time() - start_time:.2f} seconds.")
         
+
+
+
+def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, shear_flip_csv = None, comm=None):
+    """
+    Compute MST → filaments → shear from a contracted ridge file.
+    All paths are passed explicitly to keep the function file-agnostic.
+    """
+    if comm is None or comm.rank == 0:
+        print(f"[rank 0] Processing {h5_file}")
+
+        with h5py.File(h5_file, 'r') as f:
+            Ridges = f["ridges"][:]
+
+        mst = build_mst(Ridges)
+        branch_points = detect_branch_points(mst)
+        filament_segments = split_mst_at_branches(mst, branch_points)
+        filament_labels = segment_filaments_with_dbscan(Ridges, filament_segments)
+
+        save_filaments_to_hdf5(Ridges, filament_labels, filament_h5)
+        print(f"[save] Filaments → {filament_h5}")
+
+    if comm is not None:
+        comm.Barrier()
+
+    # --- Shear calculations ---
+    process_shear_sims(
+        filament_h5, BG_data, output_shear_file=shear_csv,
+        k=1, num_bins=20, comm=comm,
+        flip_g1=False, flip_g2=False, background_type='sim',
+        nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+    )
+
+    if shear_flip_csv is not None:
+        process_shear_sims(
+            filament_h5, BG_data, output_shear_file=shear_flip_csv,
+            k=1, num_bins=20, comm=comm,
+            flip_g1=True, flip_g2=False, background_type='sim',
+            nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+        )
+
+
+
+
+
+
+
+
 
 
 def sum_in_place(data, comm):
