@@ -13,9 +13,7 @@ import matplotlib.pyplot as plt
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import healpy as hp
-
-import h5py
-import numpy as np
+import dredge_scms
 
 from mpi4py import MPI
 
