@@ -140,7 +140,7 @@ def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, fina
 
 
 
-def run_filament_pipeline(bandwidth, base_sim_dir, run_ids,base_label, home_dir):
+def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir):
     """
     Run the full filament-finding + plotting for a given bandwidth, simulation base, and run IDs.
     Results are grouped under the same bandwidth + base label directory.
@@ -149,42 +149,45 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids,base_label, home_dir)
     neighbours = 5000
     convergence = 1e-5
     seed = 3482364
-    mesh_size = int(2*5e5)
+    mesh_size = int(2 * 5e5)
 
     # --- Directory structure ---
-    
-    
     os.makedirs(home_dir, exist_ok=True)
     checkpoint_dir = os.path.join(home_dir, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     for run_id in run_ids:
+        # --- Load coordinates on rank 0 only ---
+        coordinates = None
         if COMM_WORLD.rank == 0:
-            
-
-            # Load coordinates
             coordinates = load_coordinates(base_sim_dir, run_id)
-    
-            # Run filament finder
-            ridges, initial_density, final_density = dredge_scms.find_filaments(
-                coordinates,
-                bandwidth=np.radians(bandwidth),
-                convergence=np.radians(convergence),
-                distance_metric='haversine',
-                n_neighbors=neighbours,
-                comm=COMM_WORLD,
-                checkpoint_dir=checkpoint_dir,
-                resume=True,
-                seed=seed,
-                mesh_size=mesh_size
-            )
 
-        # Output (rank 0 only)
+        # --- Broadcast to all ranks ---
+        coordinates = COMM_WORLD.bcast(coordinates, root=0)
+
+        # --- All ranks now participate in the filament finder ---
+        ridges, initial_density, final_density = dredge_scms.find_filaments(
+            coordinates,
+            bandwidth=np.radians(bandwidth),
+            convergence=np.radians(convergence),
+            distance_metric='haversine',
+            n_neighbors=neighbours,
+            comm=COMM_WORLD,
+            checkpoint_dir=checkpoint_dir,
+            resume=True,
+            seed=seed,
+            mesh_size=mesh_size
+        )
+
+        # --- Synchronize all ranks before output ---
+        COMM_WORLD.barrier()
+
+        # --- Output (rank 0 only) ---
         if COMM_WORLD.rank == 0:
             final_percentiles = [15]
             initial_percentile = 0
 
-            # Density map for this run
+            # Build the density map (serial)
             density_map = build_density_map(base_sim_dir, run_id, 512)
 
             plot_dir = os.path.join(home_dir, "plots_by_final_percentile")
@@ -213,6 +216,10 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids,base_label, home_dir)
                 plot_path = os.path.join(plot_dir, f"{base_label}_run_{run_id}_Ridges_plot_p{fp:02d}.png")
                 results_plot(density_map, ridges_cut, plot_path)
                 print(f"[rank 0] Saved plot: {plot_path}")
+
+        # --- Synchronize before next run_id ---
+        COMM_WORLD.barrier()
+
 
 ###########################################################
 
