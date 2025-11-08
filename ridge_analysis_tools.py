@@ -165,7 +165,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir
         # --- Broadcast to all ranks ---
         coordinates = COMM_WORLD.bcast(coordinates, root=0)
 
-        # --- All ranks now participate in the filament finder ---
+        # --- Parallelized filament finder ---
         ridges, initial_density, final_density = dredge_scms.find_filaments(
             coordinates,
             bandwidth=np.radians(bandwidth),
@@ -187,7 +187,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir
             final_percentiles = [15]
             initial_percentile = 0
 
-            # Build the density map (serial)
+            # Build the density map (rank 0 only)
             density_map = build_density_map(base_sim_dir, run_id, 512)
 
             plot_dir = os.path.join(home_dir, "plots_by_final_percentile")
