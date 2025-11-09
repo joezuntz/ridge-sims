@@ -105,13 +105,13 @@ def results_plot(density_map, ridges, plot_filename):
     """
     Make a plot of a density map and ridge points on top.
     """
-    healpy.cartview(density_map, min=0, lonra=[20, 50], latra=[-30, 0],)
-    healpy.graticule()
+    hp.cartview(density_map, min=0, lonra=[20, 50], latra=[-30, 0],)
+    hp.graticule()
 
     ridges = np.degrees(ridges)
     ridges_ra = ridges[:, 1] - 180
     ridges_dec = ridges[:, 0]
-    healpy.projplot(ridges_ra, ridges_dec, 'r.', markersize=1, lonlat=True)
+    hp.projplot(ridges_ra, ridges_dec, 'r.', markersize=1, lonlat=True)
     plt.savefig(plot_filename, bbox_inches='tight', dpi=300)
 
 
@@ -124,11 +124,11 @@ def build_density_map(base_sim_dir, run_id, nside, smoothing_degrees=0.5):
     data = load_coordinates(base_sim_dir, run_id, shift=False)
     dec = np.degrees(data[:, 0])
     ra = np.degrees(data[:, 1])
-    npix = healpy.nside2npix(nside)
-    pix = healpy.ang2pix(nside, ra, dec, lonlat=True)
+    npix = hp.nside2npix(nside)
+    pix = hp.ang2pix(nside, ra, dec, lonlat=True)
     m = np.zeros(npix, dtype=int)
     np.add.at(m, pix, 1)
-    m1 = healpy.smoothing(m, fwhm=np.radians(smoothing_degrees), verbose=False)
+    m1 = hp.smoothing(m, fwhm=np.radians(smoothing_degrees), verbose=False)
     return m1
     
 
