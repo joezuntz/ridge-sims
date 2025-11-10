@@ -271,7 +271,7 @@ def process_ridge_file(ridge_file, mask, nside, radius_arcmin, min_coverage, out
         radius_arcmin=radius_arcmin, min_coverage=min_coverage
     )
     ridges_clean = ridges[keep_idx]
-    print(f"[shrink] {os.path.basename(ridge_file)}: kept {len(ridges_clean)}/{n_total}")
+    print(f"[contracted] {os.path.basename(ridge_file)}: kept {len(ridges_clean)}/{n_total}")
 
     # Save to output folder
     base_name = os.path.basename(ridge_file).replace(".h5", "_contracted.h5")
