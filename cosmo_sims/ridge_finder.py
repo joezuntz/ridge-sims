@@ -41,6 +41,10 @@ def main():
     num_runs = 10
     bandwidth = 0.1
 
+
+    skipped_runs = []
+    missing_inputs = []
+
     for category in categories:
         for run_idx in range(1, num_runs + 1):
             if COMM_WORLD.rank == 0:
