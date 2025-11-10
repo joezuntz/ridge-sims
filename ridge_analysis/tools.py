@@ -195,12 +195,24 @@ def save_to_hdf5(data, filename, dataset_name="data"):
     with h5py.File(filename, "w") as hdf:
         hdf.create_dataset(dataset_name, data=structured_data)
 
-# There is an added label to each filament
-def save_filaments_to_hdf5(ra_dec, labels, filename, dataset_name="data"):
+
+def save_filaments_to_hdf5_old_labels(ra_dec, labels, filename, dataset_name="data"):
     """Save RA, DEC, and Filament Labels"""
     dtype = [("RA", "f8"), ("DEC", "f8"), ("Filament_Label", "i8")]  
     structured_data = np.array(
         [(ra, dec, label) for (ra, dec), label in zip(ra_dec, labels)],
+        dtype=dtype
+    )
+
+    with h5py.File(filename, "w") as hdf:
+        hdf.create_dataset(dataset_name, data=structured_data)
+		
+# There is an added label to each filament
+def save_filaments_to_hdf5(ra_dec, labels, filename, dataset_name="data"):
+    """Save RA, DEC, and Filament Labels with RA from column 1 and DEC from column 0"""
+    dtype = [("RA", "f8"), ("DEC", "f8"), ("Filament_Label", "i8")]  
+    structured_data = np.array(
+        [(ra_dec[i, 1], ra_dec[i, 0], label) for i, label in enumerate(labels)],
         dtype=dtype
     )
 
