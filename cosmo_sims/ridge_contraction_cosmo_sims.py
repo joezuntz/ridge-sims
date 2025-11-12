@@ -121,7 +121,7 @@ def main():
                 band_folders = [args.band]
             else:
                 band_folders = [b for b in os.listdir(run_path)
-                                if b.startswith("band_") and os.path.isdir(os.path.join(run_path, b)))]
+                                if b.startswith("band_") and os.path.isdir(os.path.join(run_path, b))]
 
             for band_folder in band_folders:
                 band_path = os.path.join(run_path, band_folder)
