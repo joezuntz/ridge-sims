@@ -55,7 +55,7 @@ Cosmo_sim_ridges/
 # === CONFIGURATION ===
 # ======================================================
 
-mask_filename = "des-data/desy3_gold_mask.npy"   # mask file
+mask_filename = os.path.join(parent_dir, "des-data", "desy3_gold_mask.npy")  # mask file
 base_root = "Cosmo_sim_ridges"  # main simulation folder
 radius_arcmin = 4.0          # disk filter radius
 min_coverage = 0.9           # fraction of mask pixels required
