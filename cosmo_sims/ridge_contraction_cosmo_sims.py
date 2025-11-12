@@ -93,7 +93,7 @@ def main():
                       if os.path.isdir(os.path.join(root_dir, c))]
 
     print(f"Categories to process: {categories}")
-
+    mask = load_mask(mask_filename, nside)
     #############################################################################
     # === SAFETY FLAGS ===
 
@@ -126,7 +126,14 @@ def main():
             for band_folder in band_folders:
                 band_path = os.path.join(run_path, band_folder)
                 ridge_dir = os.path.join(band_path, "Ridges_final_p15")
-
+                
+                output_dir = os.path.join(ridge_dir)  # contracted .h5 goes here
+                plots_dir = os.path.join(os.path.dirname(ridge_dir), "plots_by_final_percentile")
+                
+                os.makedirs(output_dir, exist_ok=True)
+                os.makedirs(plots_dir, exist_ok=True)
+                
+                
                 if not os.path.isdir(ridge_dir):
                     print(f"[skip] No ridge directory: {ridge_dir}")
                     continue
@@ -161,7 +168,15 @@ def main():
 
                     # --- ridge contraction routine ---
                     try:
-                        contract_ridge_file(ridge_path, category, run_folder, band_folder)
+                        process_ridge_file(
+                        ridge_path,
+                        mask=mask,
+                        nside=nside,
+                        radius_arcmin=radius_arcmin,
+                        min_coverage=min_coverage,
+                        output_dir=output_dir,
+                        plot_dir=plots_dir
+                        )
                     except Exception as e:
                         print(f"[error] Failed to process {ridge_path}: {e}")
                         continue
