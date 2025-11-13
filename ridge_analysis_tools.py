@@ -525,7 +525,7 @@ def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):
     output_file_path = os.path.join(run_dir, "source_catalog_cutzl04.h5")
 
     # Load background from the .npy file
-    with h5py.File(npy_file, "r") as file:
+    with h5py.File(npy_path, "r") as file:
         bg_ra_full = file["RA"][:]
         bg_dec_full = file["DEC"][:]
         g1_values_full = file["G1"][:]
