@@ -56,7 +56,7 @@ Cosmo_sim_ridges/S8/run_1/band_0.1/shear/
 def main():
     # --- Root directories ---
     home_dir = "Cosmo_sim_ridges"
-    base_sim_root = "lhc_cosmo_sims_zero_err"
+    base_sim_root = os.path.abspath(os.path.join(parent_dir, "lhc_cosmo_sims_zero_err")) 
     final_percentiles = [15]
 
     # --- Find contracted ridge files ---
