@@ -482,6 +482,13 @@ def find_background_file(h5_file, base_sim_root):
     return bg_file
     
     
+
+############################################################################
+
+# -------------------- BACKGROUND REDSHIFT CUT -----------------------------
+
+############################################################################
+
 # === Locate the .npy background file for a given ridge file
 def find_background_npy(h5_file, base_sim_root):
     """
@@ -503,13 +510,6 @@ def find_background_npy(h5_file, base_sim_root):
     if not os.path.exists(npy_file):
         raise FileNotFoundError(f"Background .npy file not found: {npy_file}")
     return npy_file
-
-
-############################################################################
-
-# -------------------- BACKGROUND REDSHIFT CUT -----------------------------
-
-############################################################################
 
 
 # === Convert .npy → filtered .h5 (z>0.4 is applied by default)
@@ -568,16 +568,78 @@ def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):
     print(f"Original: {len(bg_ra_full)} | Filtered: {len(bg_ra_filtered)}")
     
 
+
+
+
+
+
 def convert_all_backgrounds(base_sim_root):
     """
-    Traverse the simulation directory and convert all .npy backgrounds.
-    """
-    for root, _, files in os.walk(base_sim_root):
-        for f in files:
-            if f == "source_catalog_0.npy":
-                npy_path = os.path.join(root, f)
-                convert_npy_to_filtered_h5(npy_path)
+    convert all .npy backgrounds.
 
+    This version includes optional safety checks:
+    - Safety check: Skip if output .h5 already exists.
+    - Summary : Report missing, skipped conversions at the end.
+    """
+
+    # ===========================================================
+    # === SAFETY MECHANISMS 
+    # ===========================================================
+
+    SKIP_IF_EXISTS = True  
+    REPORT_AT_END = True   
+
+    skipped_existing = []
+    missing_input = []
+    
+
+    # ===========================================================
+    # === MAIN 
+    # ===========================================================
+
+    if not os.path.exists(base_sim_root):
+        raise FileNotFoundError(f"Base directory not found: {base_sim_root}")
+
+    print(f"[INFO] Scanning simulation tree: {base_sim_root}")
+
+    for root, _, files in os.walk(base_sim_root):
+        if "source_catalog_0.npy" not in files:
+            continue
+
+        npy_path = os.path.join(root, "source_catalog_0.npy")
+        output_path = os.path.join(root, "source_catalog_cutzl04.h5")
+
+        # SAFETY #1 — skip existing output
+        if SKIP_IF_EXISTS and os.path.exists(output_path):
+            print(f"[SKIP] Output exists → {output_path}")
+            skipped_existing.append(npy_path)
+            continue
+
+        try:
+            convert_npy_to_filtered_h5(npy_path)
+        except FileNotFoundError:
+            print(f"[MISSING] Input .npy file not found: {npy_path}")
+            missing_input.append(npy_path)
+
+    # ===========================================================
+    # === SAFETY #2 — END REPORT
+    # ===========================================================
+    if REPORT_AT_END:
+        print("\n========= CONVERSION SUMMARY =========")
+
+        if skipped_existing:
+            print(f"[SKIPPED EXISTING] {len(skipped_existing)} files:")
+            for p in skipped_existing:
+                print(f"  - {p}")
+
+        if missing_input:
+            print(f"[MISSING INPUT] {len(missing_input)} files:")
+            for p in missing_input:
+                print(f"  - {p}")
+
+        if not (skipped_existing or missing_input):
+            print("[OK] All backgrounds processed successfully.")
+        print("=======================================")
 ##############################################################################
 
 # ------------------------- RIDGE SHEAR PROCESS -----------------------------------
