@@ -30,7 +30,7 @@ class Config:
                  sigma8=FIDUCIAL_PARAMS["sigma8"],
                  seed=42,
                  include_shape_noise=None, # option for almost no noise,
-                 lsst=False,
+                 lsst=None,
                  ):
         self.sim_dir = sim_dir
         self.lens_type = lens_type
