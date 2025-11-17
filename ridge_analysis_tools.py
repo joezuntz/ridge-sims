@@ -140,7 +140,7 @@ def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, fina
 
 
 
-def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir):
+def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir, N = 2):
     """
     Run the full filament-finding + plotting for a given bandwidth, simulation base, and run IDs.
     Results are grouped under the same bandwidth + base label directory.
@@ -149,7 +149,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir
     neighbours = 5000
     convergence = 1e-5
     seed = 3482364
-    mesh_size = int(2 * 5e5)
+    mesh_size = int(N * 5e5)
 
     # --- Directory structure ---
     os.makedirs(home_dir, exist_ok=True)
