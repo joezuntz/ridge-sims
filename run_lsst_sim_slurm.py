@@ -1,3 +1,29 @@
+# We want the following file structure to be created 
+
+"""
+lhc_run_lsst_sims/
+    lsst_1/
+        run_1/
+        run_2/
+        
+    lsst_10/
+        run_1/
+        run_2/
+        
+lhc_run_lsst_sim_zero_err/
+    lsst_1/
+        run_1/
+        ...
+    lsst_10/
+        run_1/
+        ...
+"""
+
+
+
+
+
+
 import argparse
 import os
 import numpy as np
@@ -6,39 +32,41 @@ from ridge_sims.config import Config
 
 def map_job_to_config(job_id):
     """
-    Map a single SLURM job_id to (include_shape_noise, run_id)
-    
-    Example:
-    job_id:   1 2 3 4 5 6
-    noise :   T T T F F F
-    run_id:   1 2 3 1 2 3
+    job_id → (include_noise, run_id, lsst)
     """
-    # runs per mode
-    runs_per_mode = 3
+    if not 1 <= job_id <= 8:
+        raise ValueError("job_id must be 1–8")
 
-    if job_id <= runs_per_mode:
-        include_noise = True
-        run_id = job_id
-    else:
-        include_noise = False
-        run_id = job_id - runs_per_mode
+    # lsst mode
+    lsst = 1 if job_id <= 4 else 10
 
-    return include_noise, run_id
+    # reduce to 1..4 for noise/run logic
+    local_id = job_id if job_id <= 4 else job_id - 4
+
+    # noise / run split
+    include_noise = (local_id <= 2)   # first two → noise
+    run_id = 1 if local_id in (1,3) else 2
+
+    return include_noise, run_id, lsst
 
 
-def run_sim(run_id, include_noise):
+
+def run_sim(run_id, include_noise, lsst):
 
     base_dir = (
         "lhc_run_lsst_sims" if include_noise 
         else "lhc_run_lsst_sim_zero_err"
     )
 
-    run_dir = os.path.join(base_dir, f"run_{run_id}")
+    # add LSST subfolder
+    lsst_dir = os.path.join(base_dir, f"lsst_{lsst}")
+
+    run_dir = os.path.join(lsst_dir, f"run_{run_id}")
     seed = run_id
     np.random.seed(seed)
 
-    # First run path
-    first_run_dir = os.path.join(base_dir, "run_1")
+    # first run path must follow same structure
+    first_run_dir = os.path.join(base_dir, f"lsst_{lsst}", "run_1")
     first_shell = os.path.join(first_run_dir, "shell_cls.npy")
 
     # Create config
@@ -46,13 +74,13 @@ def run_sim(run_id, include_noise):
         sim_dir=run_dir,
         seed=seed,
         include_shape_noise=include_noise,
-        lsst=True,
+        lsst=lsst,
     )
     config.save()
 
-    print(f"\n=== include_shape_noise={include_noise} | run {run_id} ===")
+    print(f"\n=== include_shape_noise={include_noise} | lsst={lsst} | run {run_id} ===")
 
-    # Step 1 logic... Do not run this step for the next runs
+    # Step 1 logic
     if run_id == 1:
         print("Running step 1 for run 1")
         step1(config)
@@ -65,22 +93,23 @@ def run_sim(run_id, include_noise):
             step1(config)
             config.shell_cl_file = first_shell
 
-    # Step 2 + Step 3
     step2(config)
     step3(config)
 
-    print(f"Finished run {run_id} (include_noise={include_noise})")
+    print(f"Finished run {run_id} (include_noise={include_noise}, lsst={lsst})")
+
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--job-id", type=int, required=True)
+    parser.add_argument("--lsst", type=int, required=True)
     args = parser.parse_args()
 
     include_noise, run_id = map_job_to_config(args.job_id)
 
-    print(f"Dispatcher assigned:")
-    print(f"  include_shape_noise = {include_noise}")
-    print(f"  run_id              = {run_id}")
+    run_sim(run_id, include_noise, args.lsst)
 
-    run_sim(run_id, include_noise)
+    
+    
+
