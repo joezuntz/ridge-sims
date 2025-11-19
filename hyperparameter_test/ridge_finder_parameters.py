@@ -223,7 +223,7 @@ def main():
 
                 # --------------------------------------------------
                 # SAFETY CHECK 4 — missing ridge file to process
-                --------------------------------------------------
+                #-------------------------------------------------
                 ridge_ok = True
                 if RANK == 0:
                     if not os.path.exists(ridge_file):
