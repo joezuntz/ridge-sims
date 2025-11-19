@@ -138,7 +138,7 @@ def main():
 
                 # --------------------------------------------------
                 # SAFETY CHECK 1 — skip pipeline if already exists
-                --------------------------------------------------
+                #-------------------------------------------------
                 exists = True
                 if RANK == 0:
                     exists = os.path.exists(ridge_file)
@@ -153,7 +153,7 @@ def main():
 
                 # --------------------------------------------------
                 # SAFETY CHECK 2 — input simulation availability
-                --------------------------------------------------
+                #-------------------------------------------------
                 input_ok = True
                 if RANK == 0:
                     try:
@@ -208,7 +208,7 @@ def main():
 
                 # --------------------------------------------------
                 # SAFETY CHECK 3 — contracted output already exists
-                --------------------------------------------------
+                #-------------------------------------------------
                 exists2 = True
                 if RANK == 0:
                     exists2 = os.path.exists(contracted_file)
