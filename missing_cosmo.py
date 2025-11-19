@@ -30,7 +30,6 @@ num_per_category = 10
 MISSING = {
     ("S8_perp", 0),
     ("S8_perp", 1),
-    ("S8_perp", 6),
     ("Om_fixed", 7),
     ("Om_fixed", 8),
     ("Om_fixed", 9),
