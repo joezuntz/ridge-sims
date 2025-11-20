@@ -49,9 +49,8 @@ if parent_dir not in sys.path:
 
 os.chdir(current_dir)
 
-# Project imports
 import dredge_scms
-from ridge_analysis_tools import *  # must include process_ridge_file()
+from ridge_analysis_tools import * 
 
 COMM = MPI.COMM_WORLD
 RANK = COMM.rank
@@ -151,7 +150,7 @@ def main():
                 pipeline_should_run = not exists   # CHANGED
 
                 # --------------------------------------------------
-                # SAFETY CHECK 2 — input simulation availability
+                # SAFETY CHECK 2 — 
                 # --------------------------------------------------
                 if pipeline_should_run:            #  CHANGED 
 
@@ -196,7 +195,7 @@ def main():
                         COMM.barrier()
                         continue
 
-                COMM.barrier()                     # CHANGED BLOCK END
+                COMM.barrier()                     # CHANGED 
 
                 # ======================================================
                 # SECOND STAGE — RIDGE CONTRACTION  (always checked)
@@ -209,7 +208,7 @@ def main():
                 )
 
                 # --------------------------------------------------
-                # SAFETY CHECK 3 — contracted output already exists
+                # SAFETY CHECK 3 — if contracted output already exists
                 # --------------------------------------------------
                 exists2 = True
                 if RANK == 0:
@@ -242,7 +241,7 @@ def main():
                 # RUN CONTRACTION ROUTINE (Stage 2)
                 # --------------------------------------------------
                 try:
-                    if RANK == 0:  # contraction is local, no MPI
+                    if RANK == 0:  # no MPI
                         process_ridge_file(
                             ridge_file=ridge_file,
                             mask=mask,
