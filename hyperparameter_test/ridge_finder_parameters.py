@@ -35,7 +35,6 @@ After stage 2:
         │   │   ├── summary.txt     
 
 """
-
 import os, sys
 import numpy as np
 import h5py
@@ -58,14 +57,14 @@ COMM = MPI.COMM_WORLD
 RANK = COMM.rank
 
 
-# ==============================================================
+# ============================================================== 
 # MAIN SCRIPT
-# ==============================================================
+# ============================================================== 
 def main():
 
-    # ----------------------------------------------------------
+    # ---------------------------------------------------------- 
     # PARAMETERS
-    # ----------------------------------------------------------
+    # ---------------------------------------------------------- 
     N_list = [2.5, 3, 3.5, 4]
     run_ids = range(1, 2)
     bandwidth = 0.1
@@ -78,7 +77,7 @@ def main():
     if RANK == 0:
         os.makedirs(output_base, exist_ok=True)
 
-    # Contraction routine parameters ---------------------------
+    # Contraction routine parameters --------------------------- 
     radius_arcmin = 4.0
     min_coverage = 0.9
     nside = 512
@@ -86,9 +85,9 @@ def main():
     mask = np.load(mask_filename) if RANK == 0 else None
     mask = COMM.bcast(mask, root=0)
 
-    # ----------------------------------------------------------
+    # ---------------------------------------------------------- 
     # SUMMARY
-    # ----------------------------------------------------------
+    # ---------------------------------------------------------- 
     summary = {
         # pipeline stage
         "completed": [],
@@ -103,9 +102,9 @@ def main():
         "errors_contraction": []
     }
 
-    # ----------------------------------------------------------
+    # ---------------------------------------------------------- 
     # MAIN LOOPS
-    # ----------------------------------------------------------
+    # ---------------------------------------------------------- 
     for base_label, base_folder in sim_bases.items():
 
         base_sim_dir = os.path.join(parent_dir, base_folder)
@@ -138,7 +137,7 @@ def main():
 
                 # --------------------------------------------------
                 # SAFETY CHECK 1 — skip pipeline if already exists
-                #-------------------------------------------------
+                # --------------------------------------------------
                 exists = True
                 if RANK == 0:
                     exists = os.path.exists(ridge_file)
@@ -148,56 +147,59 @@ def main():
                         )
 
                 exists = COMM.bcast(exists, root=0)
-                if exists:
-                    continue
+
+                pipeline_should_run = not exists   # CHANGED
 
                 # --------------------------------------------------
                 # SAFETY CHECK 2 — input simulation availability
-                #-------------------------------------------------
-                input_ok = True
-                if RANK == 0:
+                # --------------------------------------------------
+                if pipeline_should_run:            #  CHANGED 
+
+                    input_ok = True
+                    if RANK == 0:
+                        try:
+                            _ = load_coordinates(base_sim_dir, run_id)
+                        except FileNotFoundError:
+                            input_ok = False
+                            summary["skipped_missing_input"].append(
+                                {"run": run_id, "mesh": N}
+                            )
+
+                    input_ok = COMM.bcast(input_ok, root=0)
+                    if not input_ok:
+                        pipeline_should_run = False
+
+                # --------------------------------------------------
+                # RUN THE FILAMENT PIPELINE (Stage 1)
+                # --------------------------------------------------
+                if pipeline_should_run:            # CHANGED
                     try:
-                        _ = load_coordinates(base_sim_dir, run_id)
-                    except FileNotFoundError:
-                        input_ok = False
-                        summary["skipped_missing_input"].append(
-                            {"run": run_id, "mesh": N}
+                        run_filament_pipeline(
+                            bandwidth=bandwidth,
+                            base_sim_dir=base_sim_dir,
+                            run_ids=[run_id],
+                            base_label=base_label,
+                            home_dir=home_dir,
+                            N=N
                         )
 
-                input_ok = COMM.bcast(input_ok, root=0)
-                if not input_ok:
-                    continue
+                        if RANK == 0:
+                            summary["completed"].append(
+                                {"run": run_id, "mesh": N}
+                            )
 
-                # --------------------------------------------------
-                # RUN THE FILAMENT PIPELINE
-                # --------------------------------------------------
-                try:
-                    run_filament_pipeline(
-                        bandwidth=bandwidth,
-                        base_sim_dir=base_sim_dir,
-                        run_ids=[run_id],
-                        base_label=base_label,
-                        home_dir=home_dir,
-                        N=N
-                    )
+                    except Exception as e:
+                        if RANK == 0:
+                            summary["errors"].append(
+                                {"run": run_id, "mesh": N, "error": str(e)}
+                            )
+                        COMM.barrier()
+                        continue
 
-                    if RANK == 0:
-                        summary["completed"].append(
-                            {"run": run_id, "mesh": N}
-                        )
-
-                except Exception as e:
-                    if RANK == 0:
-                        summary["errors"].append(
-                            {"run": run_id, "mesh": N, "error": str(e)}
-                        )
-                    COMM.barrier()
-                    continue
-
-                COMM.barrier()
+                COMM.barrier()                     # CHANGED BLOCK END
 
                 # ======================================================
-                # SECOND STAGE — RIDGE CONTRACTION
+                # SECOND STAGE — RIDGE CONTRACTION  (always checked)
                 # ======================================================
 
                 contracted_file = ridge_file.replace(".h5", "_contracted.h5")
@@ -208,7 +210,7 @@ def main():
 
                 # --------------------------------------------------
                 # SAFETY CHECK 3 — contracted output already exists
-                #-------------------------------------------------
+                # --------------------------------------------------
                 exists2 = True
                 if RANK == 0:
                     exists2 = os.path.exists(contracted_file)
@@ -223,7 +225,7 @@ def main():
 
                 # --------------------------------------------------
                 # SAFETY CHECK 4 — missing ridge file to process
-                #-------------------------------------------------
+                # --------------------------------------------------
                 ridge_ok = True
                 if RANK == 0:
                     if not os.path.exists(ridge_file):
@@ -237,7 +239,7 @@ def main():
                     continue
 
                 # --------------------------------------------------
-                # RUN CONTRACTION ROUTINE
+                # RUN CONTRACTION ROUTINE (Stage 2)
                 # --------------------------------------------------
                 try:
                     if RANK == 0:  # contraction is local, no MPI
@@ -262,9 +264,9 @@ def main():
                         )
                     continue
 
-    # ======================================================
+    # ====================================================== 
     # FINAL SUMMARY 
-    # ======================================================
+    # ====================================================== 
     if RANK == 0:
 
         summary_file = os.path.join(output_base, "summary.txt")
@@ -296,8 +298,7 @@ def main():
         print("================================\n")
 
 
-
-# Entry point --------------------------------------------------
+# Entry point -------------------------------------------------- 
 if __name__ == "__main__":
     main()
 
