@@ -690,13 +690,13 @@ ra_min,  ra_max  = 3.36, 3.50      # horizontal axis (phi = RA)
 # ------------------------------------------------------------
 # 1. Load full-sky density map (Healpix)
 # ------------------------------------------------------------
-nside = 512
+nside = 1024
 m_sky = build_density_map(base_sim_dir, run_id, nside=nside, smoothing_degrees=0.5)
 
 # ------------------------------------------------------------
 # 2. Build a regular grid in RA/Dec inside the window
 # ------------------------------------------------------------
-N = 400   # resolution of the heatmap grid 
+N = 1000   # resolution of the heatmap grid 
 
 ra_grid  = np.linspace(ra_min,  ra_max,  N)
 dec_grid = np.linspace(dec_min, dec_max, N)
