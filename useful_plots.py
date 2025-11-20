@@ -753,7 +753,9 @@ from ridge_analysis_tools import *
 base_sim_dir = "lhc_run_sims_50"
 run_id = 1
 
-dec_lenses, ra_lenses = load_coordinates(base_sim_dir, run_id, shift=True)
+coords = load_coordinates(base_sim_dir, run_id, shift=True)
+dec_lenses = coords[:, 0]
+ra_lenses  = coords[:, 1]
 
 # Window (radians)
 dec_min, dec_max = 0.93, 1.00      # vertical axis (theta = pi/2 - dec)
