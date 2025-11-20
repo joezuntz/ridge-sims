@@ -242,7 +242,7 @@ def main():
                 try:
                     if RANK == 0:  # contraction is local, no MPI
                         process_ridge_file(
-                            ridge_path=ridge_file,
+                            ridge_file=ridge_file,
                             mask=mask,
                             nside=nside,
                             radius_arcmin=radius_arcmin,
