@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+import healpy as hp
 from ridge_analysis_tools import *
 ## --- config ---
 #base_dir = "example30_band0.4/8test"
@@ -440,43 +441,43 @@ from ridge_analysis_tools import *
 ##############################################
 
 
-## --- Configuration ---
-base_label = "zero_err"
-bandwidth = 0.1
-run_id = 1
-fp = 15  # percentile tag 
+### --- Configuration ---
+#base_label = "zero_err"
+#bandwidth = 0.1
+#run_id = 1
+#fp = 15  # percentile tag 
 
-# ridge file
-home_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/contracted_Ridges_final_p15"
-ridges_file = os.path.join(home_dir,f"normal_run_1_ridges_p15_contracted.h5")
+## ridge file
+#home_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/contracted_Ridges_final_p15"
+#ridges_file = os.path.join(home_dir,f"normal_run_1_ridges_p15_contracted.h5")
 
-print(f"Loading ridge coordinates from:\n  {ridges_file}")
+#print(f"Loading ridge coordinates from:\n  {ridges_file}")
 
-# --- Load ridges ---
-with h5py.File(ridges_file, "r") as f:
-    ridges = f["ridges"][:]
+## --- Load ridges ---
+#with h5py.File(ridges_file, "r") as f:
+#    ridges = f["ridges"][:]
 
-print(f"Loaded ridges: {ridges.shape}")
+#print(f"Loaded ridges: {ridges.shape}")
 
-ra = ridges[:, 1]  
-dec = ridges[:, 0]
+#ra = ridges[:, 1]  
+#dec = ridges[:, 0]
 
-# --- scatter plot ---
-plt.figure(figsize=(8, 6))
-plt.scatter(ra, dec, s=0.1, color="orange", alpha=0.6)
-plt.xlabel("Right Ascension")
-plt.ylabel("Declination")
-plt.title(f"Ridge Coordinates, bw={bandwidth}")
-plt.grid(alpha=0.3)
+## --- scatter plot ---
+#plt.figure(figsize=(8, 6))
+#plt.scatter(ra, dec, s=0.1, color="orange", alpha=0.6)
+#plt.xlabel("Right Ascension")
+#plt.ylabel("Declination")
+#plt.title(f"Ridge Coordinates, bw={bandwidth}")
+#plt.grid(alpha=0.3)
 
-# --- Save the plot ---
-plot_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots"
-os.makedirs(plot_dir, exist_ok=True)
-plot_path = os.path.join(plot_dir, f"ridges_run{run_id}_bw{bandwidth}.png")
-plt.savefig(plot_path, bbox_inches="tight", dpi=300)
-plt.close()
+## --- Save the plot ---
+#plot_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots"
+#os.makedirs(plot_dir, exist_ok=True)
+#plot_path = os.path.join(plot_dir, f"ridges_run{run_id}_bw{bandwidth}.png")
+#plt.savefig(plot_path, bbox_inches="tight", dpi=300)
+#plt.close()
 
-print("Ridge coordinate plot saved to {plot_path}")
+#print("Ridge coordinate plot saved to {plot_path}")
 
 
 
@@ -674,5 +675,73 @@ print("Ridge coordinate plot saved to {plot_path}")
 #plt.savefig(save_path2, dpi=300)
 #plt.close()
 #print(f"Saved {save_path2}")
+
+
+
+
+
+base_sim_dir = "lhc_run_sims_50"
+run_id = 1
+
+# Window (radians)
+dec_min, dec_max = 0.93, 1.00      # vertical axis (theta = pi/2 - dec)
+ra_min,  ra_max  = 3.36, 3.50      # horizontal axis (phi = RA)
+
+# ------------------------------------------------------------
+# 1. Load full-sky density map (Healpix)
+# ------------------------------------------------------------
+nside = 512
+m_sky = build_density_map(base_sim_dir, run_id, nside=nside, smoothing_degrees=0.5)
+
+# ------------------------------------------------------------
+# 2. Build a regular grid in RA/Dec inside the window
+# ------------------------------------------------------------
+N = 400   # resolution of the heatmap grid 
+
+ra_grid  = np.linspace(ra_min,  ra_max,  N)
+dec_grid = np.linspace(dec_min, dec_max, N)
+
+RA, DEC = np.meshgrid(ra_grid, dec_grid, indexing="xy")
+
+# Healpix uses:
+#   theta = pi/2 - dec
+#   phi   = RA
+theta = np.pi/2 - DEC
+phi   = RA
+
+# ------------------------------------------------------------
+# 3. Convert grid points to Healpix pixel indices
+# ------------------------------------------------------------
+pix = hp.ang2pix(nside, theta, phi)
+
+# ------------------------------------------------------------
+# 4. Sample Healpix map on the grid to create the heatmap
+# ------------------------------------------------------------
+heat = m_sky[pix]
+
+# ------------------------------------------------------------
+# 5. heatmap in *radians*
+# ------------------------------------------------------------
+plt.figure(figsize=(8, 6))
+
+extent = [ra_min, ra_max, dec_min, dec_max]
+
+plt.imshow(
+    heat,
+    origin="lower",
+    extent=extent,
+    aspect="auto"
+)
+
+plt.xlabel("RA (rad)")
+plt.ylabel("Dec (rad)")
+
+plt.colorbar(label="Density")
+
+outpath = "simulation_ridges_comparative_analysis_debug/useful_plots/heatmap_normal_run1.png"
+os.makedirs(os.path.dirname(outpath), exist_ok=True)
+
+plt.tight_layout()
+plt.savefig(outpath, dpi=150)
 
 
