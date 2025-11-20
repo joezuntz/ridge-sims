@@ -680,68 +680,124 @@ from ridge_analysis_tools import *
 
 
 
+#base_sim_dir = "lhc_run_sims_50"
+#run_id = 1
+
+## Window (radians)
+#dec_min, dec_max = 0.93, 1.00      # vertical axis (theta = pi/2 - dec)
+#ra_min,  ra_max  = 3.36, 3.50      # horizontal axis (phi = RA)
+
+## ------------------------------------------------------------
+## 1. Load full-sky density map (Healpix)
+## ------------------------------------------------------------
+#nside = 1024
+#m_sky = build_density_map(base_sim_dir, run_id, nside=nside, smoothing_degrees=0.5)
+
+## ------------------------------------------------------------
+## 2. Build a regular grid in RA/Dec inside the window
+## ------------------------------------------------------------
+#N = 1000   # resolution of the heatmap grid 
+
+#ra_grid  = np.linspace(ra_min,  ra_max,  N)
+#dec_grid = np.linspace(dec_min, dec_max, N)
+
+#RA, DEC = np.meshgrid(ra_grid, dec_grid, indexing="xy")
+
+## Healpix uses:
+##   theta = pi/2 - dec
+##   phi   = RA
+#theta = np.pi/2 - DEC
+#phi   = RA
+
+## ------------------------------------------------------------
+## 3. Convert grid points to Healpix pixel indices
+## ------------------------------------------------------------
+#pix = hp.ang2pix(nside, theta, phi)
+
+## ------------------------------------------------------------
+## 4. Sample Healpix map on the grid to create the heatmap
+## ------------------------------------------------------------
+#heat = m_sky[pix]
+
+## ------------------------------------------------------------
+## 5. heatmap in *radians*
+## ------------------------------------------------------------
+#plt.figure(figsize=(8, 6))
+
+#extent = [ra_min, ra_max, dec_min, dec_max]
+
+#plt.imshow(
+#    heat,
+#    origin="lower",
+#    extent=extent,
+#    aspect="auto"
+#)
+
+#plt.xlabel("RA (rad)")
+#plt.ylabel("Dec (rad)")
+
+#plt.colorbar(label="Density")
+
+#outpath = "simulation_ridges_comparative_analysis_debug/useful_plots/heatmap_normal_run1.png"
+#os.makedirs(os.path.dirname(outpath), exist_ok=True)
+
+#plt.tight_layout()
+#plt.savefig(outpath, dpi=150)
+
+
+
+
+# ------------------------------------------------------------
+# lens coordinates
+# ------------------------------------------------------------
 base_sim_dir = "lhc_run_sims_50"
 run_id = 1
+
+dec_lenses, ra_lenses = load_coordinates(base_sim_dir, run_id, shift=True)
 
 # Window (radians)
 dec_min, dec_max = 0.93, 1.00      # vertical axis (theta = pi/2 - dec)
 ra_min,  ra_max  = 3.36, 3.50      # horizontal axis (phi = RA)
 
 # ------------------------------------------------------------
-# 1. Load full-sky density map (Healpix)
+# 1. Define the grid
 # ------------------------------------------------------------
-nside = 1024
-m_sky = build_density_map(base_sim_dir, run_id, nside=nside, smoothing_degrees=0.5)
-
-# ------------------------------------------------------------
-# 2. Build a regular grid in RA/Dec inside the window
-# ------------------------------------------------------------
-N = 1000   # resolution of the heatmap grid 
-
-ra_grid  = np.linspace(ra_min,  ra_max,  N)
+N = 400  # heatmap resolution
+ra_grid  = np.linspace(ra_min, ra_max, N)
 dec_grid = np.linspace(dec_min, dec_max, N)
 
-RA, DEC = np.meshgrid(ra_grid, dec_grid, indexing="xy")
+# ------------------------------------------------------------
+# 2. Compute 2D histogram
+# ------------------------------------------------------------
+heat, ra_edges, dec_edges = np.histogram2d(
+    dec_lenses,  # vertical axis
+    ra_lenses,   # horizontal axis
+    bins=[dec_grid, ra_grid]
+)
 
-# Healpix uses:
-#   theta = pi/2 - dec
-#   phi   = RA
-theta = np.pi/2 - DEC
-phi   = RA
-
-# ------------------------------------------------------------
-# 3. Convert grid points to Healpix pixel indices
-# ------------------------------------------------------------
-pix = hp.ang2pix(nside, theta, phi)
-
-# ------------------------------------------------------------
-# 4. Sample Healpix map on the grid to create the heatmap
-# ------------------------------------------------------------
-heat = m_sky[pix]
+# Flip vertical axis so that origin="lower" works with imshow
+heat = heat.T  # transpose so X-axis = RA, Y-axis = Dec
 
 # ------------------------------------------------------------
-# 5. heatmap in *radians*
+# 3. Plot heatmap
 # ------------------------------------------------------------
 plt.figure(figsize=(8, 6))
-
 extent = [ra_min, ra_max, dec_min, dec_max]
 
 plt.imshow(
     heat,
     origin="lower",
     extent=extent,
-    aspect="auto"
+    aspect="auto",
+    cmap="hot"  # red = higher density
 )
 
 plt.xlabel("RA (rad)")
 plt.ylabel("Dec (rad)")
+plt.colorbar(label="Lens count density")
 
-plt.colorbar(label="Density")
-
-outpath = "simulation_ridges_comparative_analysis_debug/useful_plots/heatmap_normal_run1.png"
+# Save output
+outpath = "simulation_ridges_comparative_analysis_debug/useful_plots/heatmap_of_lenses.png"
 os.makedirs(os.path.dirname(outpath), exist_ok=True)
-
 plt.tight_layout()
 plt.savefig(outpath, dpi=150)
-
-
