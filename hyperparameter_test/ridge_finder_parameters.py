@@ -242,14 +242,14 @@ def main():
                 # --------------------------------------------------
                 try:
                     if RANK == 0:  # no MPI
-                        process_ridge_file(
-                            ridge_file=ridge_file,
-                            mask=mask,
-                            nside=nside,
-                            radius_arcmin=radius_arcmin,
-                            min_coverage=min_coverage,
-                            output_dir=ridges_dir,
-                            plot_dir=plots_dir
+                        process_ridge_file(        
+                            ridge_file,            
+                            mask,                  
+                            nside,                 
+                            radius_arcmin,         
+                            min_coverage,          
+                            ridges_dir,            
+                            plots_dir              
                         )
 
                         summary["completed_contraction"].append(
