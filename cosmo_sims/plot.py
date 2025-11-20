@@ -90,7 +90,7 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
             plt.plot(g_x, linewidth=1.7)
             plt.xlabel("Index")
             plt.ylabel(r"$g_{\times}$")
-            plt.title(label + r": $g_{\times}$"))
+            plt.title(label + r": $g_{\times}$")
             plt.tight_layout()
             out_file = os.path.join(output_dir, f"{label}_gx.png")
             plt.savefig(out_file, dpi=250, bbox_inches="tight")
