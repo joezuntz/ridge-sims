@@ -765,8 +765,8 @@ ra_min,  ra_max  = 3.36, 3.50      # horizontal axis (phi = RA)
 # 1. Define the grid
 # ------------------------------------------------------------
 N = 400  # heatmap resolution
-ra_grid  = np.linspace(ra_min, ra_max, N)
-dec_grid = np.linspace(dec_min, dec_max, N)
+ra_grid  = np.linspace(np.min(ra_lenses), np.max(ra_lenses), N)
+dec_grid = np.linspace(np.min(dec_lenses), np.max(dec_lenses), N)
 
 # ------------------------------------------------------------
 # 2. Compute 2D histogram
