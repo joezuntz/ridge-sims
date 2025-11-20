@@ -103,12 +103,10 @@ def run_sim(run_id, include_noise, lsst):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--job-id", type=int, required=True)
-    parser.add_argument("--lsst", type=int, required=True)
     args = parser.parse_args()
 
-    include_noise, run_id = map_job_to_config(args.job_id)
-
-    run_sim(run_id, include_noise, args.lsst)
+    include_noise, run_id, lsst = map_job_to_config(args.job_id)
+    run_sim(run_id, include_noise, lsst)
 
     
     
