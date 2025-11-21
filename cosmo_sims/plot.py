@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 # ------------------------------------------------------------
@@ -25,13 +26,10 @@ plt.rcParams.update({
 # ------------------------------------------------------------
 
 ROOT = "Cosmo_sim_ridges"
-
 CATEGORIES = ["Om_fixed", "S8", "S8_perp", "sigma8_fixed"]
-
-RUNS = [f"run_{i}" for i in range(1, 10 + 1)]
+RUNS = [f"run_{i}" for i in range(1, 11)]
 P = 15
 
-# Output directory (relative to where script is executed)
 OUTPUT_ROOT = os.path.abspath("plots")
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
 print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
@@ -42,7 +40,6 @@ print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
 # ------------------------------------------------------------
 
 def load_shear_file(path):
-    """Load shear CSV; return None if missing or unreadable."""
     if not os.path.exists(path):
         return None
     try:
@@ -52,7 +49,7 @@ def load_shear_file(path):
 
 
 # ------------------------------------------------------------
-# Main plotting routine
+# Main plotting
 # ------------------------------------------------------------
 
 def plot_shear_all_categories():
@@ -81,41 +78,43 @@ def plot_shear_all_categories():
             print(f"  No usable shear files for {cat}.")
             continue
 
-        # ----------------------------------------------------
-        # Prepare two figures: g+ and g×
-        # ----------------------------------------------------
         fig_gplus, ax_gplus = plt.subplots(figsize=(8, 6))
         fig_gx, ax_gx = plt.subplots(figsize=(8, 6))
 
         for run_id, df in shear_list:
 
-            # Hard-coded correct CSV headers
+            # CSV columns (fixed)
             rad_col = "Weighted_Real_Distance"
             gplus_col = "Weighted_g_plus"
             gcross_col = "Weighted_g_cross"
 
-            # Plot curves
-            ax_gplus.plot(df[rad_col], df[gplus_col], alpha=0.6, label=run_id)
-            ax_gx.plot(df[rad_col], df[gcross_col], alpha=0.6, label=run_id)
+            # Convert rad → arcmin
+            arcmin_centers = np.degrees(df[rad_col].values) * 60.0
+
+            # Plot
+            ax_gplus.plot(arcmin_centers, df[gplus_col], alpha=0.6, label=run_id)
+            ax_gx.plot(arcmin_centers, df[gcross_col], alpha=0.6, label=run_id)
 
         # ----------------------------------------------------
         # Format g+
         # ----------------------------------------------------
+        ax_gplus.set_xscale("log")
         ax_gplus.set_title(f"{cat}: g₊ (all runs)")
-        ax_gplus.set_xlabel("θ [radians]")
+        ax_gplus.set_xlabel("θ [arcmin]")
         ax_gplus.set_ylabel("g₊")
         ax_gplus.legend(frameon=False)
 
         # ----------------------------------------------------
         # Format g×
         # ----------------------------------------------------
+        ax_gx.set_xscale("log")
         ax_gx.set_title(f"{cat}: g× (all runs)")
-        ax_gx.set_xlabel("θ [radians]")
+        ax_gx.set_xlabel("θ [arcmin]")
         ax_gx.set_ylabel("g×")
         ax_gx.legend(frameon=False)
 
         # ----------------------------------------------------
-        # Save into ./plots/
+        # Save
         # ----------------------------------------------------
         fig_gplus.savefig(
             os.path.join(OUTPUT_ROOT, f"{cat}_gplus_all_runs.png"),
