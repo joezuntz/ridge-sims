@@ -747,59 +747,99 @@ from ridge_analysis_tools import *
 
 
 
-# ------------------------------------------------------------
-# lens coordinates
-# ------------------------------------------------------------
-base_sim_dir = "lhc_run_sims_50"
-run_id = 1
 
-coords = load_coordinates(base_sim_dir, run_id, shift=True)
-dec_lenses = coords[:, 0]
-ra_lenses  = coords[:, 1]
 
-# Window (radians)
-dec_min, dec_max = 0.93, 1.00      # vertical axis (theta = pi/2 - dec)
-ra_min,  ra_max  = 3.36, 3.50      # horizontal axis (phi = RA)
 
-# ------------------------------------------------------------
-# 1. Define the grid
-# ------------------------------------------------------------
-N = 400  # heatmap resolution
-ra_grid  = np.linspace(np.min(ra_lenses), np.max(ra_lenses), N)
-dec_grid = np.linspace(np.min(dec_lenses), np.max(dec_lenses), N)
 
-# ------------------------------------------------------------
-# 2. Compute 2D histogram
-# ------------------------------------------------------------
-heat, ra_edges, dec_edges = np.histogram2d(
-    dec_lenses,  # vertical axis
-    ra_lenses,   # horizontal axis
-    bins=[dec_grid, ra_grid]
-)
 
-# Flip vertical axis so that origin="lower" works with imshow
-heat = heat.T  # transpose so X-axis = RA, Y-axis = Dec
+# =====================================================================
+#   Publication-style params
+# =====================================================================
+plt.rcParams.update({
+    "font.size": 14,
+    "axes.labelsize": 16,
+    "axes.titlesize": 16,
+    "legend.fontsize": 12,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    "axes.linewidth": 1.5,
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "xtick.top": True,
+    "ytick.right": True,
+})
 
-# ------------------------------------------------------------
-# 3. Plot heatmap
-# ------------------------------------------------------------
-plt.figure(figsize=(8, 6))
-extent = [ra_min, ra_max, dec_min, dec_max]
-
-plt.imshow(
-    heat,
-    origin="lower",
-    extent=extent,
-    aspect="auto",
-    cmap="hot"  # red = higher density
-)
-
-plt.xlabel("RA (rad)")
-plt.ylabel("Dec (rad)")
-plt.colorbar(label="Lens count density")
-
-# Save output
-outpath = "simulation_ridges_comparative_analysis_debug/useful_plots/heatmap_of_lenses.png"
+# Output location
+outpath = "paper_plots/redshift_dist.png"
 os.makedirs(os.path.dirname(outpath), exist_ok=True)
-plt.tight_layout()
-plt.savefig(outpath, dpi=150)
+
+
+# ---------------------------------------------------------------
+# Read background galaxies
+# ---------------------------------------------------------------
+def read_sim_background(bg_file):
+    """Read background galaxies before any cuts."""
+    with h5py.File(bg_file, "r") as f:
+        z_true = f["Z_TRUE"][:]
+    return z_true
+
+
+# ---------------------------------------------------------------
+# Read lenses BEFORE z<0.4 cut
+# ---------------------------------------------------------------
+def load_lens_redshifts(base_sim_dir, run_id):
+    """Load lens redshifts before selection."""
+    filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
+    with h5py.File(filename, "r") as f:
+        z_true = f["Z_TRUE"][:]
+    return z_true
+
+
+# ---------------------------------------------------------------
+# Plot lens and background redshift distributions
+# ---------------------------------------------------------------
+def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None):
+    plt.figure(figsize=(8, 6))
+
+    # Use shared global bins
+    zmax = max(bg_z.max(), lens_z.max())
+    bins = np.linspace(0, zmax, 60)
+
+    plt.hist(lens_z, bins=bins, density=True, alpha=0.5, label="Lens catalog")
+    plt.hist(bg_z,   bins=bins, density=True, alpha=0.5, label="Source catalog")
+
+    # Vertical selection cut
+    plt.axvline(z_cut, linestyle="--", linewidth=2, label=f"z = {z_cut}")
+
+    plt.xlabel("Redshift z")
+    plt.title("Redshift Distributions Before Selection Cut")
+    plt.legend()
+    plt.tight_layout()
+
+    if savepath is not None:
+        plt.savefig(savepath, dpi=300)
+    plt.show()
+
+
+# ---------------------------------------------------------------
+# Main call
+# ---------------------------------------------------------------
+if __name__ == "__main__":
+
+    BG_file = os.path.join(
+        "..",
+        "lhc_run_sims_zero_err_10",
+        "run_1",
+        "source_catalog_0.npy"
+    )
+
+    base_sim_dir = "lhc_run_sims_zero_err_10"
+    run_id = 1
+
+    # Load data
+    bg_z = read_sim_background(BG_file)
+    lens_z = load_lens_redshifts(base_sim_dir, run_id)
+
+    # Plot distribution
+    plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=outpath)
+
