@@ -99,7 +99,7 @@ def plot_shear_all_categories():
         # Format g+
         # ----------------------------------------------------
         ax_gplus.set_xscale("log")
-        ax_gplus.set_title(f"{cat}: g₊ (all runs)")
+        ax_gplus.set_title(f"{cat}: g₊ ")
         ax_gplus.set_xlabel("θ [arcmin]")
         ax_gplus.set_ylabel("g₊")
         ax_gplus.legend(frameon=False)
@@ -108,7 +108,7 @@ def plot_shear_all_categories():
         # Format g×
         # ----------------------------------------------------
         ax_gx.set_xscale("log")
-        ax_gx.set_title(f"{cat}: g× (all runs)")
+        ax_gx.set_title(f"{cat}: g× ")
         ax_gx.set_xlabel("θ [arcmin]")
         ax_gx.set_ylabel("g×")
         ax_gx.legend(frameon=False)
