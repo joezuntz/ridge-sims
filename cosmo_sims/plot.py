@@ -22,6 +22,7 @@ plt.rcParams.update({
 # =====================================================================
 def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
 
+    # Absolute paths
     input_dir = os.path.abspath(input_dir)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, output_dir)
@@ -29,111 +30,124 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
 
     print(f"\n[INFO] Output directory: {output_dir}\n")
 
-    # GLOBAL containers across ALL categories
+    # GLOBAL collectors
     ALL_GPLUS = []
     ALL_GX = []
     ALL_LABELS = []
 
-    # Category-based containers:
+    # CATEGORY collectors
     CATEGORY_DATA = {}
 
-    # Loop through the top-level categories
+    # -----------------------------------------------------------------
+    # Loop over cosmology categories
+    # -----------------------------------------------------------------
     for category in os.listdir(input_dir):
         cat_path = os.path.join(input_dir, category)
         if not os.path.isdir(cat_path):
             continue
 
         print(f"\n===== CATEGORY: {category} =====")
-        CATEGORY_DATA[category] = {
-            "labels": [],
-            "gplus": [],
-            "gx": []
-        }
+        CATEGORY_DATA[category] = {"labels": [], "gplus": [], "gx": []}
 
-        # Walk entire tree under each category
-        for root, dirs, files in os.walk(cat_path):
-
-            # Only accept directories named "shear"
-            if os.path.basename(root) != "shear":
+        # -------------------------------------------------------------
+        # Loop over runs inside each category
+        # -------------------------------------------------------------
+        for run in os.listdir(cat_path):
+            run_path = os.path.join(cat_path, run)
+            if not run.startswith("run_"):
                 continue
 
-            if "shear_p15.csv" not in files:
-                continue
+            # ---------------------------------------------------------
+            # Loop over bandwidths
+            # ---------------------------------------------------------
+            for band in os.listdir(run_path):
+                band_path = os.path.join(run_path, band)
+                if not band.startswith("band_"):
+                    continue
 
-            csv_path = os.path.join(root, "shear_p15.csv")
-            print(f"[INFO] Reading: {csv_path}")
+                # Expected final directory
+                ridge_path = os.path.join(band_path, "Ridges_final_p15", "shear")
+                shear_file = os.path.join(ridge_path, "shear_p15.csv")
 
-            try:
-                df = pd.read_csv(csv_path)
-            except Exception as e:
-                print(f"  ERROR reading CSV: {e}")
-                continue
+                # -----------------------------------------------------
+                # Skip if CSV missing
+                # -----------------------------------------------------
+                if not os.path.exists(shear_file):
+                    continue
 
-            rel_path = os.path.relpath(root, cat_path).split(os.sep)
-            label = f"{category}_{'_'.join(rel_path[:-1])}"
+                print(f"[INFO] Reading: {shear_file}")
 
-            g_plus = df["g_plus"].values if "g_plus" in df.columns else None
-            g_x    = df["g_x"].values    if "g_x" in df.columns else None
+                try:
+                    df = pd.read_csv(shear_file)
+                except Exception as e:
+                    print(f"  ERROR reading CSV: {e}")
+                    continue
 
-            CATEGORY_DATA[category]["labels"].append(label)
-            CATEGORY_DATA[category]["gplus"].append(g_plus)
-            CATEGORY_DATA[category]["gx"].append(g_x)
+                # Label format
+                label = f"{category}_{run}_{band}"
 
-            ALL_LABELS.append(label)
-            ALL_GPLUS.append(g_plus)
-            ALL_GX.append(g_x)
+                # Extract shear
+                g_plus = df["g_plus"].values if "g_plus" in df.columns else None
+                g_x    = df["g_x"].values    if "g_x" in df.columns else None
 
-            # ------------------------------
-            # INDIVIDUAL PLOTS
-            # ------------------------------
+                # Store in category collectors
+                CATEGORY_DATA[category]["labels"].append(label)
+                CATEGORY_DATA[category]["gplus"].append(g_plus)
+                CATEGORY_DATA[category]["gx"].append(g_x)
 
-            # g+
-            if g_plus is not None:
-                plt.figure(figsize=(7, 4.7))
-                plt.plot(g_plus, linewidth=1.7)
-                plt.xlabel("Index")
-                plt.ylabel("$g_+$")
-                plt.title(f"{label}: $g_+$")
-                plt.tight_layout()
-                out_file = os.path.join(output_dir, f"{label}_gplus.png")
-                plt.savefig(out_file, dpi=250, bbox_inches="tight")
-                plt.close()
+                # Store globally
+                ALL_LABELS.append(label)
+                ALL_GPLUS.append(g_plus)
+                ALL_GX.append(g_x)
 
-            # g×
-            if g_x is not None:
-                plt.figure(figsize=(7, 4.7))
-                plt.plot(g_x, linewidth=1.7)
-                plt.xlabel("Index")
-                plt.ylabel(f"{label}: " + r"$g_{\times}$")
-                plt.title(f"{label}: " + r"$g_{\times}$")
-                plt.tight_layout()
-                out_file = os.path.join(output_dir, f"{label}_gx.png")
-                plt.savefig(out_file, dpi=250, bbox_inches="tight")
-                plt.close()
+                # -----------------------------------------------------
+                # INDIVIDUAL PLOTS
+                # -----------------------------------------------------
+                if g_plus is not None:
+                    plt.figure(figsize=(7, 4.7))
+                    plt.plot(g_plus, linewidth=1.7)
+                    plt.xlabel("Index")
+                    plt.ylabel(r"$g_+$")
+                    plt.title(f"{label}  (g+)")
+                    plt.tight_layout()
+                    out_file = os.path.join(output_dir, f"{label}_gplus.png")
+                    plt.savefig(out_file, dpi=250, bbox_inches="tight")
+                    plt.close()
 
-        # =================================================================
-        # CATEGORY-LEVEL PLOTS
-        # =================================================================
+                if g_x is not None:
+                    plt.figure(figsize=(7, 4.7))
+                    plt.plot(g_x, linewidth=1.7)
+                    plt.xlabel("Index")
+                    plt.ylabel(r"$g_{\times}$")
+                    plt.title(f"{label}  (g×)")
+                    plt.tight_layout()
+                    out_file = os.path.join(output_dir, f"{label}_gx.png")
+                    plt.savefig(out_file, dpi=250, bbox_inches="tight")
+                    plt.close()
+
+        # =============================================================
+        # PER-CATEGORY COMBINED PLOTS
+        # =============================================================
         labels = CATEGORY_DATA[category]["labels"]
         gplus_list = CATEGORY_DATA[category]["gplus"]
         gx_list = CATEGORY_DATA[category]["gx"]
 
-        # Category g+
+        # -- category g+ --
         if any(g is not None for g in gplus_list):
             plt.figure(figsize=(8, 5.3))
             for g, lbl in zip(gplus_list, labels):
                 if g is not None:
                     plt.plot(g, linewidth=1.5, label=lbl)
             plt.xlabel("Index")
-            plt.ylabel("$g_+$")
-            plt.title(f"{category}: All $g_+$")
-            plt.legend(frameon=False)
+            plt.ylabel(r"$g_+$")
+            plt.title(f"{category}: All g+ curves")
+            plt.legend(frameon=False, fontsize=8)
             plt.tight_layout()
             out_file = os.path.join(output_dir, f"{category}_ALL_gplus.png")
             plt.savefig(out_file, dpi=300)
             plt.close()
 
-        # Category g×
+        # -- category g× --
         if any(g is not None for g in gx_list):
             plt.figure(figsize=(8, 5.3))
             for g, lbl in zip(gx_list, labels):
@@ -141,15 +155,15 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
                     plt.plot(g, linewidth=1.5, label=lbl)
             plt.xlabel("Index")
             plt.ylabel(r"$g_{\times}$")
-            plt.title(r"$g_{\times}$ for " + category)
-            plt.legend(frameon=False)
+            plt.title(f"{category}: All g× curves")
+            plt.legend(frameon=False, fontsize=8)
             plt.tight_layout()
             out_file = os.path.join(output_dir, f"{category}_ALL_gx.png")
             plt.savefig(out_file, dpi=300)
             plt.close()
 
     # =================================================================
-    # GLOBAL PLOTS
+    # GLOBAL PLOTS ACROSS ALL CATEGORIES
     # =================================================================
     if any(g is not None for g in ALL_GPLUS):
         plt.figure(figsize=(9, 6))
@@ -157,11 +171,11 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
             if g is not None:
                 plt.plot(g, linewidth=1.2, alpha=0.75, label=lbl)
         plt.xlabel("Index")
-        plt.ylabel("$g_+$")
-        plt.title("$g_+$ across all cosmologies")
-        plt.legend(frameon=False, fontsize=7)
+        plt.ylabel(r"$g_+$")
+        plt.title("All cosmologies: g+")
+        plt.legend(frameon=False, fontsize=6)
         plt.tight_layout()
-        out_file = os.path.join(output_dir, f"GLOBAL_ALL_gplus.png")
+        out_file = os.path.join(output_dir, "GLOBAL_ALL_gplus.png")
         plt.savefig(out_file, dpi=300)
         plt.close()
 
@@ -172,14 +186,15 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
                 plt.plot(g, linewidth=1.2, alpha=0.75, label=lbl)
         plt.xlabel("Index")
         plt.ylabel(r"$g_{\times}$")
-        plt.title("$g_\\times$ across all cosmologies")
-        plt.legend(frameon=False, fontsize=7)
+        plt.title("All cosmologies: g×")
+        plt.legend(frameon=False, fontsize=6)
         plt.tight_layout()
-        out_file = os.path.join(output_dir, f"GLOBAL_ALL_gx.png")
+        out_file = os.path.join(output_dir, "GLOBAL_ALL_gx.png")
         plt.savefig(out_file, dpi=300)
         plt.close()
 
     print("\n[INFO] All plotting completed.\n")
+
 
 # =====================================================================
 if __name__ == "__main__":
