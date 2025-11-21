@@ -38,7 +38,6 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
     CATEGORY_DATA = {}
 
     # Loop through the top-level categories
-    # e.g. Om_fixed, S8, S8_perp, sigma8_fixed
     for category in os.listdir(input_dir):
         cat_path = os.path.join(input_dir, category)
         if not os.path.isdir(cat_path):
@@ -70,21 +69,16 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
                 print(f"  ERROR reading CSV: {e}")
                 continue
 
-            # Build a label: category_run_x_band_y
             rel_path = os.path.relpath(root, cat_path).split(os.sep)
-            # rel_path = ["run_1", "band_0.1", "shear"]
             label = f"{category}_{'_'.join(rel_path[:-1])}"
 
-            # Extract shear fields
             g_plus = df["g_plus"].values if "g_plus" in df.columns else None
             g_x    = df["g_x"].values    if "g_x" in df.columns else None
 
-            # Store per-category
             CATEGORY_DATA[category]["labels"].append(label)
             CATEGORY_DATA[category]["gplus"].append(g_plus)
             CATEGORY_DATA[category]["gx"].append(g_x)
 
-            # Store global
             ALL_LABELS.append(label)
             ALL_GPLUS.append(g_plus)
             ALL_GX.append(g_x)
@@ -92,31 +86,34 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
             # ------------------------------
             # INDIVIDUAL PLOTS
             # ------------------------------
+
+            # g+
             if g_plus is not None:
                 plt.figure(figsize=(7, 4.7))
                 plt.plot(g_plus, linewidth=1.7)
                 plt.xlabel("Index")
-                plt.ylabel(r"$g_+$")
+                plt.ylabel("$g_+$")
                 plt.title(f"{label}: $g_+$")
                 plt.tight_layout()
                 out_file = os.path.join(output_dir, f"{label}_gplus.png")
                 plt.savefig(out_file, dpi=250, bbox_inches="tight")
                 plt.close()
 
+            # g×
             if g_x is not None:
                 plt.figure(figsize=(7, 4.7))
                 plt.plot(g_x, linewidth=1.7)
                 plt.xlabel("Index")
-                plt.ylabel(rf"{label}: $g_{\times}$")
-                plt.title(f"{label}: $g_{\times}$")
+                plt.ylabel(f"{label}: " + r"$g_{\times}$")
+                plt.title(f"{label}: " + r"$g_{\times}$")
                 plt.tight_layout()
                 out_file = os.path.join(output_dir, f"{label}_gx.png")
                 plt.savefig(out_file, dpi=250, bbox_inches="tight")
                 plt.close()
 
-        # ===============================
+        # =================================================================
         # CATEGORY-LEVEL PLOTS
-        # ===============================
+        # =================================================================
         labels = CATEGORY_DATA[category]["labels"]
         gplus_list = CATEGORY_DATA[category]["gplus"]
         gx_list = CATEGORY_DATA[category]["gx"]
@@ -128,7 +125,7 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
                 if g is not None:
                     plt.plot(g, linewidth=1.5, label=lbl)
             plt.xlabel("Index")
-            plt.ylabel(r"$g_+$")
+            plt.ylabel("$g_+$")
             plt.title(f"{category}: All $g_+$")
             plt.legend(frameon=False)
             plt.tight_layout()
@@ -144,7 +141,7 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
                     plt.plot(g, linewidth=1.5, label=lbl)
             plt.xlabel("Index")
             plt.ylabel(r"$g_{\times}$")
-            plt.title(rf"$g_{\times}$")
+            plt.title(r"$g_{\times}$ for " + category)
             plt.legend(frameon=False)
             plt.tight_layout()
             out_file = os.path.join(output_dir, f"{category}_ALL_gx.png")
@@ -152,7 +149,7 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
             plt.close()
 
     # =================================================================
-    # GLOBAL PLOTS ACROSS ALL CATEGORIES
+    # GLOBAL PLOTS
     # =================================================================
     if any(g is not None for g in ALL_GPLUS):
         plt.figure(figsize=(9, 6))
@@ -160,7 +157,7 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
             if g is not None:
                 plt.plot(g, linewidth=1.2, alpha=0.75, label=lbl)
         plt.xlabel("Index")
-        plt.ylabel(r"$g_+$")
+        plt.ylabel("$g_+$")
         plt.title("$g_+$ across all cosmologies")
         plt.legend(frameon=False, fontsize=7)
         plt.tight_layout()
@@ -174,8 +171,8 @@ def plot_all_shear(input_dir="Cosmo_sim_ridges", output_dir="plots"):
             if g is not None:
                 plt.plot(g, linewidth=1.2, alpha=0.75, label=lbl)
         plt.xlabel("Index")
-        plt.ylabel(rf"{label}: $g_{\times}$")
-        plt.title(rf"$g_{\times}$","across all cosmologies")
+        plt.ylabel(r"$g_{\times}$")
+        plt.title("$g_\\times$ across all cosmologies")
         plt.legend(frameon=False, fontsize=7)
         plt.tight_layout()
         out_file = os.path.join(output_dir, f"GLOBAL_ALL_gx.png")
