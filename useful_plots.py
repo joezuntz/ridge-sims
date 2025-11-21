@@ -827,7 +827,6 @@ def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None):
 if __name__ == "__main__":
 
     BG_file = os.path.join(
-        "..",
         "lhc_run_sims_zero_err_10",
         "run_1",
         "source_catalog_0.npy"
