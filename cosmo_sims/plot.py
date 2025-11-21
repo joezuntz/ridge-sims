@@ -24,20 +24,14 @@ plt.rcParams.update({
 # Directories + config
 # ------------------------------------------------------------
 
-# Data root
 ROOT = "Cosmo_sim_ridges"
 
-# Categories (top-level dirs under ROOT)
 CATEGORIES = ["Om_fixed", "S8", "S8_perp", "sigma8_fixed"]
 
-# Runs
-RUNS = [f"run_{i}" for i in range(1, 11)]
-P = 15      # percentile → shear_p15.csv
+RUNS = [f"run_{i}" for i in range(1, 10 + 1)]
+P = 15
 
-
-# ------------------------------------------------------------
-# Output directory (relative to where you run the script)
-# ------------------------------------------------------------
+# Output directory (relative to where script is executed)
 OUTPUT_ROOT = os.path.abspath("plots")
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
 print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
@@ -48,7 +42,7 @@ print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
 # ------------------------------------------------------------
 
 def load_shear_file(path):
-    """Load shear CSV; returns None if missing or unreadable."""
+    """Load shear CSV; return None if missing or unreadable."""
     if not os.path.exists(path):
         return None
     try:
@@ -65,7 +59,7 @@ def plot_shear_all_categories():
 
     for cat in CATEGORIES:
         print(f"=== Category: {cat} ===")
-        shear_list = []   # list of (run_id, df)
+        shear_list = []
 
         for run in RUNS:
 
@@ -83,41 +77,24 @@ def plot_shear_all_categories():
             shear_list.append((run, df))
             print(f"  [loaded] {csv_path}")
 
-        # ----------------------------------------------------
-        # If nothing loaded for this category, skip
-        # ----------------------------------------------------
         if len(shear_list) == 0:
             print(f"  No usable shear files for {cat}.")
             continue
 
         # ----------------------------------------------------
-        # Prepare two separate figures: g+ and g×
+        # Prepare two figures: g+ and g×
         # ----------------------------------------------------
         fig_gplus, ax_gplus = plt.subplots(figsize=(8, 6))
         fig_gx, ax_gx = plt.subplots(figsize=(8, 6))
 
         for run_id, df in shear_list:
 
-            # Identify columns automatically
-            # Radius
-            if "R" in df.columns:
-                rad_col = "R"
-            else:
-                rad_col = [c for c in df.columns if "R" in c][0]
+            # Hard-coded correct CSV headers
+            rad_col = "Weighted_Real_Distance"
+            gplus_col = "Weighted_g_plus"
+            gcross_col = "Weighted_g_cross"
 
-            # g+
-            gplus_candidates = [c for c in df.columns if "gplus" in c.lower() or "g_plus" in c.lower()]
-            if len(gplus_candidates) == 0:
-                raise ValueError(f"Could not find g+ column in {csv_path}")
-            gplus_col = gplus_candidates[0]
-
-            # g×
-            gcross_candidates = [c for c in df.columns if "x" in c.lower()]
-            if len(gcross_candidates) == 0:
-                raise ValueError(f"Could not find gx column in {csv_path}")
-            gcross_col = gcross_candidates[0]
-
-            # Plot
+            # Plot curves
             ax_gplus.plot(df[rad_col], df[gplus_col], alpha=0.6, label=run_id)
             ax_gx.plot(df[rad_col], df[gcross_col], alpha=0.6, label=run_id)
 
@@ -125,7 +102,7 @@ def plot_shear_all_categories():
         # Format g+
         # ----------------------------------------------------
         ax_gplus.set_title(f"{cat}: g₊ (all runs)")
-        ax_gplus.set_xlabel("R")
+        ax_gplus.set_xlabel("θ [radians]")
         ax_gplus.set_ylabel("g₊")
         ax_gplus.legend(frameon=False)
 
@@ -133,12 +110,12 @@ def plot_shear_all_categories():
         # Format g×
         # ----------------------------------------------------
         ax_gx.set_title(f"{cat}: g× (all runs)")
-        ax_gx.set_xlabel("R")
+        ax_gx.set_xlabel("θ [radians]")
         ax_gx.set_ylabel("g×")
         ax_gx.legend(frameon=False)
 
         # ----------------------------------------------------
-        # Save both figures into ./plots/
+        # Save into ./plots/
         # ----------------------------------------------------
         fig_gplus.savefig(
             os.path.join(OUTPUT_ROOT, f"{cat}_gplus_all_runs.png"),
