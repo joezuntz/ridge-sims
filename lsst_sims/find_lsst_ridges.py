@@ -63,8 +63,8 @@ def main():
 
     # Simulation types 
     sim_roots = [
-        os.path.join(current_dir, "lhc_run_lsst_sims"),
-        os.path.join(current_dir, "lhc_run_lsst_sim_zero_err"),
+    os.path.join(parent_dir, "lhc_run_lsst_sims"),
+    os.path.join(parent_dir, "lhc_run_lsst_sim_zero_err"),
     ]
 
     output_base = "LSST_ridges"
