@@ -70,11 +70,95 @@ def transform_background(background_file, output_hdf5_file, seed):
 
 
 
+def discover_and_convert_BG(base_root):
+    """
+    Find all directories containing source_catalog_0.npy
+    in a tree like lsst_X/run_Y/, then call the existing
+    convert_all_backgrounds() for each simulation block.
+    """
+
+    if not os.path.exists(base_root):
+        raise FileNotFoundError(f"Directory not found: {base_root}")
+
+    # Collect all run dirs where the background exists
+    run_dirs = []
+
+    for lsst_dir in sorted(os.listdir(base_root)):
+        full_lsst_path = os.path.join(base_root, lsst_dir)
+        if not os.path.isdir(full_lsst_path):
+            continue
+
+        # Look for run_* inside each lsst_X
+        for run_dir in sorted(os.listdir(full_lsst_path)):
+            full_run_path = os.path.join(full_lsst_path, run_dir)
+            if not os.path.isdir(full_run_path):
+                continue
+
+            # Check if this run contains the background file
+            npy_file = os.path.join(full_run_path, "source_catalog_0.npy")
+            if os.path.exists(npy_file):
+                run_dirs.append(full_run_path)
+
+    print(f"[INFO] Found {len(run_dirs)} run directories with backgrounds")
+
+    # Now call your existing converter for each run directory
+    for rd in run_dirs:
+        print(f"\n=== Processing {rd} ===")
+        convert_all_backgrounds(rd)
+
+
+
+
 ###############################################################
 
 # ------------------ RIDGE FINDER -----------------------------
 
 ##############################################################
+
+# Discover LSST directories
+
+def discover_lsst_runs(sim_root):
+    """
+    Return list of tuples (lsst_label, run_id, full_run_path)
+    for all lsst_*/run_*/ directories containing lens_catalog_0.npy.
+    """
+
+    discovered = []
+
+    if not os.path.exists(sim_root):
+        raise FileNotFoundError(f"Simulation root does not exist: {sim_root}")
+
+    for lsst_dir in sorted(os.listdir(sim_root)):
+        lsst_path = os.path.join(sim_root, lsst_dir)
+        if not os.path.isdir(lsst_path):
+            continue
+
+        # Expect lsst_X
+        if not lsst_dir.startswith("lsst_"):
+            continue
+
+        for run_dir in sorted(os.listdir(lsst_path)):
+            full_run_path = os.path.join(lsst_path, run_dir)
+            if not os.path.isdir(full_run_path):
+                continue
+
+            # Expect run_Y
+            if not run_dir.startswith("run_"):
+                continue
+
+            run_id_str = run_dir.replace("run_", "")
+            try:
+                run_id = int(run_id_str)
+            except ValueError:
+                continue
+
+            input_file = os.path.join(full_run_path, "lens_catalog_0.npy")
+            if os.path.exists(input_file):
+                discovered.append((lsst_dir, run_id, full_run_path))
+
+    return discovered
+
+
 
 
 def load_coordinates(base_sim_dir, run_id, shift=True):
