@@ -770,7 +770,7 @@ plt.rcParams.update({
 })
 
 # Output location
-outpath = "paper_plots/redshift_dist.png"
+outpath = "paper_plots/lsst_redshift_dist.png"
 os.makedirs(os.path.dirname(outpath), exist_ok=True)
 
 
@@ -826,14 +826,23 @@ def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None):
 # ---------------------------------------------------------------
 if __name__ == "__main__":
 
+#    BG_file = os.path.join(
+#        "lhc_run_sims_zero_err_10",
+#        "run_1",
+#        "source_catalog_0.npy"
+#    )
+
+#    base_sim_dir = "lhc_run_sims_zero_err_10"
+
+
     BG_file = os.path.join(
-        "lhc_run_sims_zero_err_10",
-        "run_1",
-        "source_catalog_0.npy"
+    "lhc_run_lsst_sims/lsst_1",
+    "run_2",
+    "source_catalog_0.npy"
     )
 
-    base_sim_dir = "lhc_run_sims_zero_err_10"
-    run_id = 1
+    base_sim_dir = "lhc_run_lsst_sims/lsst_1"
+    run_id = 2
 
     # Load data
     bg_z = read_sim_background(BG_file)
