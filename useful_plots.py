@@ -805,11 +805,11 @@ def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None):
     zmax = max(bg_z.max(), lens_z.max())
     bins = np.linspace(0, zmax, 60)
 
-    plt.hist(lens_z, bins=bins, density=True, alpha=0.5, label="Lens catalog")
-    plt.hist(bg_z,   bins=bins, density=True, alpha=0.5, label="Source catalog")
+    plt.hist(lens_z, bins=bins, density=True,histtype='step', alpha=0.5, label="Lens catalog")
+    plt.hist(bg_z,   bins=bins, density=True,histtype='step', alpha=0.5, label="Source catalog")
 
     # Vertical selection cut
-    plt.axvline(z_cut, linestyle="--", linewidth=2, label=f"z = {z_cut}")
+    #plt.axvline(z_cut, linestyle="--", linewidth=2, label=f"z = {z_cut}")
 
     plt.xlabel("Redshift z")
     plt.title("Redshift Distributions Before Selection Cut")
