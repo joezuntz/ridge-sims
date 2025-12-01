@@ -796,20 +796,41 @@ def load_lens_redshifts(base_sim_dir, run_id):
 
 
 # ---------------------------------------------------------------
+# Compute mean redshift using histogram PDF
+# ---------------------------------------------------------------
+def mean_redshift_from_pdf(z_array, bins=60):
+    pdf, edges = np.histogram(z_array, bins=bins, density=True)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    dz = np.diff(edges)
+    mean_z = np.sum(centers * pdf * dz)
+    return mean_z
+
+
+# ---------------------------------------------------------------
 # Plot lens and background redshift distributions
 # ---------------------------------------------------------------
-def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None):
+def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None,
+                                lens_mean=None, bg_mean=None):
+
     plt.figure(figsize=(8, 6))
 
     # Use shared global bins
     zmax = max(bg_z.max(), lens_z.max())
     bins = np.linspace(0, zmax, 60)
 
-    plt.hist(lens_z, bins=bins, density=True,histtype='step', alpha=0.5, label="Lens catalog")
-    plt.hist(bg_z,   bins=bins, density=True,histtype='step', alpha=0.5, label="Source catalog")
+    plt.hist(lens_z, bins=bins, density=True, histtype='step',
+             alpha=0.5, label="Lens catalog")
+    plt.hist(bg_z, bins=bins, density=True, histtype='step',
+             alpha=0.5, label="Source catalog")
 
-    # Vertical selection cut
-    #plt.axvline(z_cut, linestyle="--", linewidth=2, label=f"z = {z_cut}")
+    # Mean redshift vertical lines
+    if lens_mean is not None:
+        plt.axvline(lens_mean, linestyle="--", linewidth=2,
+                    label=f"Lens mean z = {lens_mean:.3f}")
+
+    if bg_mean is not None:
+        plt.axvline(bg_mean, linestyle="--", linewidth=2,
+                    label=f"Source mean z = {bg_mean:.3f}")
 
     plt.xlabel("Redshift z")
     plt.title("Redshift Distributions Before Selection Cut")
@@ -826,19 +847,10 @@ def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None):
 # ---------------------------------------------------------------
 if __name__ == "__main__":
 
-#    BG_file = os.path.join(
-#        "lhc_run_sims_zero_err_10",
-#        "run_1",
-#        "source_catalog_0.npy"
-#    )
-
-#    base_sim_dir = "lhc_run_sims_zero_err_10"
-
-
     BG_file = os.path.join(
-    "lhc_run_lsst_sims/lsst_1",
-    "run_2",
-    "source_catalog_0.npy"
+        "lhc_run_lsst_sims/lsst_1",
+        "run_2",
+        "source_catalog_0.npy"
     )
 
     base_sim_dir = "lhc_run_lsst_sims/lsst_1"
@@ -848,6 +860,18 @@ if __name__ == "__main__":
     bg_z = read_sim_background(BG_file)
     lens_z = load_lens_redshifts(base_sim_dir, run_id)
 
-    # Plot distribution
-    plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=outpath)
+    # Compute mean redshifts
+    lens_mean_z = mean_redshift_from_pdf(lens_z, bins=60)
+    bg_mean_z   = mean_redshift_from_pdf(bg_z,   bins=60)
 
+    print("Mean lens redshift =", lens_mean_z)
+    print("Mean background redshift =", bg_mean_z)
+
+    # Plot distribution with mean lines
+    plot_redshift_distributions(
+        lens_z, bg_z,
+        z_cut=0.4,
+        savepath=outpath,
+        lens_mean=lens_mean_z,
+        bg_mean=bg_mean_z
+    )
