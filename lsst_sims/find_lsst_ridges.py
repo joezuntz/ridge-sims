@@ -53,7 +53,7 @@ except ImportError:
 
 # Temporary local pipeline to test for different values of the redshift 
 
-def run_filament_pipeline_local(bandwidth, base_sim_dir, run_ids, base_label, home_dir, N = 2, z_cut=0.4):
+def run_filament_pipeline_local(bandwidth, base_sim_dir, run_ids, base_label, home_dir, N = 2, z_cut=0.7):
     """
     Run the full filament-finding + plotting for a given bandwidth, simulation base, and run IDs.
     Results are grouped under the same bandwidth + base label directory.
