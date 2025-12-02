@@ -160,29 +160,40 @@ def discover_lsst_runs(sim_root):
 
 
 
-
-def load_coordinates(base_sim_dir, run_id, shift=True):
+def load_coordinates(base_sim_dir, run_id, shift=True, z_cut=None):
     """
     Load coordinates from a catalog file.
 
-    If shift is True, the right ascension (RA) is shifted by 180 degrees.
-    Use shift=True when finding filaments, but not for building density maps.
+    Parameters
+    ----------
+    shift : 
+        If True, shifts RA by +180 degrees (mod 360).
+    z_cut : float or None.
     """
+    
     filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
     with h5py.File(filename, 'r') as f:
         ra = f["RA"][:]
         dec = f["DEC"][:]
         z_true = f["Z_TRUE"][:]
-    mask = z_true < 0.4
-    ra = ra[mask]
-    dec = dec[mask]
+
+    # Apply redshift cut
+    if z_cut is not None:
+        mask = z_true < z_cut
+        ra = ra[mask]
+        dec = dec[mask]
+
+    # Optional RA shift
     if shift:
         ra = (ra + 180) % 360
-    
-    # Inputs must now be in radians!
+
+    # Convert (DEC, RA) to radians
     coordinates = np.column_stack((dec, ra))
     coordinates = np.radians(coordinates)
     return coordinates
+
+
+
 
 
 def results_plot(density_map, ridges, plot_filename):
@@ -199,13 +210,13 @@ def results_plot(density_map, ridges, plot_filename):
     plt.savefig(plot_filename, bbox_inches='tight', dpi=300)
 
 
-def build_density_map(base_sim_dir, run_id, nside, smoothing_degrees=0.5):
+def build_density_map(base_sim_dir, run_id, nside, smoothing_degrees=0.5,z_cut=None):
     """
     Make a density maps from the coordinates.
     """
     # The healpy conventions are different and should not have
     # the 180 deg shift applied
-    data = load_coordinates(base_sim_dir, run_id, shift=False)
+    data = load_coordinates(base_sim_dir, run_id, shift=False,z_cut=z_cut)
     dec = np.degrees(data[:, 0])
     ra = np.degrees(data[:, 1])
     npix = hp.nside2npix(nside)
@@ -224,10 +235,11 @@ def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, fina
 
 
 
-def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir, N = 2):
+def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir, N = 2, z_cut=0.4):
     """
     Run the full filament-finding + plotting for a given bandwidth, simulation base, and run IDs.
     Results are grouped under the same bandwidth + base label directory.
+    z_cut=0.4 is default for DES sims. It is to be changed for lsst sims
     """
     # --- Parameters ---
     neighbours = 5000
@@ -244,7 +256,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir
         # --- Load coordinates on rank 0 only ---
         coordinates = None
         if COMM_WORLD.rank == 0:
-            coordinates = load_coordinates(base_sim_dir, run_id)
+            coordinates = load_coordinates(base_sim_dir, run_id, z_cut=z_cut )
 
         # --- Broadcast to all ranks ---
         coordinates = COMM_WORLD.bcast(coordinates, root=0)
@@ -272,7 +284,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir
             initial_percentile = 0
 
             # Build the density map (rank 0 only)
-            density_map = build_density_map(base_sim_dir, run_id, 512)
+            density_map = build_density_map(base_sim_dir, run_id, 512, z_cut=z_cut)
 
             plot_dir = os.path.join(home_dir, "plots_by_final_percentile")
             os.makedirs(plot_dir, exist_ok=True)
@@ -297,7 +309,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir
                 print(f"[rank 0] Saved ridges → {h5_filename}")
 
                 # Plot
-                plot_path = os.path.join(plot_dir, f"{base_label}_run_{run_id}_Ridges_plot_p{fp:02d}.png")
+                plot_path = os.path.join(plot_dir, f"{base_label}_run_{run_id}_Ridges_plot_p{fp:02d}_z{z_cut:.2f}.png")
                 results_plot(density_map, ridges_cut, plot_path)
                 print(f"[rank 0] Saved plot: {plot_path}")
 
@@ -533,7 +545,6 @@ def load_background(bg_file, comm=None, rows=None, background_type=None):
         raise ValueError(f"Unknown background_type: {background_type}")
 
 
-
 def find_contracted_files(home_dir):
     """find all '_contracted.h5' ridge files in directory."""
     contracted_files = []
@@ -573,7 +584,7 @@ def find_background_file(h5_file, base_sim_root):
 
 ############################################################################
 
-# === Locate the .npy background file for a given ridge file
+# === Locate the .npy background file for a given cosmo ridge file
 def find_background_npy(h5_file, base_sim_root):
     """
     This is the file structure for all cosmo background files
