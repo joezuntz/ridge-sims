@@ -2,10 +2,10 @@
 #SBATCH --job-name=lsst_sims
 #SBATCH --output=logs/lsst_sims_%A_%a.out
 #SBATCH --error=logs/lsst_sims_%A_%a.err
-#SBATCH --array=1-8
+#SBATCH --array=1-4
 #SBATCH --time=10-00:00:00
 #SBATCH --cpus-per-task=32
-#SBATCH --mem=128G
+#SBATCH --mem=512G
 
 source ~/.bashrc
 conda activate /home/jzuntz/ridges/env
