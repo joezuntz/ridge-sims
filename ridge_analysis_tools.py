@@ -70,43 +70,6 @@ def transform_background(background_file, output_hdf5_file, seed):
 
 
 
-def discover_and_convert_BG(base_root):
-    """
-    Find all directories containing source_catalog_0.npy
-    in a tree like lsst_X/run_Y/, then call the existing
-    convert_all_backgrounds() for each simulation block.
-    """
-
-    if not os.path.exists(base_root):
-        raise FileNotFoundError(f"Directory not found: {base_root}")
-
-    # Collect all run dirs where the background exists
-    run_dirs = []
-
-    for lsst_dir in sorted(os.listdir(base_root)):
-        full_lsst_path = os.path.join(base_root, lsst_dir)
-        if not os.path.isdir(full_lsst_path):
-            continue
-
-        # Look for run_* inside each lsst_X
-        for run_dir in sorted(os.listdir(full_lsst_path)):
-            full_run_path = os.path.join(full_lsst_path, run_dir)
-            if not os.path.isdir(full_run_path):
-                continue
-
-            # Check if this run contains the background file
-            npy_file = os.path.join(full_run_path, "source_catalog_0.npy")
-            if os.path.exists(npy_file):
-                run_dirs.append(full_run_path)
-
-    print(f"[INFO] Found {len(run_dirs)} run directories with backgrounds")
-
-    # Now call your existing converter for each run directory
-    for rd in run_dirs:
-        print(f"\n=== Processing {rd} ===")
-        convert_all_backgrounds(rd)
-
-
 
 
 ###############################################################
@@ -309,7 +272,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir
                 print(f"[rank 0] Saved ridges → {h5_filename}")
 
                 # Plot
-                plot_path = os.path.join(plot_dir, f"{base_label}_run_{run_id}_Ridges_plot_p{fp:02d}_z{z_cut:.2f}.png")
+                plot_path = os.path.join(plot_dir, f"{base_label}_run_{run_id}_Ridges_plot_p{fp:02d}.png")
                 results_plot(density_map, ridges_cut, plot_path)
                 print(f"[rank 0] Saved plot: {plot_path}")
 
@@ -609,26 +572,29 @@ def find_background_npy(h5_file, base_sim_root):
 
 # === Convert .npy → filtered .h5 (z>0.4 is applied by default)
 
-def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):
+def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):   # updated
     """
     Load .npy catalog, apply z>z_cut and finite-value filters,
     and save to .h5 with same structure as cosmological shear input.
     """
     
-    # Make output file path
+    # Output file name reflects z_cut
     run_dir = os.path.dirname(npy_path)
-    output_file_path = os.path.join(run_dir, "source_catalog_cutzl04.h5")
+    output_file_path = os.path.join(
+        run_dir, f"source_catalog_cutzl{z_cut:.2f}.h5"   # updated
+    )
 
-    # Load background from the .npy file
-    with h5py.File(npy_path, "r") as file:
-        bg_ra_full = file["RA"][:]
-        bg_dec_full = file["DEC"][:]
-        g1_values_full = file["G1"][:]
-        g2_values_full = file["G2"][:]
-        z_true_full = file["Z_TRUE"][:]
-        weights_full = file["weight"][:] if "weight" in file else np.ones_like(bg_ra_full)
+    # --- FIX: .npy must be loaded with numpy, not h5py --- # updated
+    data = np.load(npy_path, allow_pickle=True).item()   # updated
 
-    # Apply the redshift cut and NaN filter
+    bg_ra_full = data["RA"]
+    bg_dec_full = data["DEC"]
+    g1_values_full = data["G1"]
+    g2_values_full = data["G2"]
+    z_true_full = data["Z_TRUE"]
+    weights_full = data["weight"] if "weight" in data else np.ones_like(bg_ra_full)
+
+    # Apply z-cut
     z_mask = z_true_full > z_cut
     valid_mask = (
         np.isfinite(bg_ra_full)
@@ -650,7 +616,7 @@ def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):
     # Create output directory
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
-    # Save to new HDF5 file
+    # Save output
     with h5py.File(output_file_path, "w") as hf:
         hf.create_dataset("RA", data=bg_ra_filtered)
         hf.create_dataset("DEC", data=bg_dec_filtered)
@@ -661,36 +627,20 @@ def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):
 
     print(f"Filtered background data saved → {output_file_path}")
     print(f"Original: {len(bg_ra_full)} | Filtered: {len(bg_ra_filtered)}")
-    
 
 
 
 
-
-
-def convert_all_backgrounds(base_sim_root):
+def convert_all_backgrounds(base_sim_root, z_cut=0.4):   # updated
     """
     convert all .npy backgrounds.
-
-    This version includes optional safety checks:
-    - Safety check: Skip if output .h5 already exists.
-    - Summary : Report missing, skipped conversions at the end.
     """
-
-    # ===========================================================
-    # === SAFETY MECHANISMS 
-    # ===========================================================
 
     SKIP_IF_EXISTS = True  
     REPORT_AT_END = True   
 
     skipped_existing = []
     missing_input = []
-    
-
-    # ===========================================================
-    # === MAIN 
-    # ===========================================================
 
     if not os.path.exists(base_sim_root):
         raise FileNotFoundError(f"Base directory not found: {base_sim_root}")
@@ -702,23 +652,25 @@ def convert_all_backgrounds(base_sim_root):
             continue
 
         npy_path = os.path.join(root, "source_catalog_0.npy")
-        output_path = os.path.join(root, "source_catalog_cutzl04.h5")
 
-        # SAFETY #1 — skip existing output
+        # FIX: properly format output filename with z_cut
+        output_path = os.path.join(
+            root, f"source_catalog_cutzl{z_cut:.2f}.h5"   # updated
+        )
+
+        # skip if output exists
         if SKIP_IF_EXISTS and os.path.exists(output_path):
             print(f"[SKIP] Output exists → {output_path}")
             skipped_existing.append(npy_path)
             continue
 
         try:
-            convert_npy_to_filtered_h5(npy_path)
+            convert_npy_to_filtered_h5(npy_path, z_cut=z_cut)   # updated (pass z_cut)
         except FileNotFoundError:
             print(f"[MISSING] Input .npy file not found: {npy_path}")
             missing_input.append(npy_path)
 
-    # ===========================================================
-    # === SAFETY #2 — END REPORT
-    # ===========================================================
+    # END REPORT
     if REPORT_AT_END:
         print("\n========= CONVERSION SUMMARY =========")
 
@@ -735,6 +687,42 @@ def convert_all_backgrounds(base_sim_root):
         if not (skipped_existing or missing_input):
             print("[OK] All backgrounds processed successfully.")
         print("=======================================")
+
+
+
+
+def discover_and_convert_BG(base_root, z_cut=0.4):   # updated
+    """
+    Find all run dirs and convert with z_cut.
+    """
+
+    if not os.path.exists(base_root):
+        raise FileNotFoundError(f"Directory not found: {base_root}")
+
+    run_dirs = []
+
+    for lsst_dir in sorted(os.listdir(base_root)):
+        full_lsst_path = os.path.join(base_root, lsst_dir)
+        if not os.path.isdir(full_lsst_path):
+            continue
+
+        for run_dir in sorted(os.listdir(full_lsst_path)):
+            full_run_path = os.path.join(full_lsst_path, run_dir)
+            if not os.path.isdir(full_run_path):
+                continue
+
+            npy_file = os.path.join(full_run_path, "source_catalog_0.npy")
+            if os.path.exists(npy_file):
+                run_dirs.append(full_run_path)
+
+    print(f"[INFO] Found {len(run_dirs)} run directories with backgrounds")
+
+    for rd in run_dirs:
+        print(f"\n=== Processing {rd} ===")
+        convert_all_backgrounds(rd, z_cut=z_cut)   # updated
+
+
+
 ##############################################################################
 
 # ------------------------- RIDGE SHEAR PROCESS -----------------------------------
