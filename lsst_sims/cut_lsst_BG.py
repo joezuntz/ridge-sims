@@ -53,6 +53,8 @@ def discover_run_dirs(base_root):
 
 if __name__ == "__main__":
 
+
+    ZCUT = 0.7   # updated
     roots = [
         "lhc_run_lsst_sims",
         "lhc_run_lsst_sim_zero_err"
@@ -75,4 +77,4 @@ if __name__ == "__main__":
         for rd in run_dirs:
             print("\n=== Processing run directory ===")
             print(rd)
-            convert_all_backgrounds(rd)
+            convert_all_backgrounds(rd, z_cut=ZCUT)   # updated
