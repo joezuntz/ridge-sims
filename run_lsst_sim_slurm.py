@@ -51,6 +51,31 @@ def map_job_to_config(job_id):
 
 
 
+
+
+def map_missing_job_to_config(job_id):
+    """
+    Only run LSST=10
+    1: normal  run 1
+    2: normal  run 2
+    3: zeroerr run 1
+    4: zeroerr run 2
+    """
+    if job_id == 1:
+        return True, 1, 10  # include_noise, run_id, lsst
+    elif job_id == 2:
+        return True, 2, 10
+    elif job_id == 3:
+        return False, 1, 10
+    elif job_id == 4:
+        return False, 2, 10
+    else:
+        raise ValueError("job_id must be 1–4")
+
+
+
+
+
 def run_sim(run_id, include_noise, lsst):
 
     base_dir = (
@@ -105,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("--job-id", type=int, required=True)
     args = parser.parse_args()
 
-    include_noise, run_id, lsst = map_job_to_config(args.job_id)
+    include_noise, run_id, lsst = map_missing_job_to_config(args.job_id)
     run_sim(run_id, include_noise, lsst)
 
     
