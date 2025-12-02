@@ -572,27 +572,25 @@ def find_background_npy(h5_file, base_sim_root):
 
 # === Convert .npy → filtered .h5 (z>0.4 is applied by default)
 
-def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):   # updated
+def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):
     """
-    Load .npy catalog, apply z>z_cut and finite-value filters,
+    Load .npy (actually HDF5), apply z>z_cut and finite-value filters,
     and save to .h5 with same structure as cosmological shear input.
     """
-    
-    # Output file name reflects z_cut
+
     run_dir = os.path.dirname(npy_path)
     output_file_path = os.path.join(
-        run_dir, f"source_catalog_cutzl{z_cut:.2f}.h5"   # updated
+        run_dir, f"source_catalog_cutzl{z_cut:.2f}.h5"
     )
 
-    # --- FIX: .npy must be loaded with numpy, not h5py --- # updated
-    data = np.load(npy_path, allow_pickle=True).item()   # updated
-
-    bg_ra_full = data["RA"]
-    bg_dec_full = data["DEC"]
-    g1_values_full = data["G1"]
-    g2_values_full = data["G2"]
-    z_true_full = data["Z_TRUE"]
-    weights_full = data["weight"] if "weight" in data else np.ones_like(bg_ra_full)
+    # load file 
+    with h5py.File(npy_path, "r") as hf:
+        bg_ra_full     = hf["RA"][:]
+        bg_dec_full    = hf["DEC"][:]
+        g1_values_full = hf["G1"][:]
+        g2_values_full = hf["G2"][:]
+        z_true_full    = hf["Z_TRUE"][:]
+        weights_full   = hf["weight"][:] if "weight" in hf else np.ones_like(bg_ra_full)
 
     # Apply z-cut
     z_mask = z_true_full > z_cut
@@ -605,18 +603,15 @@ def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):   # updated
         & z_mask
     )
 
-    # Filter the data
-    bg_ra_filtered = bg_ra_full[valid_mask]
-    bg_dec_filtered = bg_dec_full[valid_mask]
+    # Filter
+    bg_ra_filtered     = bg_ra_full[valid_mask]
+    bg_dec_filtered    = bg_dec_full[valid_mask]
     g1_values_filtered = g1_values_full[valid_mask]
     g2_values_filtered = g2_values_full[valid_mask]
-    z_true_filtered = z_true_full[valid_mask]
-    weights_filtered = weights_full[valid_mask]
+    z_true_filtered    = z_true_full[valid_mask]
+    weights_filtered   = weights_full[valid_mask]
 
-    # Create output directory
-    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
-
-    # Save output
+    # Save output h5
     with h5py.File(output_file_path, "w") as hf:
         hf.create_dataset("RA", data=bg_ra_filtered)
         hf.create_dataset("DEC", data=bg_dec_filtered)
@@ -627,8 +622,6 @@ def convert_npy_to_filtered_h5(npy_path, z_cut=0.4):   # updated
 
     print(f"Filtered background data saved → {output_file_path}")
     print(f"Original: {len(bg_ra_full)} | Filtered: {len(bg_ra_filtered)}")
-
-
 
 
 def convert_all_backgrounds(base_sim_root, z_cut=0.4):   # updated
