@@ -18,7 +18,7 @@ import yaml
 import numpy as np
 import pandas as pd 
 
-base_sim_dir = "lhc_cosmo_sims_zero_err"
+base_sim_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "lhc_cosmo_sims_zero_err"))
 
 missing_runs = {}   # list of missing/broken runs
 
