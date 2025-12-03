@@ -125,10 +125,9 @@ def main():
     args = parser.parse_args()
     task_id = args.task_id  # Here we have 1–8 from the Slurm array
 
-    # Two simulation types
     sim_roots = [
-        os.path.join(parent_dir, "lsst_sim_ridges"),
-        os.path.join(parent_dir, "lsst_sim_zero_err_ridges"),
+        os.path.join(parent_dir, "lhc_run_lsst_sim_zero_err"),
+        os.path.join(parent_dir, "lhc_run_lsst_sims"),
     ]
 
     output_base = "LSST_ridges"
@@ -154,7 +153,7 @@ def main():
             all_jobs.append((sim_root, sim_root_label, lsst_label, run_id))
 
     # ------------------------------------
-    # If Slurm task-id is given → select exactly one job
+    # for a given Slurm task-id we should select exactly one job
     # ------------------------------------
     if task_id is not None:
         if task_id < 1 or task_id > len(all_jobs):
@@ -173,14 +172,18 @@ def main():
         base_label = lsst_label
         base_sim_dir = os.path.join(sim_root, lsst_label)
 
+        # ============================================================
+        #  OUTPUT DIRECTORY STRUCTURE  
+        # ============================================================
         home_dir = os.path.join(
-            output_base,
-            sim_root_label,
-            lsst_label,
-            f"run_{run_id}",
-            f"band_{bandwidth:.1f}"
-        )
+            output_base,       
+            sim_root_label,      
+            lsst_label,         
+            f"run_{run_id}",     
+            f"band_{bandwidth:.1f}"  
+        )  
         os.makedirs(home_dir, exist_ok=True)
+        # ============================================================
 
         # Check input existence
         input_file = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
@@ -190,7 +193,7 @@ def main():
             missing_inputs.append(f"{lsst_label}/run_{run_id}")
             continue
 
-        # Check output existence (corrected f-string)
+        # Check output existence
         expected_output = os.path.join(
             home_dir,
             f"Ridges_final_p15_z{0.70:.2f}.h5"
