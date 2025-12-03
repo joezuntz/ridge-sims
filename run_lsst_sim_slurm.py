@@ -55,24 +55,20 @@ def map_job_to_config(job_id):
 
 def map_missing_job_to_config(job_id):
     """
-    Only run LSST=10
-    1: normal  run 1
-    2: normal  run 2
-    3: zeroerr run 1
-    4: zeroerr run 2
+    Missing simulations for LSST=10 only.
+    job_id:
+        1 → noise, run 1
+        2 → noise, run 2
+        3 → zero-noise, run 1
+        4 → zero-noise, run 2
     """
-    if job_id == 1:
-        return True, 1, 10  # include_noise, run_id, lsst
-    elif job_id == 2:
-        return True, 2, 10
-    elif job_id == 3:
-        return False, 1, 10
-    elif job_id == 4:
-        return False, 2, 10
-    else:
+    if not 1 <= job_id <= 4:
         raise ValueError("job_id must be 1–4")
 
+    include_noise = (job_id <= 2)
+    run_id = 1 if job_id in (1, 3) else 2
 
+    return include_noise, run_id, 10
 
 
 
