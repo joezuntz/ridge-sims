@@ -3,7 +3,7 @@
 #SBATCH --output=logs/lsst_ridges_%A_%a.out
 #SBATCH --error=logs/lsst_ridges_%A_%a.err
 
-#SBATCH --array=1-8
+#SBATCH --array=1-7
 #SBATCH --nodes=1               
 #SBATCH --ntasks=16             # 16 MPI ranks
 #SBATCH --cpus-per-task=1
