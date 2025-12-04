@@ -13,4 +13,4 @@
 source ~/.bashrc
 conda activate /home/jzuntz/ridges/env
 
-mpirun -n $SLURM_NTASKS python lsst_ridges_slurm.py --task-id $SLURM_ARRAY_TASK_ID
+mpirun -n $SLURM_NTASKS python lsst_sims/lsst_ridges_slurm.py --task-id $SLURM_ARRAY_TASK_ID
