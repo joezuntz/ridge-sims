@@ -7,10 +7,10 @@
 #SBATCH --nodes=1               
 #SBATCH --ntasks=16             # 16 MPI ranks
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=512G
+#SBATCH --mem=1024G
 #SBATCH --time=10-00:00:00
 
 source ~/.bashrc
 conda activate /home/jzuntz/ridges/env
-
+export OMP_NUM_THREADS=1
 mpirun -n $SLURM_NTASKS python lsst_sims/lsst_ridges_slurm.py --task-id $SLURM_ARRAY_TASK_ID
