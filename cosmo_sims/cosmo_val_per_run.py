@@ -1,3 +1,20 @@
+import os, sys
+
+# Directory of this script (cosmo_sims)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Go one level up 
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+
+# find modules in the parent directory
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# we stay inside cosmo_sims for outputs
+os.chdir(current_dir)
+
+
+
 import numpy as np
 import pandas as pd
 
