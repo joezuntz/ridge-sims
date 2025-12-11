@@ -54,7 +54,7 @@ def run_filament_pipeline(run_id):
     coords = None
     if COMM_WORLD.rank == 0:
         print(f"[rank 0] Loading coords from: {base_sim_dir}/run_{run_id}")
-        coords = load_coordinates(base_sim_dir, run_id, z_cut=0.7)
+        coords = load_coordinates(base_sim_dir, run_id, z_cut=0.7, fraction=0.25)
 
     coords = COMM_WORLD.bcast(coords, root=0)
 
@@ -91,3 +91,6 @@ def run_filament_pipeline(run_id):
 
 if __name__ == "__main__":
     run_filament_pipeline(run_id)
+
+
+
