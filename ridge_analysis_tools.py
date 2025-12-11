@@ -123,15 +123,19 @@ def discover_lsst_runs(sim_root):
 
 
 
-def load_coordinates(base_sim_dir, run_id, shift=True, z_cut=None):
+def load_coordinates(base_sim_dir, run_id, shift=True, z_cut=None, fraction=None):
     """
     Load coordinates from a catalog file.
 
     Parameters
     ----------
-    shift : 
+    shift : bool
         If True, shifts RA by +180 degrees (mod 360).
-    z_cut : float or None.
+    z_cut : float or None
+        If provided, select only galaxies with z_true < z_cut.
+    fraction : float or None
+        If provided, keep only this fraction of the coordinates.
+        Must be between 0 and 1.
     """
     
     filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
@@ -150,10 +154,19 @@ def load_coordinates(base_sim_dir, run_id, shift=True, z_cut=None):
     if shift:
         ra = (ra + 180) % 360
 
+    # Apply fractional selection
+    if fraction is not None:
+        if not (0 < fraction <= 1):
+            raise ValueError("fraction must be between 0 and 1")
+        n_keep = int(len(ra) * fraction)
+        ra = ra[:n_keep]
+        dec = dec[:n_keep]
+
     # Convert (DEC, RA) to radians
     coordinates = np.column_stack((dec, ra))
     coordinates = np.radians(coordinates)
     return coordinates
+
 
 
 
@@ -198,7 +211,7 @@ def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, fina
 
 
 
-def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir, N = 2, z_cut=0.4):
+def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir, N = 2, z_cut=0.4,fraction=None):
     """
     Run the full filament-finding + plotting for a given bandwidth, simulation base, and run IDs.
     Results are grouped under the same bandwidth + base label directory.
@@ -219,7 +232,7 @@ def run_filament_pipeline(bandwidth, base_sim_dir, run_ids, base_label, home_dir
         # --- Load coordinates on rank 0 only ---
         coordinates = None
         if COMM_WORLD.rank == 0:
-            coordinates = load_coordinates(base_sim_dir, run_id, z_cut=z_cut )
+            coordinates = load_coordinates(base_sim_dir, run_id, z_cut=z_cut,fraction=None )
 
         # --- Broadcast to all ranks ---
         coordinates = COMM_WORLD.bcast(coordinates, root=0)
