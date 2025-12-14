@@ -4,7 +4,7 @@
 #SBATCH --error=logs/lsst_ridges_%A_%a.err
 
 #SBATCH --nodes=1               
-#SBATCH --ntasks=6            
+#SBATCH --ntasks=8           
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=256G
 #SBATCH --time=10-00:00:00
