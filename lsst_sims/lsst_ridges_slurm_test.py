@@ -64,7 +64,7 @@ def run_filament_pipeline(run_id):
             base_sim_dir,
             run_id,
             z_cut=0.7,
-            fraction=0.25
+            fraction=0.40
         )
 
         print(f"[rank 0] Loaded coords with shape: {coords.shape}")
