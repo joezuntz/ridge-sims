@@ -167,7 +167,7 @@ def plot_shear_all_categories():
         # Format g+
         # ----------------------------------------------------
         ax_gplus.set_xscale("log")
-        ax_gplus.set_title(rf"{cat}: $\gamma_{+}$ ")
+        ax_gplus.set_title(f"{cat}: " + r"$\gamma_{+}$")
         ax_gplus.set_xlabel(r"$\theta [arcmin]$")
         ax_gplus.set_ylabel(r" $\gamma_{+}$")
 
@@ -175,7 +175,7 @@ def plot_shear_all_categories():
         # Format g×
         # ----------------------------------------------------
         ax_gx.set_xscale("log")
-        ax_gx.set_title(rf"{cat}:$\gamma_{times}$ ")
+        ax_gx.set_title(f"{cat}:"+ r"$\gamma_{times}$ ")
         ax_gx.set_xlabel(r"$\theta [arcmin]$")
         ax_gx.set_ylabel(r"$\gamma_{times}$")
 
