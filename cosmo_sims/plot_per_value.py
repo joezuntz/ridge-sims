@@ -65,7 +65,7 @@ def get_param_label(category, run):
         return ""
 
 def get_param_value(category, run):
-    """Numeric value used for colorbar."""
+    """Numeric value used for colorbar (depends on what varies)."""
     row = mapping_df[(mapping_df.category == category) &
                      (mapping_df.run == run)]
 
@@ -74,8 +74,13 @@ def get_param_value(category, run):
 
     row = row.iloc[0]
 
-    if category == "Om_fixed":
+    if category == "sigma8_fixed":
+        # σ8 fixed → Ωm varies
         return row["Omega_m"]
+
+    elif category == "Om_fixed":
+        # Ωm fixed → σ8 varies
+        return row["sigma8"]
 
     elif category == "S8":
         return row["S8"]
@@ -83,12 +88,8 @@ def get_param_value(category, run):
     elif category == "S8_perp":
         return row["Omega_m"]
 
-    elif category == "sigma8_fixed":
-        return row["sigma8"]
-
     else:
         return None
-
 # ------------------------------------------------------------
 # Helper
 # ------------------------------------------------------------
