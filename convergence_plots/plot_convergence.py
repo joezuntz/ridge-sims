@@ -36,17 +36,17 @@ def generate_ridges_for_n_neighbors():
     coords = ridge_analysis_tools.load_coordinates(base_sim_dir, 1, shift=True, z_cut=0.4)
 
     convergence = 1e-4
-    n_neighbors = [1000, 2000, 3000, 4000]
+    n_neighbors_list = [1000, 2000, 3000, 4000]
 
     # We use the same checkpoint dir to resume from previous runs,
     # so that each run continues from the last one with a tighter convergence
-    for n_neighbor in n_neighbors:
+    for n_neighbors in n_neighbors_list:
         ridges, _, _ = dredge_scms.find_filaments(
             coords,
             bandwidth=np.radians(0.2),
             convergence=np.radians(convergence),
             distance_metric='haversine',
-            n_neighbors=n_neighbor,
+            n_neighbors=n_neighbors,
             comm=COMM_WORLD,
             checkpoint_dir=f"./checkpoints/n_neighbors_{n_neighbors}",
             resume=True,
