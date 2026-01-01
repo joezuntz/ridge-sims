@@ -59,7 +59,7 @@ def run_filament_pipeline(run_id):
     if COMM_WORLD.rank == 0:
         print(f"[rank 0] Loading coords from: {base_sim_dir}/run_{run_id}")
         sys.stdout.flush()
-
+        # test with 5% data
         coords = load_coordinates(
             base_sim_dir,
             run_id,
