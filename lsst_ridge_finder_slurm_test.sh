@@ -12,4 +12,4 @@
 source ~/.bashrc
 conda activate /home/jzuntz/ridges/env
 export OMP_NUM_THREADS=1
-mpirun -n $SLURM_NTASKS python lsst_sims/lsst_ridges_slurm_test.py --task-id 1
+mpirun -n $SLURM_NTASKS python lsst_sims/lsst_ridges_slurm_test_sharedArray.py --task-id 1
