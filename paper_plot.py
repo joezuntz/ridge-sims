@@ -11,24 +11,33 @@ import matplotlib.image as mpimg
 import matplotlib.patches as patches
 
 ############################################################
-# === PUBLICATION STYLE CONFIG===
+# === CONFIG===
 ############################################################
 plt.rcParams.update({
-    "figure.figsize": (6.8, 6.8),   
+    "figure.figsize": (6.8, 6.8),
     "figure.dpi": 100,
 
     "axes.linewidth": 1.6,
     "axes.labelsize": 15,
     "axes.titlesize": 15,
 
+    # Major ticks
     "xtick.direction": "in",
     "ytick.direction": "in",
-    "xtick.major.size": 6,
-    "ytick.major.size": 6,
+    "xtick.major.size": 8,
+    "ytick.major.size": 8,
     "xtick.major.width": 1.4,
     "ytick.major.width": 1.4,
     "xtick.labelsize": 13,
     "ytick.labelsize": 13,
+
+    # Minor ticks 
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+    "xtick.minor.size": 3.5,
+    "ytick.minor.size": 3.5,
+    "xtick.minor.width": 1.0,
+    "ytick.minor.width": 1.0,
 
     "font.family": "serif",
 
@@ -37,7 +46,6 @@ plt.rcParams.update({
 
     "savefig.bbox": "tight",
 })
-
 ############################################################
 # === MST & DBSCAN functions ===
 ############################################################
