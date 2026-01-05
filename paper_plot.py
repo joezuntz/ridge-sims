@@ -125,7 +125,7 @@ labels = segment_filaments_with_dbscan(subset, segments)
 ############################################################
 # === OUTPUT DIRECTORY ===
 ############################################################
-output_dir = "simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots"
+output_dir = "hyperparameter_test"
 os.makedirs(output_dir, exist_ok=True)
 
 ############################################################
