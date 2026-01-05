@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -11,19 +10,33 @@ import os, sys
 import matplotlib.image as mpimg
 import matplotlib.patches as patches
 
-
 ############################################################
+# === PUBLICATION STYLE CONFIG===
 ############################################################
+plt.rcParams.update({
+    "figure.figsize": (6.8, 6.8),   
+    "figure.dpi": 100,
 
-#os.chdir(os.path.dirname(os.path.abspath(__file__)))
-#sys.path.insert(0, os.getcwd())
+    "axes.linewidth": 1.6,
+    "axes.labelsize": 15,
+    "axes.titlesize": 15,
 
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "xtick.major.size": 6,
+    "ytick.major.size": 6,
+    "xtick.major.width": 1.4,
+    "ytick.major.width": 1.4,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
 
-############################################################
-############################################################
+    "font.family": "serif",
 
+    "legend.frameon": False,
+    "legend.fontsize": 12,
 
-
+    "savefig.bbox": "tight",
+})
 
 ############################################################
 # === MST & DBSCAN functions ===
@@ -37,7 +50,8 @@ def build_mst(points, k=10):
             row.append(i)
             col.append(indices[i, j])
             data.append(distances[i, j])
-    sparse_dist_matrix = coo_matrix((data, (row, col)), shape=(len(points), len(points)))
+    sparse_dist_matrix = coo_matrix((data, (row, col)),
+                                    shape=(len(points), len(points)))
     mst_sparse = minimum_spanning_tree(sparse_dist_matrix).tocoo()
     G = nx.Graph()
     for i, j, weight in zip(mst_sparse.row, mst_sparse.col, mst_sparse.data):
@@ -45,14 +59,15 @@ def build_mst(points, k=10):
     return G
 
 def detect_branch_points(mst):
-    return [node for node, degree in dict(mst.degree()).items() if degree > 2]
+    return [n for n, d in dict(mst.degree()).items() if d > 2]
 
 def split_mst_at_branches(mst, branch_points):
     G = mst.copy()
     G.remove_nodes_from(branch_points)
     return list(nx.connected_components(G))
 
-def segment_filaments_with_dbscan(points, filament_segments, eps=0.02, min_samples=5):
+def segment_filaments_with_dbscan(points, filament_segments,
+                                  eps=0.02, min_samples=5):
     labels = np.full(len(points), -1)
     cluster_id = 0
     for segment in filament_segments:
@@ -62,195 +77,167 @@ def segment_filaments_with_dbscan(points, filament_segments, eps=0.02, min_sampl
         for i, idx in enumerate(segment):
             if segment_labels[i] != -1:
                 labels[idx] = cluster_id + segment_labels[i]
-        cluster_id += max(segment_labels) + 1 if len(segment_labels) > 0 else 0
+        if len(segment_labels) > 0:
+            cluster_id += max(segment_labels) + 1
     return labels
 
-
 ############################################################
-# === Load ridge points  ===
+# === Load ridge points ===
 ############################################################
 def load_ridges_from_h5(path):
-    """Load 'ridges' dataset from an h5 file and return (N,2) array [dec, ra] in degrees."""
     with h5py.File(path, "r") as f:
-        if "ridges" not in f:
-            raise KeyError(f"'ridges' dataset not found in {path}")
         ridges = f["ridges"][:]
-    ridges = np.asarray(ridges)
-    if ridges.ndim != 2 or ridges.shape[1] < 2:
-        raise ValueError("ridges array must be shape (N,2 or more) with dec,ra")
 
     dec = ridges[:, 0].astype(float)
-    ra = ridges[:, 1].astype(float)
+    ra  = ridges[:, 1].astype(float)
 
     if np.nanmax(np.abs(np.concatenate((dec, ra)))) < 2.0:
         dec = np.degrees(dec)
-        ra = np.degrees(ra)
+        ra  = np.degrees(ra)
 
     ra = np.mod(ra, 360.0)
     return np.column_stack((dec, ra))
 
-
 ############################################################
 # === MAIN EXECUTION ===
 ############################################################
-home_dir = f"simulation_ridges_comparative_analysis_debug/normal_mesh_x2/band_0.1/Ridges_final_p15"
-ridge_file = os.path.join(home_dir,f"normal_run_1_ridges_p15.h5")
+home_dir = "simulation_ridges_comparative_analysis_debug/normal_mesh_x2/band_0.1/Ridges_final_p15"
+ridge_file = os.path.join(home_dir, "normal_run_1_ridges_p15.h5")
 ridges = load_ridges_from_h5(ridge_file)
 
-# === 1. Select region ===
-ra_min, ra_max = 3.35, 3.50
+# Region selection
+ra_min, ra_max   = 3.35, 3.50
 dec_min, dec_max = -1.0, -0.925
-mask = (ridges[:,1] >= ra_min) & (ridges[:,1] <= ra_max) & \
-       (ridges[:,0] >= dec_min) & (ridges[:,0] <= dec_max)
+
+mask = (
+    (ridges[:,1] >= ra_min) & (ridges[:,1] <= ra_max) &
+    (ridges[:,0] >= dec_min) & (ridges[:,0] <= dec_max)
+)
 subset = ridges[mask]
 print(f"Selected {len(subset)} points in region.")
 
-# === 2. Apply MST & DBSCAN ===
+# MST + DBSCAN
 mst = build_mst(subset)
 branches = detect_branch_points(mst)
 segments = split_mst_at_branches(mst, branches)
-labels = segment_filaments_with_dbscan(subset, segments, eps=0.02, min_samples=5)
+labels = segment_filaments_with_dbscan(subset, segments)
 
-# === 3. PLOTS ===
-output_dir = f"simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots"
+############################################################
+# === OUTPUT DIRECTORY ===
+############################################################
+output_dir = "simulation_ridges_comparative_analysis_debug/normal/band_0.1/test_plots"
 os.makedirs(output_dir, exist_ok=True)
 
-# (a) Ridge points
-plt.figure(figsize=(6,6))
-plt.scatter(subset[:,1], subset[:,0], s=2, color='black')
-plt.xlabel("RA")
-plt.ylabel("DEC")
-plt.savefig(os.path.join(output_dir, "ridges_points.png"), dpi=300)
-plt.close()
-
-# (b) MST + branch points
-plt.figure(figsize=(6,6))
-for i, j in mst.edges():
-    x = [subset[i,1], subset[j,1]]
-    y = [subset[i,0], subset[j,0]]
-    plt.plot(x, y, color='gray', lw=0.5, alpha=1)
-plt.scatter(subset[:,1], subset[:,0], s=4, color='black', alpha=1)
-plt.scatter(subset[branches,1], subset[branches,0], color='red', s=2)
-plt.xlabel("RA")
-plt.ylabel("DEC")
-plt.savefig(os.path.join(output_dir, "mst_branches.png"), dpi=300)
-plt.close()
-
-# (c) DBSCAN-labeled filaments
-plt.figure(figsize=(6,6))
-unique_labels = np.unique(labels)
-for lab in unique_labels:
-    mask = labels == lab
-    if lab == -1:
-        plt.scatter(subset[mask,1], subset[mask,0], color='lightgray', s=1)
-    else:
-        plt.scatter(subset[mask,1], subset[mask,0], s=1)
-plt.xlabel("RA")
-plt.ylabel("DEC")
-plt.savefig(os.path.join(output_dir, "dbscan_filaments.png"), dpi=300)
-plt.close()
-
-print("Individual plots saved.")
-
+############################################################
+# === Helper for axis formatting ===
+############################################################
+def format_axes(ax):
+    ax.set_aspect("equal", adjustable="box")
+    ax.tick_params(top=True, right=True)
+    ax.grid(False)
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.6)
 
 ############################################################
-# === 4. FLOWCHART ===
+# (a) Ridge points
+############################################################
+fig, ax = plt.subplots()
+ax.scatter(subset[:,1], subset[:,0], s=4, color="black")
+ax.set_xlabel("RA")
+ax.set_ylabel("DEC")
+format_axes(ax)
+fig.savefig(os.path.join(output_dir, "ridges_points.pdf"))
+plt.close(fig)
+
+############################################################
+# (b) MST + branch points
+############################################################
+fig, ax = plt.subplots()
+for i, j in mst.edges():
+    ax.plot([subset[i,1], subset[j,1]],
+            [subset[i,0], subset[j,0]],
+            color="gray", lw=0.7)
+
+ax.scatter(subset[:,1], subset[:,0], s=6, color="black")
+ax.scatter(subset[branches,1], subset[branches,0],
+           s=14, color="red", zorder=5)
+
+ax.set_xlabel("RA")
+ax.set_ylabel("DEC")
+format_axes(ax)
+fig.savefig(os.path.join(output_dir, "mst_branches.pdf"))
+plt.close(fig)
+
+############################################################
+# (c) DBSCAN filaments
+############################################################
+fig, ax = plt.subplots()
+for lab in np.unique(labels):
+    m = labels == lab
+    if lab == -1:
+        ax.scatter(subset[m,1], subset[m,0],
+                   s=3, color="lightgray")
+    else:
+        ax.scatter(subset[m,1], subset[m,0], s=4)
+
+ax.set_xlabel("RA")
+ax.set_ylabel("DEC")
+format_axes(ax)
+fig.savefig(os.path.join(output_dir, "dbscan_filaments.pdf"))
+plt.close(fig)
+
+print("PDF plots saved.")
+
+############################################################
+# === FLOWCHART (PDF) ===
 ############################################################
 img_paths = [
-    os.path.join(output_dir, "ridges_points.png"),
-    os.path.join(output_dir, "mst_branches.png"),
-    os.path.join(output_dir, "dbscan_filaments.png"),
+    os.path.join(output_dir, "ridges_points.pdf"),
+    os.path.join(output_dir, "mst_branches.pdf"),
+    os.path.join(output_dir, "dbscan_filaments.pdf"),
 ]
-titles = ["Ridge Points", "MST + Branches construction", "DBSCAN Filaments"]
 
+titles = [
+    "Ridge Points",
+    "MST + Branch Construction",
+    "DBSCAN Filaments",
+]
 
-# Create vertical figure
-fig, ax = plt.subplots(figsize=(4, 10))
+fig, ax = plt.subplots(figsize=(4.2, 10))
 ax.axis("off")
 
-x_pos = 0
-y_positions = [8.4, 4.2, 0.0]  # from top to bottom
-box_w, box_h = 3.2, 3.2
+x0 = 0
+y_positions = [8.4, 4.2, 0.0]
+box_w, box_h = 3.4, 3.4
 
-# Draw boxes + images
-for y, img_path, title in zip(y_positions, img_paths, titles):
-    img = mpimg.imread(img_path)
+for y, path, title in zip(y_positions, img_paths, titles):
+    img = mpimg.imread(path)
 
-    # Drop shadow
-    shadow = patches.FancyBboxPatch(
-        (x_pos + 0.1, y - 0.1),
-        box_w,
-        box_h,
-        boxstyle="round,pad=0.02",
-        linewidth=0,
-        facecolor="gray",
-        alpha=0.3,
-        zorder=1,
-    )
-    ax.add_patch(shadow)
-
-    # Main box
     box = patches.FancyBboxPatch(
-        (x_pos, y),
-        box_w,
-        box_h,
+        (x0, y), box_w, box_h,
         boxstyle="round,pad=0.02",
-        linewidth=1.2,
+        linewidth=1.4,
         edgecolor="black",
-        facecolor="white",
-        zorder=2,
+        facecolor="white"
     )
     ax.add_patch(box)
+    ax.imshow(img, extent=(x0, x0+box_w, y, y+box_h))
+    ax.text(x0 + box_w/2, y - 0.45, title,
+            ha="center", va="top",
+            fontsize=12, weight="semibold")
 
-    # Image inside
-    ax.imshow(img, extent=(x_pos, x_pos + box_w, y, y + box_h), zorder=3)
-
-    # Title
-    ax.text(
-        x_pos + box_w / 2,
-        y - 0.4,
-        title,
-        ha="center",
-        va="bottom",
-        fontsize=11,
-        weight="semibold",
+for i in range(2):
+    ax.annotate("",
+        xy=(x0+box_w/2, y_positions[i+1]+box_h+0.2),
+        xytext=(x0+box_w/2, y_positions[i]-0.6),
+        arrowprops=dict(arrowstyle="->", lw=2)
     )
 
-# Arrows between boxes (downward pointing)
-for i in range(len(y_positions) - 1):
-    x_mid = x_pos + box_w/2
-
-    # y_tail should be ABOVE y_tip for a downward arrow
-    y_tail = y_positions[i] - 0.6                          # just below upper box
-    y_tip  = y_positions[i+1] + box_h + 0.2                # just above lower box
-
-    # sanity: ensure tail is higher than tip; if not, swap
-    if y_tail <= y_tip:
-        y_tail, y_tip = y_tip + 0.2, y_tail - 0.2
-
-    ax.annotate(
-        "",
-        xy=(x_mid, y_tip),     # arrow tip (lower y -> points down)
-        xytext=(x_mid, y_tail),# arrow tail (higher y)
-        arrowprops=dict(
-            arrowstyle="->",
-            lw=2.0,
-            color="black",
-            mutation_scale=20,
-            shrinkA=6,
-            shrinkB=6,
-        ),
-    )
-
-# Limits
 ax.set_xlim(-0.5, box_w + 0.5)
-ax.set_ylim(-1, max(y_positions) + box_h + 1)
+ax.set_ylim(-1, 12)
 ax.set_aspect("equal")
-plt.tight_layout()
 
-# Save
-flowchart_path = os.path.join(output_dir, "pipeline_overview.png")
-plt.savefig(flowchart_path, dpi=300, bbox_inches="tight")
-plt.close()
+fig.savefig(os.path.join(output_dir, "pipeline_overview.pdf"))
+plt.close(fig)
 
-print(f"Flowchart saved to: {flowchart_path}")
+print("Pipeline overview PDF saved.")
