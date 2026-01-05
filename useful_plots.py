@@ -770,7 +770,9 @@ plt.rcParams.update({
 })
 
 # Output location
-outpath = "paper_plots/lsst_redshift_dist.png"
+#outpath = "paper_plots/lsst_redshift_dist.png"
+outpath = "paper_plots/DES_redshift_dist.pdf"
+
 os.makedirs(os.path.dirname(outpath), exist_ok=True)
 
 
@@ -823,14 +825,23 @@ def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None,
     plt.hist(bg_z, bins=bins, density=True, histtype='step',
              alpha=0.5, label="Source catalog")
 
-    # Mean redshift vertical lines
-    if lens_mean is not None:
-        plt.axvline(lens_mean, linestyle="--", linewidth=2,
-                    label=f"Lens mean z = {lens_mean:.3f}")
+#    # Mean redshift vertical lines
+#    if lens_mean is not None:
+#        plt.axvline(lens_mean, linestyle="--", linewidth=2,
+#                    label=f"Lens mean z = {lens_mean:.3f}")
 
-    if bg_mean is not None:
-        plt.axvline(bg_mean, linestyle="--", linewidth=2,
-                    label=f"Source mean z = {bg_mean:.3f}")
+#    if bg_mean is not None:
+#        plt.axvline(bg_mean, linestyle="--", linewidth=2,
+#                    label=f"Source mean z = {bg_mean:.3f}")
+
+    # Redshift selection cut
+    ax.axvline(
+        z_cut,
+        linestyle="--",
+        linewidth=2.2,
+        color="black",
+        label=r"Selection cut $z = 0.4$"
+    )
 
     plt.xlabel("Redshift z")
     plt.title("Redshift Distributions Before Selection Cut")
@@ -847,14 +858,21 @@ def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None,
 # ---------------------------------------------------------------
 if __name__ == "__main__":
 
+#    BG_file = os.path.join(
+#        "lhc_run_lsst_sims/lsst_1",
+#        "run_2",
+#        "source_catalog_0.npy"
+#    )
+
+#    base_sim_dir = "lhc_run_lsst_sims/lsst_1"
     BG_file = os.path.join(
-        "lhc_run_lsst_sims/lsst_1",
-        "run_2",
+        "lhc_run_sims_zero_err_10",
+        "run_1",
         "source_catalog_0.npy"
     )
 
-    base_sim_dir = "lhc_run_lsst_sims/lsst_1"
-    run_id = 2
+    base_sim_dir = "lhc_run_sims_zero_err_10"
+    run_id = 1
 
     # Load data
     bg_z = read_sim_background(BG_file)
