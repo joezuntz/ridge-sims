@@ -753,13 +753,14 @@ from ridge_analysis_tools import *
 
 
 plt.rcParams.update({
-    "figure.figsize": (6.8, 6.8),
+    "figure.figsize": (8, 6.8),
     "figure.dpi": 100,
 
     "axes.linewidth": 1.6,
     "axes.labelsize": 15,
     "axes.titlesize": 15,
 
+    # Major ticks
     "xtick.direction": "in",
     "ytick.direction": "in",
     "xtick.major.size": 6,
@@ -768,6 +769,14 @@ plt.rcParams.update({
     "ytick.major.width": 1.4,
     "xtick.labelsize": 13,
     "ytick.labelsize": 13,
+
+    # Minor ticks 
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+    "xtick.minor.size": 3.5,
+    "ytick.minor.size": 3.5,
+    "xtick.minor.width": 1.0,
+    "ytick.minor.width": 1.0,
 
     "font.family": "serif",
 
