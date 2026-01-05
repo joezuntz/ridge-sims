@@ -752,24 +752,34 @@ from ridge_analysis_tools import *
 
 
 
-# =====================================================================
-#   Publication-style params
-# =====================================================================
 plt.rcParams.update({
-    "font.size": 14,
-    "axes.labelsize": 16,
-    "axes.titlesize": 16,
-    "legend.fontsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-    "axes.linewidth": 1.5,
+    "figure.figsize": (6.8, 6.8),
+    "figure.dpi": 100,
+
+    "axes.linewidth": 1.6,
+    "axes.labelsize": 15,
+    "axes.titlesize": 15,
+
     "xtick.direction": "in",
     "ytick.direction": "in",
-    "xtick.top": True,
-    "ytick.right": True,
+    "xtick.major.size": 6,
+    "ytick.major.size": 6,
+    "xtick.major.width": 1.4,
+    "ytick.major.width": 1.4,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+
+    "font.family": "serif",
+
+    "legend.frameon": False,
+    "legend.fontsize": 12,
+
+    "savefig.bbox": "tight",
 })
 
+############################################################
 # Output location
+############################################################
 #outpath = "paper_plots/lsst_redshift_dist.png"
 outpath = "paper_plots/DES_redshift_dist.pdf"
 
@@ -811,46 +821,65 @@ def mean_redshift_from_pdf(z_array, bins=60):
 # ---------------------------------------------------------------
 # Plot lens and background redshift distributions
 # ---------------------------------------------------------------
-def plot_redshift_distributions(lens_z, bg_z, z_cut=0.4, savepath=None,
-                                lens_mean=None, bg_mean=None):
+def plot_redshift_distributions(
+    lens_z, bg_z, z_cut=0.4, savepath=None,
+    lens_mean=None, bg_mean=None
+):
 
-    plt.figure(figsize=(8, 6))
+    fig, ax = plt.subplots()
 
     # Use shared global bins
     zmax = max(bg_z.max(), lens_z.max())
     bins = np.linspace(0, zmax, 60)
 
-    plt.hist(lens_z, bins=bins, density=True, histtype='step',
-             alpha=0.5, label="Lens catalog")
-    plt.hist(bg_z, bins=bins, density=True, histtype='step',
-             alpha=0.5, label="Source catalog")
-
-#    # Mean redshift vertical lines
-#    if lens_mean is not None:
-#        plt.axvline(lens_mean, linestyle="--", linewidth=2,
-#                    label=f"Lens mean z = {lens_mean:.3f}")
-
-#    if bg_mean is not None:
-#        plt.axvline(bg_mean, linestyle="--", linewidth=2,
-#                    label=f"Source mean z = {bg_mean:.3f}")
-
-    # Redshift selection cut
-    ax.axvline(
-        z_cut,
-        linestyle="--",
-        linewidth=2.2,
-        color="black",
-        label=r"Selection cut $z = 0.4$"
+    ax.hist(
+        lens_z, bins=bins, density=True, histtype="step",
+        linewidth=2.0, label="Lens catalog"
     )
 
-    plt.xlabel("Redshift z")
-    plt.title("Redshift Distributions Before Selection Cut")
-    plt.legend()
-    plt.tight_layout()
+    ax.hist(
+        bg_z, bins=bins, density=True, histtype="step",
+        linewidth=2.0, label="Source catalog"
+    )
+
+    # Mean redshift vertical lines
+#    if lens_mean is not None:
+#        ax.axvline(
+#            lens_mean, linestyle="--", linewidth=2,
+#            label=f"Lens mean z = {lens_mean:.3f}"
+#        )
+
+#    if bg_mean is not None:
+#        ax.axvline(
+#            bg_mean, linestyle="--", linewidth=2,
+#            label=f"Source mean z = {bg_mean:.3f}"
+#        )
+
+
+
+    ax.axvline(
+    z_cut,
+    linestyle="--",
+    linewidth=2.2,
+    color="black",
+    label=r"Selection cut $z = 0.4$"
+    )
+    ax.set_xlabel("Redshift $z$")
+    ax.set_title("Redshift Distributions Before Selection Cut")
+
+    # Axis styling to match other paper plots
+    ax.tick_params(top=True, right=True)
+    ax.grid(False)
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.6)
+
+    ax.legend()
 
     if savepath is not None:
-        plt.savefig(savepath, dpi=300)
+        fig.savefig(savepath)
+
     plt.show()
+    plt.close(fig)
 
 
 # ---------------------------------------------------------------
@@ -865,6 +894,7 @@ if __name__ == "__main__":
 #    )
 
 #    base_sim_dir = "lhc_run_lsst_sims/lsst_1"
+
     BG_file = os.path.join(
         "lhc_run_sims_zero_err_10",
         "run_1",
