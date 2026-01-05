@@ -763,8 +763,8 @@ plt.rcParams.update({
     # Major ticks
     "xtick.direction": "in",
     "ytick.direction": "in",
-    "xtick.major.size": 6,
-    "ytick.major.size": 6,
+    "xtick.major.size": 8,
+    "ytick.major.size": 8,
     "xtick.major.width": 1.4,
     "ytick.major.width": 1.4,
     "xtick.labelsize": 13,
