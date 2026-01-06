@@ -9,19 +9,38 @@ from matplotlib.colors import Normalize
 # Publication-style parameters
 # ------------------------------------------------------------
 plt.rcParams.update({
-    "font.size": 14,
-    "axes.labelsize": 16,
-    "axes.titlesize": 16,
-    "legend.fontsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-    "axes.linewidth": 1.5,
+    "figure.figsize": (8, 6.8),
+    "figure.dpi": 100,
+
+    "axes.linewidth": 1.6,
+    "axes.labelsize": 15,
+    "axes.titlesize": 15,
+
+    # Major ticks
     "xtick.direction": "in",
     "ytick.direction": "in",
-    "xtick.major.size": 8,   # slightly longer ticks
+    "xtick.major.size": 8,
     "ytick.major.size": 8,
-})
+    "xtick.major.width": 1.4,
+    "ytick.major.width": 1.4,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
 
+    # Minor ticks 
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+    "xtick.minor.size": 3.5,
+    "ytick.minor.size": 3.5,
+    "xtick.minor.width": 1.0,
+    "ytick.minor.width": 1.0,
+
+    "font.family": "serif",
+
+    "legend.frameon": False,
+    "legend.fontsize": 12,
+
+    "savefig.bbox": "tight",
+})
 # ------------------------------------------------------------
 # Directories
 # ------------------------------------------------------------
@@ -34,9 +53,11 @@ OUTPUT_ROOT = os.path.abspath("plots")
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
 print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
 
+
 # ------------------------------------------------------------
 # Load cosmology mapping
 # ------------------------------------------------------------
+
 mapping_path = "cosmo_run_mapping.csv"
 mapping_df = pd.read_csv(mapping_path)
 
@@ -104,6 +125,14 @@ def load_shear_file(path):
 # ------------------------------------------------------------
 # Main plotting
 # ------------------------------------------------------------
+CATEGORY_TITLES = {
+    "Om_fixed": r"$\Omega_m\ \mathrm{fixed}$",
+    "sigma8_fixed": r"$\sigma_8\ \mathrm{fixed}$",
+    "S8": r"$S_8$",
+    "S8_perp": r"$S_8^{\perp}$",
+}
+
+
 def plot_shear_all_categories():
 
     for cat in CATEGORIES:
@@ -167,8 +196,10 @@ def plot_shear_all_categories():
         # ----------------------------------------------------
         # Format g+
         # ----------------------------------------------------
+        title_cat = CATEGORY_TITLES.get(cat, cat)
+        
         ax_gplus.set_xscale("log")
-        ax_gplus.set_title(f"{cat}: " + r"$\gamma_{+}$")
+        ax_gplus.set_title(title_cat + r": $\gamma_{+}$")
         ax_gplus.set_xlabel(r"$\theta [arcmin]$")
         ax_gplus.set_ylabel(r" $\gamma_{+}$")
 
@@ -176,7 +207,7 @@ def plot_shear_all_categories():
         # Format g×
         # ----------------------------------------------------
         ax_gx.set_xscale("log")
-        ax_gx.set_title(f"{cat}:"+ r"$\gamma_{times}$ ")
+        ax_gx.set_title(title_cat + r": $\gamma_{\times}$")
         ax_gx.set_xlabel(r"$\theta [arcmin]$")
         ax_gx.set_ylabel(r"$\gamma_{times}$")
 
