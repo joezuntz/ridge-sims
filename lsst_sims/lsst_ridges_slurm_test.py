@@ -81,17 +81,30 @@ def run_filament_pipeline(run_id):
     print(f"[rank {COMM_WORLD.rank}] Starting filament finding")
     sys.stdout.flush()
 
+#    ridges, initial_density, final_density = dredge_scms.find_filaments(
+#        coords,
+#        bandwidth=np.radians(0.2),
+#        convergence=np.radians(1e-5),
+#        distance_metric='haversine',
+#        n_neighbors=3000,
+#        comm=COMM_WORLD,
+#        checkpoint_dir=os.path.join(out_dir, f"checkpoints_run{run_id}"),
+#        resume=False,
+#        seed=12345,
+#        mesh_size=200000
+#    )
     ridges, initial_density, final_density = dredge_scms.find_filaments(
         coords,
-        bandwidth=np.radians(0.2),
+        bandwidth=np.radians(0.4),
         convergence=np.radians(1e-5),
         distance_metric='haversine',
-        n_neighbors=3000,
+        n_neighbors=600,
         comm=COMM_WORLD,
         checkpoint_dir=os.path.join(out_dir, f"checkpoints_run{run_id}"),
         resume=False,
         seed=12345,
-        mesh_size=200000
+        mesh_size=100000,
+        mesh_threshold=3.0,
     )
 
     print(f"[rank {COMM_WORLD.rank}] Finished filament finding")
