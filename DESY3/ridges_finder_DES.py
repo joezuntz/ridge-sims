@@ -61,7 +61,7 @@ def load_catalog_coordinates(base_dir, run_id, shift=True, z_cut=None, fraction=
     Load coordinates from DES catalog file.
     """
     
-    filename = os.path.join(base_dir, "lens_catalog_0.npy")     # place holder
+    filename = os.path.join(base_dir, "ridge-maglim-sample.h5")     
     with h5py.File(filename, 'r') as f:
         ra = f["RA"][:]
         dec = f["DEC"][:]
