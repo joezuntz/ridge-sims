@@ -1,31 +1,3 @@
-# the output is as the following 
-
-"""
-DES_ridge_analysis/
-├── checkpoints/
-│   └── (internal SCMS / filament checkpoints)
-│
-├── plots_by_final_percentile/
-│   ├── DESY3_Ridges_plot_p15__mesh2_band0.10.png
-│   └── DESY3_Ridges_plot_p15__mesh2_band0.10_contracted_diagnostic.png
-│
-├── Ridges_analysis/
-│   ├── DESY3_ridges_p15__mesh2_band0.10.h5
-│   └── DESY3_ridges_p15__mesh2_band0.10_contracted.h5
-│
-└── summary.txt
-
-"""
-
-
-
-
-
-
-
-
-
-
 import os, sys
 import numpy as np
 import h5py
@@ -56,12 +28,11 @@ RANK = COMM.rank
 # HELPER FUNCTIONS
 # ==============================================================
 
-def load_catalog_coordinates(base_dir, run_id, shift=True, z_cut=None, fraction=None):
+def load_catalog_coordinates(base_dir, shift=True, z_cut=None, fraction=None):
     """
     Load coordinates from DES catalog file.
     """
-    
-    filename = os.path.join(base_dir, "ridge-maglim-sample.h5")     
+    filename = os.path.join(base_dir, "ridge-maglim-sample.h5")
     with h5py.File(filename, 'r') as f:
         ra = f["RA"][:]
         dec = f["DEC"][:]
@@ -95,7 +66,7 @@ def results_plot(density_map, ridges, plot_filename):
     """
     Make a plot of a density map and ridge points on top.
     """
-    hp.cartview(density_map, min=0, lonra=[20, 50], latra=[-30, 0],)
+    hp.cartview(density_map, min=0, lonra=[20, 50], latra=[-30, 0])
     hp.graticule()
 
     ridges = np.degrees(ridges)
@@ -103,15 +74,16 @@ def results_plot(density_map, ridges, plot_filename):
     ridges_dec = ridges[:, 0]
     hp.projplot(ridges_ra, ridges_dec, 'r.', markersize=1, lonlat=True)
     plt.savefig(plot_filename, bbox_inches='tight', dpi=300)
+    plt.close()
 
 
-def build_density_map(base_dir, run_id, nside, smoothing_degrees=0.5,z_cut=None):
+def build_density_map(base_dir, nside, smoothing_degrees=0.5, z_cut=None):
     """
     Make a density maps from the coordinates.
     """
     # The healpy conventions are different and should not have
-    # the 180 deg shift applied
-    data = load_catalog_coordinates(base_dir, run_id, shift=False,z_cut=z_cut)
+    # the 180 deg shift applied
+    data = load_catalog_coordinates(base_dir, shift=False, z_cut=z_cut)
     dec = np.degrees(data[:, 0])
     ra = np.degrees(data[:, 1])
     npix = hp.nside2npix(nside)
@@ -120,7 +92,7 @@ def build_density_map(base_dir, run_id, nside, smoothing_degrees=0.5,z_cut=None)
     np.add.at(m, pix, 1)
     m1 = hp.smoothing(m, fwhm=np.radians(smoothing_degrees), verbose=False)
     return m1
-    
+
 
 def redo_cuts(ridges, initial_density, final_density, initial_percentile=0, final_percentile=25):
     cut1 = initial_density > np.percentile(initial_density, initial_percentile)
@@ -138,9 +110,7 @@ def run_catalog_filament_pipeline(
     fraction=None):
     """
     Filament-finding pipeline for a single observational catalog (e.g. DES Y3).
-    
     """
-
     # ----------------------------------------------------------
     # Parameters (identical to simulation pipeline)
     # ----------------------------------------------------------
@@ -164,18 +134,17 @@ def run_catalog_filament_pipeline(
     os.makedirs(ridge_dir, exist_ok=True)
 
     # ----------------------------------------------------------
-    # Load catalog 
+    # Load catalog
     # ----------------------------------------------------------
     coordinates = None
-    if COMM_WORLD.rank == 0:
+    if RANK == 0:
         coordinates = load_catalog_coordinates(
             base_catalog_dir,
-            run_id=None,            # explicitly unused
             z_cut=z_cut,
             fraction=fraction
         )
 
-    coordinates = COMM_WORLD.bcast(coordinates, root=0)
+    coordinates = COMM.bcast(coordinates, root=0)
 
     # ----------------------------------------------------------
     # Filament finder
@@ -186,26 +155,25 @@ def run_catalog_filament_pipeline(
         convergence=np.radians(convergence),
         distance_metric="haversine",
         n_neighbors=neighbours,
-        comm=COMM_WORLD,
+        comm=COMM,
         checkpoint_dir=checkpoint_dir,
         resume=True,
         seed=seed,
         mesh_size=mesh_size
     )
 
-    COMM_WORLD.barrier()
+    COMM.barrier()
 
     # ----------------------------------------------------------
     # Output (rank 0)
     # ----------------------------------------------------------
-    if COMM_WORLD.rank == 0:
+    if RANK == 0:
 
         final_percentiles = [15]
         initial_percentile = 0
 
         density_map = build_density_map(
             base_catalog_dir,
-            run_id=None,
             nside=512,
             z_cut=z_cut
         )
@@ -247,6 +215,7 @@ def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverag
     """Apply the filter to one ridge file."""
     with h5py.File(ridge_file, "r") as f:
         ridges = f["ridges"][:]
+
     ridge_dec = ridges[:, 0]
     ridge_ra = ridges[:, 1]
     n_total = len(ridges)
@@ -265,7 +234,7 @@ def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverag
         f.create_dataset("ridges", data=ridges_clean)
 
     # Plot diagnostic
-    plot_file = os.path.join(plot_dir,os.path.basename(out_file).replace(".h5", "_diagnostic.png"))
+    plot_file = os.path.join(plot_dir, os.path.basename(out_file).replace(".h5", "_diagnostic.png"))
     plt.figure(figsize=(8, 6))
     plt.scatter(ridge_ra, ridge_dec, s=1, alpha=0.3, label="All ridges")
     plt.scatter(ridges_clean[:, 1], ridges_clean[:, 0], s=1, alpha=0.6, label="Filtered ridges")
@@ -280,13 +249,8 @@ def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverag
     print(f"[plot] Saved diagnostic → {plot_file}")
 
 
-
-
-
-
-
 # ==============================================================
-# FIXED PARAMETERS 
+# FIXED PARAMETERS
 # ==============================================================
 bandwidth = 0.1
 N = 2
@@ -330,20 +294,19 @@ def main():
         ridges_dir,
         f"{base_label}_ridges_p15__mesh{N}_band{bandwidth:.2f}.h5"
     )
-    
-    #cat_dir = os.path.join(parent_dir, "des-data","lhc_run_sims_zero_err_10/run_1")
-    cat_dir = os.path.join(parent_dir, "lhc_run_sims_zero_err_10/run_1")
+
+    cat_dir = os.path.join(parent_dir, "des-data")
+
     if not os.path.exists(ridge_file):
 
         run_catalog_filament_pipeline(
-                    bandwidth=bandwidth,
-                    base_catalog_dir=cat_dir,
-                    base_label=base_label,
-                    home_dir=output_base,
-                    N=N,
-                    z_cut=0.4
-                )
-
+            bandwidth=bandwidth,
+            base_catalog_dir=cat_dir,
+            base_label=base_label,
+            home_dir=output_base,
+            N=N,
+            z_cut=0.4
+        )
 
     # ----------------------------------------------------------
     # STAGE 2 — CONTRACTION
@@ -379,8 +342,31 @@ def main():
             f.write("Stages completed : ridge finding + contraction\n")
             f.write("\nOutputs stored in flat directory structure.\n")
 
+
 # ==============================================================
 # EXECUTION
 # ==============================================================
 if __name__ == "__main__":
     main()
+
+
+
+
+#Temporary
+fname = "DESY3_ridges_p15__mesh2_band0.10_contracted.h5"
+out_png = fname.replace(".h5", ".png")
+
+with h5py.File(fname, "r") as f:
+    ridges = f["ridges"][:]
+
+dec = ridges[:, 0]
+ra  = ridges[:, 1]
+
+plt.figure(figsize=(8, 6))
+plt.scatter(ra, dec, s=1)
+plt.xlabel("RA (rad)")
+plt.ylabel("Dec (rad)")
+plt.title(os.path.basename(fname))
+plt.tight_layout()
+plt.savefig(out_png, dpi=300)
+plt.close()
