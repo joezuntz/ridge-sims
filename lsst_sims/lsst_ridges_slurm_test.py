@@ -1,6 +1,9 @@
 import os, sys
 import argparse
 
+from numba import jit, config
+
+config.DISABLE_JIT = True
 
 # Parse SLURM array task ID
 parser = argparse.ArgumentParser()
