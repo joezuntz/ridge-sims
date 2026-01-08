@@ -353,7 +353,8 @@ if __name__ == "__main__":
 
 
 #Temporary
-fname = "DESY3_ridges_p15__mesh2_band0.10_contracted.h5"
+base_dir = "DES_ridge_analysis/Ridges_analysis"
+fname = os.path.join(base_dir, "DESY3_ridges_p15__mesh2_band0.10_contracted.h5")
 out_png = fname.replace(".h5", ".png")
 
 with h5py.File(fname, "r") as f:
