@@ -106,7 +106,7 @@ def run_filament_pipeline(run_id):
         checkpoint_dir=os.path.join(out_dir, f"checkpoints_run{run_id}"),
         resume=False,
         seed=12345,
-        mesh_size=100000,
+        mesh_size=4*5e5,
         mesh_threshold=3.0,
     )
 
