@@ -106,7 +106,7 @@ def run_filament_pipeline(run_id):
         checkpoint_dir=os.path.join(out_dir, f"checkpoints_run{run_id}"),
         resume=False,
         seed=12345,
-        mesh_size=4*5e5,
+        mesh_size=int(4*5e5),
         mesh_threshold=3.0,
     )
 
@@ -141,4 +141,4 @@ def run_filament_pipeline(run_id):
 if __name__ == "__main__":
     run_filament_pipeline(run_id)
 
-#job 9959703
+#job 9970905
