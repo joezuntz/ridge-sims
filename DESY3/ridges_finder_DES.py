@@ -32,7 +32,7 @@ def load_catalog_coordinates(base_dir, shift=True, z_cut=None, fraction=None):
     """
     Load coordinates from DES catalog file.
     """
-    filename = os.path.join(base_dir, "ridge-maglim-sample.h5")
+    filename = os.path.join(base_dir, "des-y3-ridges-foreground-v2.h5")
     with h5py.File(filename, 'r') as f:
         ra = f["RA"][:]
         dec = f["DEC"][:]
@@ -353,21 +353,21 @@ if __name__ == "__main__":
 
 
 #Temporary
-base_dir = "DES_ridge_analysis/Ridges_analysis"
-fname = os.path.join(base_dir, "DESY3_ridges_p15__mesh2_band0.10_contracted.h5")
-out_png = fname.replace(".h5", ".png")
+#base_dir = "DES_ridge_analysis/Ridges_analysis"
+#fname = os.path.join(base_dir, "DESY3_ridges_p15__mesh2_band0.10_contracted.h5")
+#out_png = fname.replace(".h5", ".png")
 
-with h5py.File(fname, "r") as f:
-    ridges = f["ridges"][:]
+#with h5py.File(fname, "r") as f:
+#    ridges = f["ridges"][:]
 
-dec = ridges[:, 0]
-ra  = ridges[:, 1]
+#dec = ridges[:, 0]
+#ra  = ridges[:, 1]
 
-plt.figure(figsize=(8, 6))
-plt.scatter(ra, dec, s=1)
-plt.xlabel("RA (rad)")
-plt.ylabel("Dec (rad)")
-plt.title(os.path.basename(fname))
-plt.tight_layout()
-plt.savefig(out_png, dpi=300)
-plt.close()
+#plt.figure(figsize=(8, 6))
+#plt.scatter(ra, dec, s=1)
+#plt.xlabel("RA (rad)")
+#plt.ylabel("Dec (rad)")
+#plt.title(os.path.basename(fname))
+#plt.tight_layout()
+#plt.savefig(out_png, dpi=300)
+#plt.close()
