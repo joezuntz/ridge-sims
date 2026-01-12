@@ -34,9 +34,9 @@ def load_catalog_coordinates(base_dir, shift=True, z_cut=None, fraction=None):
     """
     filename = os.path.join(base_dir, "des-y3-ridges-foreground-v2.h5")
     with h5py.File(filename, 'r') as f:
-        ra = f["RA"][:]
-        dec = f["DEC"][:]
-        z_true = f["Z_TRUE"][:]
+        ra = f["ra"][:]
+        dec = f["dec"][:]
+        z_true = f["z"][:]
 
     # Apply redshift cut
     if z_cut is not None:
