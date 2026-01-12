@@ -139,10 +139,24 @@ def load_coordinates(base_sim_dir, run_id, shift=True, z_cut=None, fraction=None
     """
     
     filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
+
+    if fraction is not None:
+        if not (0 < fraction <= 1):
+            raise ValueError("fraction must be between 0 and 1")
+    
     with h5py.File(filename, 'r') as f:
-        ra = f["RA"][:]
-        dec = f["DEC"][:]
-        z_true = f["Z_TRUE"][:]
+        sz = f["RA"].size
+        if fraction is not None:
+            nkeep = int(sz*fraction)
+            print(f"Loading {nkeep} objects out of {sz} (fraction = {fraction})")
+            ra = f["RA"][:nkeep]
+            dec = f["DEC"][:nkeep]
+            z_true = f["Z_TRUE"][:nkeep]
+        else:
+            print(f"Loading all {sz} objects")
+            ra = f["RA"][:]
+            dec = f["DEC"][:]
+            z_true = f["Z_TRUE"][:]
 
     # Apply redshift cut
     if z_cut is not None:
@@ -154,13 +168,6 @@ def load_coordinates(base_sim_dir, run_id, shift=True, z_cut=None, fraction=None
     if shift:
         ra = (ra + 180) % 360
 
-    # Apply fractional selection
-    if fraction is not None:
-        if not (0 < fraction <= 1):
-            raise ValueError("fraction must be between 0 and 1")
-        n_keep = int(len(ra) * fraction)
-        ra = ra[:n_keep]
-        dec = dec[:n_keep]
 
     # Convert (DEC, RA) to radians
     coordinates = np.column_stack((dec, ra))
