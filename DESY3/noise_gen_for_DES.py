@@ -25,7 +25,7 @@ from ridge_analysis_tools import *
 base_catalog_dir = os.path.join(parent_dir, "des-data") 
 
 bg_data_path = os.path.join(
-    base_catalog_dir, "des-y3-ridges-background-v2_cutzl0.40.h5 "
+    base_catalog_dir, "des-y3-ridges-background-v2_cutzl0.40.h5"
 )
 
 if not os.path.exists(bg_data_path):
