@@ -95,7 +95,7 @@ for fp in final_percentiles:
             BG_data=noise_bg,
             filament_h5=filament_h5,
             shear_csv=random_csv,
-            background_type="sim",
+            background_type="noise",
             shear_flip_csv=None,
             comm=COMM,
         )
