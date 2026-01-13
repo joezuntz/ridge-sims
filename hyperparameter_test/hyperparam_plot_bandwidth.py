@@ -2,11 +2,9 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as colors
 
 # ------------------------------------------------------------
-# Publication-style parameters 
+# Publication-style parameters
 # ------------------------------------------------------------
 plt.rcParams.update({
     "figure.figsize": (8, 6.8),
@@ -26,7 +24,7 @@ plt.rcParams.update({
     "xtick.labelsize": 13,
     "ytick.labelsize": 13,
 
-    # Minor ticks
+    # Minor ticks 
     "xtick.minor.visible": True,
     "ytick.minor.visible": True,
     "xtick.minor.size": 3.5,
@@ -41,11 +39,10 @@ plt.rcParams.update({
 
     "savefig.bbox": "tight",
 })
-
 # ------------------------------------------------------------
 # Directories
 # ------------------------------------------------------------
-SHEAR_ROOT  = os.path.join("parameter_test", "shear_vs_meshsize")
+SHEAR_ROOT  = os.path.join("parameter_test", "shear_vs_bandwidth")
 OUTPUT_ROOT = os.path.abspath("hyperparam_plot")
 
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
@@ -54,10 +51,10 @@ print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
 # ------------------------------------------------------------
 # Load shear files
 # ------------------------------------------------------------
-def load_shear_files_from_meshsize():
+def load_shear_files_from_bandwidth():
     """
     Looks for:
-        shear_vs_meshsize/shear_mesh_<mesh>.csv
+        shear_vs_bandwidth/shear_band_<bandwidth>.csv
     """
     out = []
 
@@ -65,28 +62,28 @@ def load_shear_files_from_meshsize():
         print(f"[FATAL] No such folder: {SHEAR_ROOT}")
         return out
 
-    for f in os.listdir(SHEAR_ROOT):
-        if f.startswith("shear_mesh_") and f.endswith(".csv"):
-            mesh = f.replace("shear_mesh_", "").replace(".csv", "")
+    for f in sorted(os.listdir(SHEAR_ROOT)):
+        if f.startswith("shear_band_") and f.endswith(".csv"):
+            band = f.replace("shear_band_", "").replace(".csv", "")
             path = os.path.join(SHEAR_ROOT, f)
 
             try:
                 df = pd.read_csv(path)
-                out.append((float(mesh), df))
+                out.append((float(band), df))
                 print(f"Loaded: {path}")
             except Exception as e:
                 print(f"[ERROR] Could not read: {path} → {e}")
 
-    # Sort numerically by mesh size
+    # Sort numerically by bandwidth
     out.sort(key=lambda x: x[0])
     return out
 
 # ------------------------------------------------------------
 # Main plotting routine
 # ------------------------------------------------------------
-def plot_shear_meshsizes():
+def plot_shear_bandwidths():
 
-    shear_data = load_shear_files_from_meshsize()
+    shear_data = load_shear_files_from_bandwidth()
     if len(shear_data) == 0:
         print("No shear files found.")
         return
@@ -100,20 +97,20 @@ def plot_shear_meshsizes():
     gcross_col = "Weighted_g_cross"
 
     # ----------------------------------------------------
-    # Colormap setup (mesh size → color)
+    # Colormap setup (bandwidth → color)
     # ----------------------------------------------------
-    meshes = [m for m, _ in shear_data]
-    norm   = colors.Normalize(vmin=min(meshes), vmax=max(meshes))
-    cmap   = cm.viridis
-    sm     = cm.ScalarMappable(norm=norm, cmap=cmap)
+    bands = [b for b, _ in shear_data]
+    norm = colors.Normalize(vmin=min(bands), vmax=max(bands))
+    cmap = cm.viridis
+    sm   = cm.ScalarMappable(norm=norm, cmap=cmap)
 
     # ----------------------------------------------------
     # Plot
     # ----------------------------------------------------
-    for mesh_value, df in shear_data:
+    for band_value, df in shear_data:
 
         theta_arcmin = np.degrees(df[rad_col].values) * 60.0
-        color = cmap(norm(mesh_value))
+        color = cmap(norm(band_value))
 
         ax_gplus.plot(theta_arcmin, df[gplus_col],
                       color=color, alpha=0.85)
@@ -130,7 +127,7 @@ def plot_shear_meshsizes():
     ax_gplus.set_title(r"$\gamma_{+}$ vs $\theta$")
 
     cbar_gplus = fig_gplus.colorbar(sm, ax=ax_gplus, pad=0.02)
-    cbar_gplus.set_label("Mesh size")
+    cbar_gplus.set_label("Bandwidth")
 
     # ----------------------------------------------------
     # Format γ×
@@ -141,13 +138,13 @@ def plot_shear_meshsizes():
     ax_gx.set_title(r"$\gamma_{\times}$ vs $\theta$")
 
     cbar_gx = fig_gx.colorbar(sm, ax=ax_gx, pad=0.02)
-    cbar_gx.set_label("Mesh size")
+    cbar_gx.set_label("Bandwidth")
 
     # ----------------------------------------------------
     # Save as PDF
     # ----------------------------------------------------
-    out_gplus = os.path.join(OUTPUT_ROOT, "all_mesh_sizes_gplus.pdf")
-    out_gx    = os.path.join(OUTPUT_ROOT, "all_mesh_sizes_gcross.pdf")
+    out_gplus = os.path.join(OUTPUT_ROOT, "all_bandwidths_gplus.pdf")
+    out_gx    = os.path.join(OUTPUT_ROOT, "all_bandwidths_gcross.pdf")
 
     fig_gplus.savefig(out_gplus)
     fig_gx.savefig(out_gx)
@@ -163,4 +160,4 @@ def plot_shear_meshsizes():
 # Run
 # ------------------------------------------------------------
 if __name__ == "__main__":
-    plot_shear_meshsizes()
+    plot_shear_bandwidths()
