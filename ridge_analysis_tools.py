@@ -581,14 +581,51 @@ def read_DES_background(bg_file, comm=None):
 
     return bg_ra, bg_dec, g1, g2, z, weights
 
+def read_DES_noise_background(bg_file, comm=None):
+    """
+    Read DES noise background catalog with flat structure:
+    ra, dec, g1, g2, weight
+    (no z stored in file)
+
+    Returns:
+      bg_ra, bg_dec, g1, g2, z_dummy, weights
+
+    z_dummy is returned as NaNs 
+    """
+    with h5py.File(bg_file, "r") as f:
+
+        total_rows = f["ra"].shape[0]
+
+        if comm is None:
+            s = slice(None)
+        else:
+            row_per_process = total_rows // comm.size
+            s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
+
+        bg_ra = f["ra"][s]
+        bg_ra = (bg_ra + 180) % 360
+
+        bg_dec = f["dec"][s]
+        g1 = f["g1"][s]
+        g2 = f["g2"][s]
+
+        weights = f["weight"][s] if "weight" in f else np.ones_like(bg_ra)
+
+        # Dummy z to preserve the interface expected by downstream code
+        z_dummy = np.full_like(bg_ra, np.nan, dtype=float)
+
+    return bg_ra, bg_dec, g1, g2, z_dummy, weights
+
 
 
 def load_background(bg_file, comm=None, rows=None, background_type=None):
     """Dispatch background reader based on catalog type."""
     if background_type == "sim":
-        return read_sim_background(bg_file, rows, comm=comm) #read_sim_background(bg_file, stride=100)
+        return read_sim_background(bg_file, rows, comm=comm)
     elif background_type == "DES":
         return read_DES_background(bg_file, comm=comm)
+    elif background_type == "noise":
+        return read_DES_noise_background(bg_file, comm=comm)
     else:
         raise ValueError(f"Unknown background_type: {background_type}")
 
