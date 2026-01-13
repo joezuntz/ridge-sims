@@ -66,6 +66,42 @@ def transform_background(background_file, output_hdf5_file, seed):
             out_file.create_dataset("weight", data=weights)
             
     print(f"Transformed background saved to {output_hdf5_file}")
+    
+    
+    
+
+def transform_DES_background(background_file, output_hdf5_file, seed):
+    """Applies random rotation to shear values and saves the transformed background to an HDF5 file."""
+    
+    np.random.seed(seed)
+
+    with h5py.File(background_file, "r") as file:
+        bg_ra = file["ra"][:]
+        bg_dec = file["dec"][:]
+        g1_values = file["g1"][:]
+        g2_values = file["g2"][:]
+
+        has_weight = "weight" in file
+        weights = file["weight"][:] if has_weight else np.ones_like(bg_ra)
+
+    # Random rotation
+    psi = np.random.uniform(0, 2 * np.pi, size=len(bg_ra))
+    cos_2psi = np.cos(2 * psi)
+    sin_2psi = np.sin(2 * psi)
+
+    g1_transformed = cos_2psi * g1_values - sin_2psi * g2_values
+    g2_transformed = sin_2psi * g1_values + cos_2psi * g2_values
+
+    # Write output (you can choose case here; be consistent downstream)
+    with h5py.File(output_hdf5_file, "w") as out_file:
+        out_file.create_dataset("ra", data=bg_ra)
+        out_file.create_dataset("dec", data=bg_dec)
+        out_file.create_dataset("g1", data=g1_transformed)
+        out_file.create_dataset("g2", data=g2_transformed)
+        if has_weight:
+            out_file.create_dataset("weight", data=weights)
+
+    print(f"Transformed background saved to {output_hdf5_file}")
 
 
 
@@ -491,24 +527,60 @@ def read_sim_background(bg_file, rows, comm=None):
 
 
 
+#def read_DES_background(bg_file, comm=None):
+#    """Read background galaxies from DES-like catalog with 'background' group."""
+#    with h5py.File(bg_file, "r") as f:
+#        total_rows = f["background"]["ra"].shape[0]
+#        if comm is None:
+#            s = slice(None)
+#        else:
+#            row_per_process = total_rows // comm.size
+#            s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
+
+#        bg_ra = f["background"]["ra"][s]
+#        bg_ra = (bg_ra + 180) % 360
+#        bg_dec = f["background"]["dec"][s]
+#        g1 = f["background"]["g1"][s]
+#        g2 = f["background"]["g2"][s]
+#        weights = f["background"]["weight"][s]
+
+#    return bg_ra, bg_dec, g1, g2, None, weights  # DES has no z_true, return None
+
 def read_DES_background(bg_file, comm=None):
-    """Read background galaxies from DES-like catalog with 'background' group."""
+    """
+    Read background galaxies from DES Y3 catalog with flat structure:
+    ra, dec, g1, g2, weight, z
+    """
     with h5py.File(bg_file, "r") as f:
-        total_rows = f["background"]["ra"].shape[0]
+
+        total_rows = f["ra"].shape[0]
+
         if comm is None:
             s = slice(None)
         else:
             row_per_process = total_rows // comm.size
-            s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
+            s = slice(
+                comm.rank * row_per_process,
+                (comm.rank + 1) * row_per_process
+            )
 
-        bg_ra = f["background"]["ra"][s]
-        bg_ra = (bg_ra + 180) % 360
-        bg_dec = f["background"]["dec"][s]
-        g1 = f["background"]["g1"][s]
-        g2 = f["background"]["g2"][s]
-        weights = f["background"]["weight"][s]
+        bg_ra = f["ra"][s]
+        bg_ra = (bg_ra + 180) % 360  
 
-    return bg_ra, bg_dec, g1, g2, None, weights  # DES has no z_true, return None
+        bg_dec = f["dec"][s]
+        g1 = f["g1"][s]
+        g2 = f["g2"][s]
+
+        z = f["z"][s]
+
+        weights = (
+            f["weight"][s]
+            if "weight" in f
+            else np.ones_like(bg_ra)
+        )
+
+    return bg_ra, bg_dec, g1, g2, z, weights
+
 
 
 def load_background(bg_file, comm=None, rows=None, background_type=None):
@@ -726,6 +798,99 @@ def discover_and_convert_BG(base_root, z_cut=0.4):   # updated
     for rd in run_dirs:
         print(f"\n=== Processing {rd} ===")
         convert_all_backgrounds(rd, z_cut=z_cut)   # updated
+
+
+
+def convert_DES_background_with_zcut(
+    bg_file,
+    z_cut=0.4,
+    comm=None,
+):
+    """
+    Read DES Y3 background catalog (flat structure),
+    apply a redshift cut z > z_cut,
+    and write a filtered catalog:
+
+      - in the SAME directory as the input file
+      - with the SAME structure 
+      - with the SAME filename, plus suffix _cutzl{z_cut:.2f} before extension
+
+    Expected input datasets:
+      /ra, /dec, /g1, /g2, /z, /weight
+
+    Output datasets (same):
+      /ra, /dec, /g1, /g2, /z, /weight
+    """
+
+    # --------------------------------------------------
+    # input path
+    # --------------------------------------------------
+    bg_file = os.path.abspath(bg_file)
+
+    if not os.path.exists(bg_file):
+        raise FileNotFoundError(f"Background file not found: {bg_file}")
+
+    # --------------------------------------------------
+    # Output path: 
+    # --------------------------------------------------
+    base_dir = os.path.dirname(bg_file)
+    base_name = os.path.basename(bg_file)
+    name, ext = os.path.splitext(base_name)
+
+    out_file = os.path.join(
+        base_dir,
+        f"{name}_cutzl{z_cut:.2f}{ext}"
+    )
+
+    # --------------------------------------------------
+    # Read input 
+    # --------------------------------------------------
+    ra, dec, g1, g2, z, weight = read_DES_background(bg_file, comm=comm)
+
+    # --------------------------------------------------
+    # Build validity mask + z cut
+    # --------------------------------------------------
+    valid = (
+        np.isfinite(ra)
+        & np.isfinite(dec)
+        & np.isfinite(g1)
+        & np.isfinite(g2)
+        & np.isfinite(z)
+        & np.isfinite(weight)
+        & (z > z_cut)
+    )
+
+    # --------------------------------------------------
+    # Write output 
+    # --------------------------------------------------
+    if comm is not None and comm.rank != 0:
+        return out_file
+
+    # Guard against accidental overwrite
+    if os.path.exists(out_file):
+        raise FileExistsError(
+            f"Output file already exists: {out_file}\n"
+            "Delete it or choose a different z_cut."
+        )
+
+    with h5py.File(out_file, "w") as f:
+        f.create_dataset("ra", data=ra[valid])
+        f.create_dataset("dec", data=dec[valid])
+        f.create_dataset("g1", data=g1[valid])
+        f.create_dataset("g2", data=g2[valid])
+        f.create_dataset("z", data=z[valid])
+        f.create_dataset("weight", data=weight[valid])
+
+        f.attrs["z_cut"] = float(z_cut)
+        f.attrs["source"] = os.path.basename(bg_file)
+
+    print("[DONE] DES background z-cut applied")
+    print(f"       Input:    {bg_file}")
+    print(f"       Output:   {out_file}")
+    print(f"       Selected: {int(valid.sum())} / {len(ra)}")
+
+    return out_file
+
 
 
 
@@ -965,7 +1130,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
 
 
-def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, shear_flip_csv = None, comm=None):
+def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type, shear_flip_csv = None, comm=None):
     """
     Compute MST → filaments → shear from a contracted ridge file.
     All paths are passed explicitly to keep the function file-agnostic.
@@ -991,7 +1156,7 @@ def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, shear_flip_csv 
     process_shear_sims(
         filament_h5, BG_data, output_shear_file=shear_csv,
         k=1, num_bins=20, comm=comm,
-        flip_g1=False, flip_g2=False, background_type='sim',
+        flip_g1=False, flip_g2=False, background_type= background_type,
         nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
     )
 
@@ -999,7 +1164,7 @@ def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, shear_flip_csv 
         process_shear_sims(
             filament_h5, BG_data, output_shear_file=shear_flip_csv,
             k=1, num_bins=20, comm=comm,
-            flip_g1=True, flip_g2=False, background_type='sim',
+            flip_g1=True, flip_g2=False, background_type=background_type,
             nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
         )
 
