@@ -1,13 +1,8 @@
 import os
-import numpy as np
-import h5py
-import re
-from ridge_analysis_tools import *
 
-
-# ------------------------------------------------------------
+# ==============================================================
 # PATH SETUP
-# ------------------------------------------------------------
+# ==============================================================
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
 
@@ -15,6 +10,21 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 os.chdir(current_dir)
+
+import dredge_scms
+from ridge_analysis_tools import *
+
+
+
+
+
+import numpy as np
+import h5py
+import re
+from ridge_analysis_tools import *
+
+
+
 
 # ------------------------------------------------------------
 # INPUT BACKGROUND CATALOG (PARENT DIR)
