@@ -618,14 +618,77 @@ def read_DES_noise_background(bg_file, comm=None):
 
 
 
+################ To read use later in the DES shear code withought the shift ##########
+
+
+def read_DES_background_noshift(bg_file, comm=None):
+    """
+    Read DES Y3 catalog EXACTLY as stored (no RA shift applied).
+    Expected datasets: ra, dec, g1, g2, z, weight
+    """
+    with h5py.File(bg_file, "r") as f:
+        total_rows = f["ra"].shape[0]
+
+        if comm is None:
+            s = slice(None)
+        else:
+            row_per_process = total_rows // comm.size
+            s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
+
+        bg_ra = f["ra"][s]     # <-- NO SHIFT
+        bg_dec = f["dec"][s]
+        g1 = f["g1"][s]
+        g2 = f["g2"][s]
+        z = f["z"][s]
+        weights = f["weight"][s] if "weight" in f else np.ones_like(bg_ra)
+
+    return bg_ra, bg_dec, g1, g2, z, weights
+
+
+def read_DES_noise_background_noshift(bg_file, comm=None):
+    """
+    Read DES noise catalog EXACTLY as stored (no RA shift applied).
+    Expected datasets: ra, dec, g1, g2, weight
+    Returns a dummy z (NaNs) to keep the interface consistent.
+    """
+    with h5py.File(bg_file, "r") as f:
+        total_rows = f["ra"].shape[0]
+
+        if comm is None:
+            s = slice(None)
+        else:
+            row_per_process = total_rows // comm.size
+            s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
+
+        bg_ra = f["ra"][s]     # <-- NO SHIFT
+        bg_dec = f["dec"][s]
+        g1 = f["g1"][s]
+        g2 = f["g2"][s]
+        weights = f["weight"][s] if "weight" in f else np.ones_like(bg_ra)
+
+        z_dummy = np.full_like(bg_ra, np.nan, dtype=float)
+
+    return bg_ra, bg_dec, g1, g2, z_dummy, weights
+################################################################################
+
+
 def load_background(bg_file, comm=None, rows=None, background_type=None):
-    """Dispatch background reader based on catalog type."""
     if background_type == "sim":
         return read_sim_background(bg_file, rows, comm=comm)
+
     elif background_type == "DES":
         return read_DES_background(bg_file, comm=comm)
+
     elif background_type == "noise":
         return read_DES_noise_background(bg_file, comm=comm)
+
+    # ---- NEW: use these when files already contain shifted RA ----
+    elif background_type == "DES_noshift":
+        return read_DES_background_noshift(bg_file, comm=comm)
+
+    elif background_type == "noise_noshift":
+        return read_DES_noise_background_noshift(bg_file, comm=comm)
+
     else:
         raise ValueError(f"Unknown background_type: {background_type}")
 
