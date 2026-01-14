@@ -71,7 +71,7 @@ for fp in final_percentiles:
         BG_data=bg_file,
         filament_h5=filament_h5,
         shear_csv=shear_csv,
-        background_type="DES",
+        background_type="DES_noshift",
         shear_flip_csv=None,
         comm=COMM,
     )
@@ -95,7 +95,7 @@ for fp in final_percentiles:
             BG_data=noise_bg,
             filament_h5=filament_h5,
             shear_csv=random_csv,
-            background_type="noise",
+            background_type="noise_noshift",
             shear_flip_csv=None,
             comm=COMM,
         )
