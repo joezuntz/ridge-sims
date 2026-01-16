@@ -87,7 +87,7 @@ def main():
     # PARAMETERS
     # ----------------------------------------------------------
     N_fixed = 2
-    bandwidth_list = np.linspace(0.15, 0.55, 5)
+    bandwidth_list = [0.01, 0.05, 0.1] #np.linspace(0.15, 0.55, 5)
     run_ids = range(1, 2)
 
     sim_bases = {
