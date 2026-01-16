@@ -100,7 +100,7 @@ def main():
     bandwidth = 0.1
 
     sim_bases = {
-        "zero_err": "lhc_run_sims",
+        "shape_err": "lhc_run_sims",
     }
 
     output_base = "DES_sim"
