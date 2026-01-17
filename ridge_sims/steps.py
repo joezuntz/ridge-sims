@@ -71,8 +71,12 @@ def step3(config):
     rng = np.random.default_rng(seed=config.seed)
 
     # Load the number density information
-    sample = load_sample_information(config.lens_type, config.combined, lsst=config.lsst)
-    
+    sample = load_sample_information_advanced(
+        config.lens_type,
+        config.combined,
+        lsst=config.lsst,
+        lsst10_nz=config.lsst10_nz,  # NEW option
+    )
     # if we want no noise in sims
     if not config.include_shape_noise:
         print("Shape noise disabled: setting sigma_e[:] = 1e-3")

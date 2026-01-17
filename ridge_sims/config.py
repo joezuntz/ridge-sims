@@ -31,6 +31,7 @@ class Config:
                  seed=42,
                  include_shape_noise=None, # option for almost no noise,
                  lsst=None,
+                 lsst10_nz=False,  # NEW: DES with lsst nz option
                  ):
         self.sim_dir = sim_dir
         self.lens_type = lens_type
@@ -47,6 +48,7 @@ class Config:
         self.seed = seed
         self.include_shape_noise = include_shape_noise # no noise option
         self.lsst = lsst
+        self.lsst10_nz = lsst10_nz  # NEW: DES with lsst nz option
         # Set file output output names based on sim_dir
         self.set_file_names()
 
