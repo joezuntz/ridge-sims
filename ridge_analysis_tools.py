@@ -1104,7 +1104,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
     max_ang_rad = np.radians(max_distance_arcmin/60)
     
     # this line was defined lower in the code
-    bins = np.logspace(np.log10(min_ang_rad), np.log10(max_ang_rad), num_bins + 1)
+    #bins = np.logspace(np.log10(min_ang_rad), np.log10(max_ang_rad), num_bins + 1)
     
     coverage_pixel_size = hp.nside2resol(nside_coverage, arcmin=True)
     assert coverage_pixel_size > max_distance_arcmin, "Coverage pixel size ({coverage_pixel_size} arcmin) must be larger than max_distance_arcmin ({max_distance_arcmin} arcmin). Increase nside_coverage."
@@ -1193,7 +1193,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         g_cross = g1_subset * np.sin(2 * phi) - g2_subset * np.cos(2 * phi)
 
         # Bin the distances between 1 arcmin and 1 degree
-        #bins = np.logspace(np.log10(min_ang_rad), np.log10(max_ang_rad), num_bins + 1) # This is now moved to the top
+        bins = np.logspace(np.log10(min_ang_rad), np.log10(max_ang_rad), num_bins + 1) # This is now moved to the top
         bin_indices = np.digitize(distances[:, 0], bins) - 1
         valid_bins = (bin_indices >= 0) & (bin_indices < num_bins)
 
