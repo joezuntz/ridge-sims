@@ -126,6 +126,7 @@ def main():
                 BG_data=BG_data,
                 filament_h5=filaments_h5,
                 shear_csv=shear_csv,
+                background_type = 'sim',
                 shear_flip_csv=None,
                 comm=comm
             )
