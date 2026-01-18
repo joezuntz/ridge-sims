@@ -1,7 +1,7 @@
 import os, sys
 import argparse
 from numba import config
-#config.DISABLE_JIT = True
+config.DISABLE_JIT = True
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task-id", type=int, required=True)
@@ -76,7 +76,7 @@ def run_filament_pipeline(run_id):
             base_sim_dir,
             run_id,
             z_cut=0.7,
-            fraction=0.05
+            fraction=0.15
         )
 
         # Filter the INPUT dataset (coords) 
