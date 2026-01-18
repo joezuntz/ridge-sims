@@ -1,7 +1,7 @@
 import sys
 import os
 import numpy as np
-from .samples import load_sample_information, load_mask
+from .samples import load_sample_information_advanced,load_sample_information, load_mask
 from .ridge_sims import (
     shell_configuration,
     generate_shell_cl,
