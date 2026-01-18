@@ -268,222 +268,100 @@ def load_sample_information(lens_type, combined=True, lsst=False):
 
 
 ##################################################################################
-#      A Test function to combine DES simulation and LSST Y10 nz samples
+#      Test functions to combine DES simulation and LSST Y10 nz samples
 ##################################################################################
-
-
-
-def load_sample_information_advanced(lens_type, combined=True, lsst=False, lsst10_nz=False):  # NEW
+def _load_lsst_y10_bins(path, nbin=None):
     """
-    Create and return a SampleInfo object with the number density information
-    for the source and lens samples, and galaxy bias for the latter. 
-    
-    The number densities are taken from the DES Y3 data release.
+    Load LSST SRD bins from npy dict with keys:
+      - 'redshift_range'
+      - 'bins' (indexable container)
 
-    Parameters
-    ----------
-    lens_type : str
-        The type of lens sample to use. Must be 'maglim' or 'redmagic'.
-
-    combined : bool 
-        Whether to use the combined source and lens samples. Default is True.
-        If False use tomographic samples.
-
-    lsst: int:
-        If 0, use DES Y3 number densities.
-        If 1, use LSST Y1 number densities.
-        If 10, use LSST Y10 number densities.
-
-    Returns
-    -------
-    sample : SampleInfo
-        The object containing the number density information.
+    If nbin is given, reads only the first nbin bins.
+    Returns (z, nz) with nz shape (nbin, nz).
     """
+    d = np.load(path, allow_pickle=True).item()
+    z = np.asarray(d["redshift_range"])
+    bins = d["bins"]
 
-    # Full LSST mode: switches *everything* (mask, n_eff, bias, sigma_e, etc.)
+    if nbin is None:
+        # try to infer length
+        try:
+            nbin = len(bins)
+        except TypeError:
+            raise ValueError(f"Cannot infer number of bins in {path}")
+
+    nz = np.array([bins[i] for i in range(nbin)])
+    if nz.ndim == 1:
+        nz = nz[None, :]
+    if nz.ndim != 2:
+        raise ValueError(f"{path}: bins has unexpected shape {nz.shape}")
+    return z, nz
+
+
+
+def _normalize_then_scale(nz, z, target_densities):
+    nz = np.asarray(nz, dtype=float)
+    z = np.asarray(z, dtype=float)
+    target_densities = np.asarray(target_densities, dtype=float)
+
+    if nz.ndim != 2:
+        raise ValueError(f"nz must be 2D (nbin,nz). Got {nz.shape}")
+    if nz.shape[0] != target_densities.shape[0]:
+        raise ValueError(f"Bin mismatch: nz bins={nz.shape[0]} but target bins={target_densities.shape[0]}")
+
+    out = np.empty_like(nz, dtype=float)
+    for i in range(nz.shape[0]):
+        norm = np.trapezoid(nz[i], z)
+        if not np.isfinite(norm) or norm <= 0:
+            raise ValueError(f"Non-positive/invalid normalization for bin {i}: {norm}")
+        out[i] = (nz[i] / norm) * target_densities[i]
+    return out
+
+
+
+def load_sample_information_advanced(lens_type, combined=True, lsst=False, lsst10_nz=False):
+    """
+    Same as load_sample_information, but if lsst10_nz=True (and lsst is False/None),
+    replace DES n(z) shapes with LSST Y10 shapes while keeping DES densities/bias/sigma_e.
+    """
+    # 1) Build the canonical sample first (DES or full LSST)
+    sample = load_sample_information(lens_type, combined=combined, lsst=lsst)
+
+    # 2) Full LSST mode: hybrid is irrelevant
     if lsst:
-        return load_lsst_sample_information(lsst, combined)
-
-    # Hybrid mode: keep DES-like sample properties (densities, bias, sigma_e)
-    # but replace the *shape* of n(z) with LSST Y10.
-    # keep the DES mask and number densities but test the
-    # sensitivity of ridge/shear measurements to a deeper redshift distribution.
-    if lsst10_nz:  
-        # Load LSST Y10 n(z) shapes (do NOT keep its n_eff normalization)
-        y = 10
-        source_nz_data = np.load(f"lsst-data/srd_source_bins_year_{y}.npy", allow_pickle=True).item()
-        source_z = source_nz_data['redshift_range']
-        source_nz = np.array(source_nz_data['bins'])
-
-        lens_nz_data = np.load(f"lsst-data/srd_lens_bins_year_{y}.npy", allow_pickle=True).item()
-        lens_z = lens_nz_data['redshift_range']
-        lens_nz = np.array(lens_nz_data['bins'])
-
-        # consistent 2D shapes: (nbin, nz)
-        if source_nz.ndim == 1:
-            source_nz = source_nz[None, :]
-        if lens_nz.ndim == 1:
-            lens_nz = lens_nz[None, :]
-
-        # DES-like number densities and per-bin sigma_e
-        if combined:
-            source_number_densities = [combined_source_number_densities]
-            sigma_e = combined_sigma_e
-        else:
-            source_number_densities = tomographic_source_number_densities
-            sigma_e = tomographic_sigma_e
-
-        if lens_type == "maglim":
-            if combined:
-                lens_number_densities = [maglim_combined_number_densities]
-                galaxy_bias = [float(np.mean(combined_maglim_bias))]
-            else:
-                lens_number_densities = tomographic_maglim_number_densities
-                galaxy_bias = tomographic_maglim_bias
-        else:
-            if combined:
-                lens_number_densities = [redmagic_combined_number_densities]
-                galaxy_bias = [float(np.mean(tomographic_redmagic_bias))]
-            else:
-                lens_number_densities = tomographic_redmagic_number_densities
-                galaxy_bias = tomographic_redmagic_bias
-
-        # Normalize LSST n(z) shapes to 1, then scale to DES densities.
-        # Keep the shape of LSST Y10 but matches total counts to DES.
-        nbin_source = source_nz.shape[0]
-        nbin_lens = lens_nz.shape[0]
-
-        # tomographic DES but LSST provides a different number
-        # we take the first N bins. 
-        
-        if not combined:
-            if len(source_number_densities) != nbin_source:
-                n = min(len(source_number_densities), nbin_source)
-                source_nz = source_nz[:n]
-                source_number_densities = source_number_densities[:n]
-                sigma_e = sigma_e[:n]
-                nbin_source = n
-            if len(lens_number_densities) != nbin_lens:
-                n = min(len(lens_number_densities), nbin_lens)
-                lens_nz = lens_nz[:n]
-                lens_number_densities = lens_number_densities[:n]
-                galaxy_bias = galaxy_bias[:n]
-                nbin_lens = n
-
-        for i in range(nbin_source):
-            norm = np.trapezoid(source_nz[i], source_z)
-            if norm <= 0:
-                raise ValueError("LSST source n(z) has non-positive normalization")
-            source_nz[i] = source_nz[i] / norm
-            source_nz[i] *= source_number_densities[i]
-
-        for i in range(nbin_lens):
-            norm = np.trapezoid(lens_nz[i], lens_z)
-            if norm <= 0:
-                raise ValueError("LSST lens n(z) has non-positive normalization")
-            lens_nz[i] = lens_nz[i] / norm
-            lens_nz[i] *= lens_number_densities[i]
-
-        # If combined=True, compress to a single bin consistently.
-        if combined:
-            source_nz = np.array([np.sum(source_nz, axis=0)])
-            lens_nz = np.array([np.sum(lens_nz, axis=0)])
-            nbin_source = 1
-            nbin_lens = 1
-
-        sample = SampleInfo()
-        sample.nbin_source = nbin_source
-        sample.nbin_lens = nbin_lens
-        sample.source_z = source_z
-        sample.source_nz = source_nz
-        sample.lens_z = lens_z
-        sample.lens_nz = lens_nz
-        sample.lens_number_densities = lens_number_densities
-        sample.galaxy_bias = galaxy_bias
-        sample.source_number_densities = source_number_densities
-        sample.sigma_e = sigma_e
         return sample
 
-    source_data = np.loadtxt(source_nz_filename).T
+    # 3) Hybrid: overwrite ONLY the n(z) shapes
+    if lsst10_nz:
+        y = 10
 
-    source_z = source_data[0]
-    source_nz = source_data[1:]
-
-    if combined:
-        source_number_densities = [combined_source_number_densities]
-        sigma_e = combined_sigma_e
-    else:
-        source_number_densities = tomographic_source_number_densities
-        sigma_e = tomographic_sigma_e
-
-
-    if lens_type == "maglim":
-        if combined:
-            lens_number_densities = [maglim_combined_number_densities]
-            galaxy_bias = [np.mean(combined_maglim_bias)]
-            lens_data = np.loadtxt(combined_maglim_nz_filename).T
-        else:
-            sample.lens_number_densities = tomographic_maglim_number_densities
-            sample.galaxy_bias = tomographic_maglim_bias
-            lens_data = np.loadtxt(tomographic_maglim_nz_filename).T
+        if not combined:
             
-    else:
-        if combined:
-            lens_number_densities = [redmagic_combined_number_densities]
-            galaxy_bias = np.mean(tomographic_redmagic_bias)
-            lens_data = np.loadtxt(combined_redmagic_nz_filename).T
-        else:
-            lens_number_densities = tomographic_redmagic_number_densities
-            galaxy_bias = tomographic_redmagic_bias
-            lens_data = np.loadtxt(tomographic_redmagic_nz_filename).T
+            raise ValueError("Hybrid LSST10_nz mode is implemented only for combined=True.")
 
-    lens_z = lens_data[0]
-    lens_nz = lens_data[1:]
-    nbin_lens = len(lens_nz)
-    nbin_source = len(source_nz)
+        # Load LSST Y10 shapes; for combined=True we want 1 bin each.
+        source_z, source_nz_lsst = _load_lsst_y10_bins(
+            f"lsst-data/srd_source_bins_year_{y}.npy", nbin=None
+        )
+        lens_z, lens_nz_lsst = _load_lsst_y10_bins(
+            f"lsst-data/srd_lens_bins_year_{y}.npy", nbin=None
+        )
 
-    for i in range(nbin_source):
-        source_nz[i] /= np.trapezoid(source_nz[i], source_z)
-        source_nz[i] *= source_number_densities[i]
-    
-    for i in range(nbin_lens):
-        lens_nz[i] /= np.trapezoid(lens_nz[i], lens_z)
-        lens_nz[i] *= lens_number_densities[i]
+        # Combine LSST bins into a single shape (sum the per-bin curves)
+        source_shape = np.sum(source_nz_lsst, axis=0)[None, :]
+        lens_shape   = np.sum(lens_nz_lsst, axis=0)[None, :]
 
+        # Overwrite z grids + renormalize to DES densities already stored in sample
+        sample.source_z = source_z
+        sample.source_nz = _normalize_then_scale(source_shape, source_z, sample.source_number_densities)
 
-    sample = SampleInfo()
-    sample.nbin_source = nbin_source
-    sample.nbin_lens = nbin_lens
-    sample.source_z = source_z
-    sample.source_nz = source_nz
-    sample.lens_z = lens_z
-    sample.lens_nz = lens_nz
-    sample.lens_number_densities = lens_number_densities
-    sample.galaxy_bias = galaxy_bias
-    sample.source_number_densities = source_number_densities
-    sample.sigma_e = sigma_e
-
+        sample.lens_z = lens_z
+        sample.lens_nz = _normalize_then_scale(lens_shape, lens_z, sample.lens_number_densities)
 
     return sample
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#################################################################################################
 
 
 
