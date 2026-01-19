@@ -27,7 +27,7 @@ def remove_band_around_zero(points: np.ndarray, width_deg: float = 10.0, axis: i
     """
     Remove points with |points[:, axis]| < width_deg around 0.
     For angles in radians.
-    axis=0 -> dec, axis=1 -> ra (given [dec, ra]).
+    axis=0 -> dec, axis=1 -> ra
     """
     if points is None:
         return None
@@ -50,7 +50,7 @@ def install_mesh_filter(width_deg: float = 10.0, axis: int = 0) -> None:
 
     """
     # find_filaments is defined in dredge_scms.main and it imports mesh_generation
-    # into its module :contentReference[oaicite:2]{index=2}
+    
     from dredge_scms import main as dredge_main
 
     original = dredge_main.mesh_generation
