@@ -36,7 +36,7 @@ def ensure_dir(path):
 
 
 
-
+n_random_rotations = 100 # How many noise files to use
 # ============================================================
 # PATHS
 # ============================================================
@@ -79,7 +79,7 @@ COMM.Barrier()
 # ============================================================
 # NOISE: 
 # ============================================================
-n_random_rotations = 100 # How many noise files to use
+
 
 
 noise_files_all = sorted(glob.glob(os.path.join(noise_dir, "source_catalog_noise_*.h5")))
