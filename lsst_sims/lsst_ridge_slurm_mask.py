@@ -34,7 +34,13 @@ def remove_band_around_zero(points: np.ndarray, width_deg: float = 10.0, axis: i
     if not (isinstance(points, np.ndarray) and points.ndim == 2 and points.shape[1] == 2):
         raise ValueError("Expected points to be an (N,2) numpy array [dec, ra] in radians.")
     w = np.deg2rad(width_deg)
-    keep = np.abs(points[:, axis]) >= w
+
+    # NEW: also remove north-pole cap within width_deg of dec=+90deg
+    dec = points[:, 0]
+    keep_equator = np.abs(dec) >= w
+    keep_northcap = dec <= (0.5 * np.pi - w)
+
+    keep = keep_equator & keep_northcap
     return points[keep]
 
 
@@ -69,22 +75,22 @@ def run_filament_pipeline(run_id):
         os.makedirs(out_dir, exist_ok=True)
     COMM_WORLD.barrier()
 
-    # ---- Load coords on rank 0
+    # Load coords 
     coords = None
     if COMM_WORLD.rank == 0:
         coords = load_coordinates(
             base_sim_dir,
             run_id,
             z_cut=0.7,
-            fraction=0.15
+            fraction=0.35
         )
 
-        # Filter the INPUT dataset (coords) 
+        # Filter the input dataset coordinates
         coords = remove_band_around_zero(coords, width_deg=10.0, axis=0)  # axis=0 => dec
         print(f"[rank 0] Coords after |dec|>=10deg cut: {coords.shape}")
         sys.stdout.flush()
 
-        # Install the mesh filter *before* calling find_filaments
+        #  mesh filter before calling find_filaments
         install_mesh_filter(width_deg=10.0, axis=0)
 
     # broadcast filtered coords
