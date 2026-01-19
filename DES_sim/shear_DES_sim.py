@@ -43,7 +43,7 @@ n_random_rotations = 100 # How many noise files to use
 
 ridge_file = os.path.join(
     current_dir,
-    "DES_sim/run_1/band_0.1/mesh_2/Ridges_final_p15/zero_err_run_1_ridges_p15_contracted.h5"
+    "DES_sim/run_1/band_0.1/mesh_2/Ridges_final_p15/shape_err_run_1_ridges_p15_contracted.h5"
 )
 signal_bg  = os.path.join(parent_dir, "lhc_run_sims/run_1/source_catalog_cutzl04.h5")
 
