@@ -147,7 +147,7 @@ def main():
                 # --------------------------------------------------
                 home_dir = os.path.join(
                     output_base,
-                    f"run_{run_id}",
+                    f"run_{run_id}_zcut07",
                     f"band_{bandwidth:.1f}",
                     f"mesh_{N}"
                 )
@@ -210,7 +210,8 @@ def main():
                             run_ids=[run_id],
                             base_label=base_label,
                             home_dir=home_dir,
-                            N=N
+                            N=N,
+                            z_cut=0.7
                         )
 
                         if RANK == 0:
