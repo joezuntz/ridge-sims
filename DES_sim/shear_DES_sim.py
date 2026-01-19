@@ -15,7 +15,7 @@ if parent_dir not in sys.path:
 # Remain inside this directory for execution
 os.chdir(current_dir)
 
-from ridge_analysis_tools import process_ridge_file, process_shear_sims
+from ridge_analysis_tools import *
 
 COMM = MPI.COMM_WORLD
 RANK = COMM.rank
@@ -88,7 +88,7 @@ if RANK == 0:
         raise FileNotFoundError(f"No noise catalogs found in: {noise_dir}")
 COMM.Barrier()
 
-# Take the first N files (consistent, deterministic)
+# Take the first N files 
 noise_files = noise_files_all[:n_random_rotations]
 
 if RANK == 0 and len(noise_files) < n_random_rotations:
@@ -106,7 +106,7 @@ for nf in noise_files:
     if file_exists(random_csv):
         continue
 
-    # NOTE: we call process_shear_sims directly to reuse filament_h5
+    # call process_shear_sims directly to reuse filament_h5
     process_shear_sims(
         filament_file=filament_h5,
         bg_data=nf,
