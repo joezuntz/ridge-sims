@@ -752,157 +752,157 @@ from ridge_analysis_tools import *
 
 
 
-#plt.rcParams.update({
-#    "figure.figsize": (8, 6.8),
-#    "figure.dpi": 100,
+plt.rcParams.update({
+    "figure.figsize": (8, 6.8),
+    "figure.dpi": 100,
 
-#    "axes.linewidth": 1.6,
-#    "axes.labelsize": 15,
-#    "axes.titlesize": 15,
+    "axes.linewidth": 1.6,
+    "axes.labelsize": 15,
+    "axes.titlesize": 15,
 
-#    # Major ticks
-#    "xtick.direction": "in",
-#    "ytick.direction": "in",
-#    "xtick.major.size": 8,
-#    "ytick.major.size": 8,
-#    "xtick.major.width": 1.4,
-#    "ytick.major.width": 1.4,
-#    "xtick.labelsize": 13,
-#    "ytick.labelsize": 13,
+    # Major ticks
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "xtick.major.size": 8,
+    "ytick.major.size": 8,
+    "xtick.major.width": 1.4,
+    "ytick.major.width": 1.4,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
 
-#    # Minor ticks 
-#    "xtick.minor.visible": True,
-#    "ytick.minor.visible": True,
-#    "xtick.minor.size": 3.5,
-#    "ytick.minor.size": 3.5,
-#    "xtick.minor.width": 1.0,
-#    "ytick.minor.width": 1.0,
+    # Minor ticks 
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+    "xtick.minor.size": 3.5,
+    "ytick.minor.size": 3.5,
+    "xtick.minor.width": 1.0,
+    "ytick.minor.width": 1.0,
 
-#    "font.family": "serif",
+    "font.family": "serif",
 
-#    "legend.frameon": False,
-#    "legend.fontsize": 12,
+    "legend.frameon": False,
+    "legend.fontsize": 12,
 
-#    "savefig.bbox": "tight",
-#})
+    "savefig.bbox": "tight",
+})
 
-#############################################################
-## Output location
-#############################################################
-##outpath = "paper_plots/lsst_redshift_dist.png"
-#outpath = "paper_plots/DES_redshift_dist.pdf"
+############################################################
+# Output location
+############################################################
+#outpath = "paper_plots/lsst_redshift_dist.png"
+outpath = "paper_plots/hybrid_DES_redshift_dist.pdf"
 
-#os.makedirs(os.path.dirname(outpath), exist_ok=True)
-
-
-## ---------------------------------------------------------------
-## Read background galaxies
-## ---------------------------------------------------------------
-#def read_sim_background(bg_file):
-#    """Read background galaxies before any cuts."""
-#    with h5py.File(bg_file, "r") as f:
-#        z_true = f["Z_TRUE"][:]
-#    return z_true
+os.makedirs(os.path.dirname(outpath), exist_ok=True)
 
 
-## ---------------------------------------------------------------
-## Read lenses BEFORE z<0.4 cut
-## ---------------------------------------------------------------
-#def load_lens_redshifts(base_sim_dir, run_id):
-#    """Load lens redshifts before selection."""
-#    filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
-#    with h5py.File(filename, "r") as f:
-#        z_true = f["Z_TRUE"][:]
-#    return z_true
+# ---------------------------------------------------------------
+# Read background galaxies
+# ---------------------------------------------------------------
+def read_sim_background(bg_file):
+    """Read background galaxies before any cuts."""
+    with h5py.File(bg_file, "r") as f:
+        z_true = f["Z_TRUE"][:]
+    return z_true
 
 
-## ---------------------------------------------------------------
-## Compute mean redshift using histogram PDF
-## ---------------------------------------------------------------
-#def mean_redshift_from_pdf(z_array, bins=60):
-#    pdf, edges = np.histogram(z_array, bins=bins, density=True)
-#    centers = 0.5 * (edges[:-1] + edges[1:])
-#    dz = np.diff(edges)
-#    mean_z = np.sum(centers * pdf * dz)
-#    return mean_z
+# ---------------------------------------------------------------
+# Read lenses BEFORE z<0.4 cut
+# ---------------------------------------------------------------
+def load_lens_redshifts(base_sim_dir, run_id):
+    """Load lens redshifts before selection."""
+    filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
+    with h5py.File(filename, "r") as f:
+        z_true = f["Z_TRUE"][:]
+    return z_true
 
 
-## ---------------------------------------------------------------
-## Plot lens and background redshift distributions
-## ---------------------------------------------------------------
-#def plot_redshift_distributions(
-#    lens_z, bg_z, z_cut=0.4, savepath=None,
-#    lens_mean=None, bg_mean=None
-#):
-
-#    fig, ax = plt.subplots()
-
-#    # Use shared global bins
-#    zmax = max(bg_z.max(), lens_z.max())
-#    bins = np.linspace(0, zmax, 60)
-
-#    ax.hist(
-#        lens_z, bins=bins, density=True, histtype="step",
-#        linewidth=2.0, label="Lens catalog"
-#    )
-
-#    ax.hist(
-#        bg_z, bins=bins, density=True, histtype="step",
-#        linewidth=2.0, label="Source catalog"
-#    )
-
-#    # Mean redshift vertical lines
-##    if lens_mean is not None:
-##        ax.axvline(
-##            lens_mean, linestyle="--", linewidth=2,
-##            label=f"Lens mean z = {lens_mean:.3f}"
-##        )
-
-##    if bg_mean is not None:
-##        ax.axvline(
-##            bg_mean, linestyle="--", linewidth=2,
-##            label=f"Source mean z = {bg_mean:.3f}"
-##        )
+# ---------------------------------------------------------------
+# Compute mean redshift using histogram PDF
+# ---------------------------------------------------------------
+def mean_redshift_from_pdf(z_array, bins=60):
+    pdf, edges = np.histogram(z_array, bins=bins, density=True)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    dz = np.diff(edges)
+    mean_z = np.sum(centers * pdf * dz)
+    return mean_z
 
 
+# ---------------------------------------------------------------
+# Plot lens and background redshift distributions
+# ---------------------------------------------------------------
+def plot_redshift_distributions(
+    lens_z, bg_z, z_cut=0.7, savepath=None,
+    lens_mean=None, bg_mean=None
+):
 
-#    ax.axvline(
-#    z_cut,
-#    linestyle="--",
-#    linewidth=2.2,
-#    color="black",
-#    label=r"Selection cut $z = 0.4$"
-#    )
-#    ax.set_xlabel("Redshift $z$")
-#    ax.set_title("Redshift Distributions Before Selection Cut")
+    fig, ax = plt.subplots()
 
-#    # Axis styling to match other paper plots
-#    ax.tick_params(top=True, right=True)
-#    ax.grid(False)
-#    for spine in ax.spines.values():
-#        spine.set_linewidth(1.6)
+    # Use shared global bins
+    zmax = max(bg_z.max(), lens_z.max())
+    bins = np.linspace(0, zmax, 60)
 
-#    ax.legend()
+    ax.hist(
+        lens_z, bins=bins, density=True, histtype="step",
+        linewidth=2.0, label="Lens catalog"
+    )
 
-#    if savepath is not None:
-#        fig.savefig(savepath)
+    ax.hist(
+        bg_z, bins=bins, density=True, histtype="step",
+        linewidth=2.0, label="Source catalog"
+    )
 
-#    plt.show()
-#    plt.close(fig)
+    # Mean redshift vertical lines
+#    if lens_mean is not None:
+#        ax.axvline(
+#            lens_mean, linestyle="--", linewidth=2,
+#            label=f"Lens mean z = {lens_mean:.3f}"
+#        )
+
+#    if bg_mean is not None:
+#        ax.axvline(
+#            bg_mean, linestyle="--", linewidth=2,
+#            label=f"Source mean z = {bg_mean:.3f}"
+#        )
 
 
-## ---------------------------------------------------------------
-## Main call
-## ---------------------------------------------------------------
-#if __name__ == "__main__":
 
-##    BG_file = os.path.join(
-##        "lhc_run_lsst_sims/lsst_1",
-##        "run_2",
-##        "source_catalog_0.npy"
-##    )
+    ax.axvline(
+    z_cut,
+    linestyle="--",
+    linewidth=2.2,
+    color="black",
+    label=r"Selection cut $z = 0.7$"
+    )
+    ax.set_xlabel("Redshift $z$")
+    ax.set_title("Redshift Distributions Before Selection Cut")
 
-##    base_sim_dir = "lhc_run_lsst_sims/lsst_1"
+    # Axis styling to match other paper plots
+    ax.tick_params(top=True, right=True)
+    ax.grid(False)
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.6)
+
+    ax.legend()
+
+    if savepath is not None:
+        fig.savefig(savepath)
+
+    plt.show()
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------
+# Main call
+# ---------------------------------------------------------------
+if __name__ == "__main__":
+
+    BG_file = os.path.join(
+        "lhc_run_hybrid_DES_lSST10_sims/noise/lsst10_nz",
+        "run_1",
+        "source_catalog_0.npy"
+    )
+
+    base_sim_dir = "lhc_run_lsst_sims/lsst_1"
 
 #    BG_file = os.path.join(
 #        "lhc_run_sims_zero_err_10",
@@ -913,91 +913,110 @@ from ridge_analysis_tools import *
 #    base_sim_dir = "lhc_run_sims_zero_err_10"
 #    run_id = 1
 
-#    # Load data
-#    bg_z = read_sim_background(BG_file)
-#    lens_z = load_lens_redshifts(base_sim_dir, run_id)
+    # Load data
+    bg_z = read_sim_background(BG_file)
+    lens_z = load_lens_redshifts(base_sim_dir, run_id)
 
-#    # Compute mean redshifts
-#    lens_mean_z = mean_redshift_from_pdf(lens_z, bins=60)
-#    bg_mean_z   = mean_redshift_from_pdf(bg_z,   bins=60)
+    # Compute mean redshifts
+    lens_mean_z = mean_redshift_from_pdf(lens_z, bins=60)
+    bg_mean_z   = mean_redshift_from_pdf(bg_z,   bins=60)
 
-#    print("Mean lens redshift =", lens_mean_z)
-#    print("Mean background redshift =", bg_mean_z)
+    print("Mean lens redshift =", lens_mean_z)
+    print("Mean background redshift =", bg_mean_z)
 
-#    # Plot distribution with mean lines
-#    plot_redshift_distributions(
-#        lens_z, bg_z,
-#        z_cut=0.4,
-#        savepath=outpath,
-#        lens_mean=lens_mean_z,
-#        bg_mean=bg_mean_z
-#    )
-
-
+    # Plot distribution with mean lines
+    plot_redshift_distributions(
+        lens_z, bg_z,
+        z_cut=0.7,
+        savepath=outpath,
+        lens_mean=lens_mean_z,
+        bg_mean=bg_mean_z
+    )
 
 
-import os
-import h5py
-import numpy as np
-import matplotlib.pyplot as plt
 
-# --------------------------------------------------
-# INPUT FILE
-# --------------------------------------------------
-ridge_file = (
-    "hyperparameter_test/parameter_test/"
-    "run_1/band_0.1/mesh_1/"
-    "Ridges_final_p15/zero_err_run_1_ridges_p15_contracted.h5"
-)
 
-# --------------------------------------------------
-# OUTPUT DIRECTORY
-# --------------------------------------------------
-out_dir = "hyperparameter_test/test_plots"
-os.makedirs(out_dir, exist_ok=True)
 
-# --------------------------------------------------
-# LOAD
-# --------------------------------------------------
-with h5py.File(ridge_file, "r") as f:
-    ridges = f["ridges"][:]
 
-dec = ridges[:, 0]
-ra  = ridges[:, 1]
 
-print("RA range :", ra.min(), ra.max())
-print("DEC range:", dec.min(), dec.max())
 
-# --------------------------------------------------
-# PLOT 1 — RAW STORED VALUES
-# --------------------------------------------------
-plt.figure(figsize=(6, 5))
-plt.scatter(ra, dec, s=1)
-plt.xlabel("RA (stored units)")
-plt.ylabel("Dec (stored units)")
-plt.title("Contracted ridges — raw values")
-plt.tight_layout()
+"""
+[INFO] Using 100 noise realizations.
+[g_plus]  chi2 = 24.21, dof = 20, p = 2.335e-01, ~ 1.19σ
+[g_cross] chi2 = 21.52, dof = 20, p = 3.670e-01, ~ 0.90σ
+"""
 
-plt.savefig(
-    os.path.join(out_dir, "contracted_ridges_raw_units.png"),
-    dpi=200
-)
-plt.close()
 
-# --------------------------------------------------
-# PLOT 2 — ASSUME STORED IN RADIANS
-# --------------------------------------------------
-plt.figure(figsize=(6, 5))
-plt.scatter(np.degrees(ra), np.degrees(dec), s=1)
-plt.xlabel("RA [deg] (assuming radians)")
-plt.ylabel("Dec [deg] (assuming radians)")
-plt.title("Contracted ridges — interpreted as radians")
-plt.tight_layout()
 
-plt.savefig(
-    os.path.join(out_dir, "contracted_ridges_assume_radians.png"),
-    dpi=200
-)
-plt.close()
 
-print(f"[saved] Plots written to: {out_dir}")
+"""The contraction step acts as a conservative, mask-based veto that removes 
+ridge points in regions of insufficient survey coverage,
+ rather than as a precise geometric cut at a fixed angular distance from the boundary."""
+
+
+
+#import os
+#import h5py
+#import numpy as np
+#import matplotlib.pyplot as plt
+
+## --------------------------------------------------
+## INPUT FILE
+## --------------------------------------------------
+#ridge_file = (
+#    "hyperparameter_test/parameter_test/"
+#    "run_1/band_0.1/mesh_1/"
+#    "Ridges_final_p15/zero_err_run_1_ridges_p15_contracted.h5"
+#)
+
+## --------------------------------------------------
+## OUTPUT DIRECTORY
+## --------------------------------------------------
+#out_dir = "hyperparameter_test/test_plots"
+#os.makedirs(out_dir, exist_ok=True)
+
+## --------------------------------------------------
+## LOAD
+## --------------------------------------------------
+#with h5py.File(ridge_file, "r") as f:
+#    ridges = f["ridges"][:]
+
+#dec = ridges[:, 0]
+#ra  = ridges[:, 1]
+
+#print("RA range :", ra.min(), ra.max())
+#print("DEC range:", dec.min(), dec.max())
+
+## --------------------------------------------------
+## PLOT 1 — RAW STORED VALUES
+## --------------------------------------------------
+#plt.figure(figsize=(6, 5))
+#plt.scatter(ra, dec, s=1)
+#plt.xlabel("RA (stored units)")
+#plt.ylabel("Dec (stored units)")
+#plt.title("Contracted ridges — raw values")
+#plt.tight_layout()
+
+#plt.savefig(
+#    os.path.join(out_dir, "contracted_ridges_raw_units.png"),
+#    dpi=200
+#)
+#plt.close()
+
+## --------------------------------------------------
+## PLOT 2 — ASSUME STORED IN RADIANS
+## --------------------------------------------------
+#plt.figure(figsize=(6, 5))
+#plt.scatter(np.degrees(ra), np.degrees(dec), s=1)
+#plt.xlabel("RA [deg] (assuming radians)")
+#plt.ylabel("Dec [deg] (assuming radians)")
+#plt.title("Contracted ridges — interpreted as radians")
+#plt.tight_layout()
+
+#plt.savefig(
+#    os.path.join(out_dir, "contracted_ridges_assume_radians.png"),
+#    dpi=200
+#)
+#plt.close()
+
+#print(f"[saved] Plots written to: {out_dir}")
