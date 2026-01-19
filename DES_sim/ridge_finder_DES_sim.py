@@ -100,10 +100,10 @@ def main():
     bandwidth = 0.1
 
     sim_bases = {
-        "shape_err": "lhc_run_sims",
+        "shape_err": "lhc_run_hybrid_DES_lSST10_sims/noise/lsst10_nz",
     }
 
-    output_base = "DES_sim"
+    output_base = "hybrid_DES_sim"
     if RANK == 0:
         os.makedirs(output_base, exist_ok=True)
 
