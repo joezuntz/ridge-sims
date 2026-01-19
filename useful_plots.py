@@ -911,7 +911,7 @@ if __name__ == "__main__":
 #    )
 
 #    base_sim_dir = "lhc_run_sims_zero_err_10"
-#    run_id = 1
+    run_id = 1
 
     # Load data
     bg_z = read_sim_background(BG_file)
