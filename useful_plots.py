@@ -1066,7 +1066,7 @@ plt.rcParams.update({
 # ============================================================
 # Paths
 # ============================================================
-base_dir = "imulation_ridges_comparative_analysis_debug/normal_mesh_x2/band_0.1/shear_test_run_1"
+base_dir = "simulation_ridges_comparative_analysis_debug/normal_mesh_x2/band_0.1/shear_test_run_1"
 
 signal_file = os.path.join(base_dir, "shear_p15.csv")
 noise_files = sorted(
