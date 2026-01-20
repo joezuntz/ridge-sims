@@ -18,11 +18,11 @@ from ridge_analysis_tools import *
 
 
 # --- Application ---
-base_sim_dir =os.path.join(parent_dir, "lhc_run_sims")
+base_sim_dir =os.path.join(parent_dir, "lhc_run_hybrid_DES_lSST10_sims/noise/lsst10_nz")
 run_id = 1
 bg_data_path = os.path.join(base_sim_dir, f"run_{run_id}", "source_catalog_cutzl04.h5")
 
-output_dir = os.path.join(current_dir,"DES_sim/noise")
+output_dir = os.path.join(current_dir,"hybrid_DES_sim/noise")
 os.makedirs(output_dir, exist_ok=True)
 
 # Loop to generate 300 different noise realizations
