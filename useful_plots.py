@@ -752,187 +752,193 @@ from ridge_analysis_tools import *
 
 
 
-plt.rcParams.update({
-    "figure.figsize": (8, 6.8),
-    "figure.dpi": 100,
+#plt.rcParams.update({
+#    "figure.figsize": (8, 6.8),
+#    "figure.dpi": 100,
 
-    "axes.linewidth": 1.6,
-    "axes.labelsize": 15,
-    "axes.titlesize": 15,
+#    "axes.linewidth": 1.6,
+#    "axes.labelsize": 15,
+#    "axes.titlesize": 15,
 
-    # Major ticks
-    "xtick.direction": "in",
-    "ytick.direction": "in",
-    "xtick.major.size": 8,
-    "ytick.major.size": 8,
-    "xtick.major.width": 1.4,
-    "ytick.major.width": 1.4,
-    "xtick.labelsize": 13,
-    "ytick.labelsize": 13,
+#    # Major ticks
+#    "xtick.direction": "in",
+#    "ytick.direction": "in",
+#    "xtick.major.size": 8,
+#    "ytick.major.size": 8,
+#    "xtick.major.width": 1.4,
+#    "ytick.major.width": 1.4,
+#    "xtick.labelsize": 13,
+#    "ytick.labelsize": 13,
 
-    # Minor ticks 
-    "xtick.minor.visible": True,
-    "ytick.minor.visible": True,
-    "xtick.minor.size": 3.5,
-    "ytick.minor.size": 3.5,
-    "xtick.minor.width": 1.0,
-    "ytick.minor.width": 1.0,
+#    # Minor ticks 
+#    "xtick.minor.visible": True,
+#    "ytick.minor.visible": True,
+#    "xtick.minor.size": 3.5,
+#    "ytick.minor.size": 3.5,
+#    "xtick.minor.width": 1.0,
+#    "ytick.minor.width": 1.0,
 
-    "font.family": "serif",
+#    "font.family": "serif",
 
-    "legend.frameon": False,
-    "legend.fontsize": 12,
+#    "legend.frameon": False,
+#    "legend.fontsize": 12,
 
-    "savefig.bbox": "tight",
-})
+#    "savefig.bbox": "tight",
+#})
 
-############################################################
-# Output location
-############################################################
-#outpath = "paper_plots/lsst_redshift_dist.png"
-outpath = "paper_plots/hybrid_DES_redshift_dist.pdf"
+#############################################################
+## Output location
+#############################################################
+##outpath = "paper_plots/lsst_redshift_dist.png"
+#outpath = "paper_plots/hybrid_DES_redshift_dist.pdf"
 
-os.makedirs(os.path.dirname(outpath), exist_ok=True)
-
-
-# ---------------------------------------------------------------
-# Read background galaxies
-# ---------------------------------------------------------------
-def read_sim_background(bg_file):
-    """Read background galaxies before any cuts."""
-    with h5py.File(bg_file, "r") as f:
-        z_true = f["Z_TRUE"][:]
-    return z_true
+#os.makedirs(os.path.dirname(outpath), exist_ok=True)
 
 
-# ---------------------------------------------------------------
-# Read lenses BEFORE z<0.4 cut
-# ---------------------------------------------------------------
-def load_lens_redshifts(base_sim_dir, run_id):
-    """Load lens redshifts before selection."""
-    filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
-    with h5py.File(filename, "r") as f:
-        z_true = f["Z_TRUE"][:]
-    return z_true
+## ---------------------------------------------------------------
+## Read background galaxies
+## ---------------------------------------------------------------
+#def read_sim_background(bg_file):
+#    """Read background galaxies before any cuts."""
+#    with h5py.File(bg_file, "r") as f:
+#        z_true = f["Z_TRUE"][:]
+#    return z_true
 
 
-# ---------------------------------------------------------------
-# Compute mean redshift using histogram PDF
-# ---------------------------------------------------------------
-def mean_redshift_from_pdf(z_array, bins=60):
-    pdf, edges = np.histogram(z_array, bins=bins, density=True)
-    centers = 0.5 * (edges[:-1] + edges[1:])
-    dz = np.diff(edges)
-    mean_z = np.sum(centers * pdf * dz)
-    return mean_z
+## ---------------------------------------------------------------
+## Read lenses BEFORE z<0.4 cut
+## ---------------------------------------------------------------
+#def load_lens_redshifts(base_sim_dir, run_id):
+#    """Load lens redshifts before selection."""
+#    filename = os.path.join(base_sim_dir, f"run_{run_id}", "lens_catalog_0.npy")
+#    with h5py.File(filename, "r") as f:
+#        z_true = f["Z_TRUE"][:]
+#    return z_true
 
 
-# ---------------------------------------------------------------
-# Plot lens and background redshift distributions
-# ---------------------------------------------------------------
-def plot_redshift_distributions(
-    lens_z, bg_z, z_cut=0.7, savepath=None,
-    lens_mean=None, bg_mean=None
-):
-
-    fig, ax = plt.subplots()
-
-    # Use shared global bins
-    zmax = max(bg_z.max(), lens_z.max())
-    bins = np.linspace(0, zmax, 60)
-
-    ax.hist(
-        lens_z, bins=bins, density=True, histtype="step",
-        linewidth=2.0, label="Lens catalog"
-    )
-
-    ax.hist(
-        bg_z, bins=bins, density=True, histtype="step",
-        linewidth=2.0, label="Source catalog"
-    )
-
-    # Mean redshift vertical lines
-#    if lens_mean is not None:
-#        ax.axvline(
-#            lens_mean, linestyle="--", linewidth=2,
-#            label=f"Lens mean z = {lens_mean:.3f}"
-#        )
-
-#    if bg_mean is not None:
-#        ax.axvline(
-#            bg_mean, linestyle="--", linewidth=2,
-#            label=f"Source mean z = {bg_mean:.3f}"
-#        )
+## ---------------------------------------------------------------
+## Compute mean redshift using histogram PDF
+## ---------------------------------------------------------------
+#def mean_redshift_from_pdf(z_array, bins=60):
+#    pdf, edges = np.histogram(z_array, bins=bins, density=True)
+#    centers = 0.5 * (edges[:-1] + edges[1:])
+#    dz = np.diff(edges)
+#    mean_z = np.sum(centers * pdf * dz)
+#    return mean_z
 
 
+## ---------------------------------------------------------------
+## Plot lens and background redshift distributions
+## ---------------------------------------------------------------
+#def plot_redshift_distributions(
+#    lens_z, bg_z, z_cut=0.7, savepath=None,
+#    lens_mean=None, bg_mean=None
+#):
 
-    ax.axvline(
-    z_cut,
-    linestyle="--",
-    linewidth=2.2,
-    color="black",
-    label=r"Selection cut $z = 0.7$"
-    )
-    ax.set_xlabel("Redshift $z$")
-    ax.set_title("Redshift Distributions Before Selection Cut")
+#    fig, ax = plt.subplots()
 
-    # Axis styling to match other paper plots
-    ax.tick_params(top=True, right=True)
-    ax.grid(False)
-    for spine in ax.spines.values():
-        spine.set_linewidth(1.6)
+#    # Use shared global bins
+#    zmax = max(bg_z.max(), lens_z.max())
+#    bins = np.linspace(0, zmax, 60)
 
-    ax.legend()
+#    ax.hist(
+#        lens_z, bins=bins, density=True, histtype="step",
+#        linewidth=2.0, label="Lens catalog"
+#    )
 
-    if savepath is not None:
-        fig.savefig(savepath)
+#    ax.hist(
+#        bg_z, bins=bins, density=True, histtype="step",
+#        linewidth=2.0, label="Source catalog"
+#    )
 
-    plt.show()
-    plt.close(fig)
+#    # Mean redshift vertical lines
+##    if lens_mean is not None:
+##        ax.axvline(
+##            lens_mean, linestyle="--", linewidth=2,
+##            label=f"Lens mean z = {lens_mean:.3f}"
+##        )
+
+##    if bg_mean is not None:
+##        ax.axvline(
+##            bg_mean, linestyle="--", linewidth=2,
+##            label=f"Source mean z = {bg_mean:.3f}"
+##        )
 
 
-# ---------------------------------------------------------------
-# Main call
-# ---------------------------------------------------------------
-if __name__ == "__main__":
 
-    BG_file = os.path.join(
-        "lhc_run_hybrid_DES_lSST10_sims/noise/lsst10_nz",
-        "run_1",
-        "source_catalog_0.npy"
-    )
+#    ax.axvline(
+#    z_cut,
+#    linestyle="--",
+#    linewidth=2.2,
+#    color="black",
+#    label=r"Selection cut $z = 0.7$"
+#    )
+#    ax.set_xlabel("Redshift $z$")
+#    ax.set_title("Redshift Distributions Before Selection Cut")
 
-    base_sim_dir = "lhc_run_lsst_sims/lsst_1"
+#    # Axis styling to match other paper plots
+#    ax.tick_params(top=True, right=True)
+#    ax.grid(False)
+#    for spine in ax.spines.values():
+#        spine.set_linewidth(1.6)
+
+#    ax.legend()
+
+#    if savepath is not None:
+#        fig.savefig(savepath)
+
+#    plt.show()
+#    plt.close(fig)
+
+
+## ---------------------------------------------------------------
+## Main call
+## ---------------------------------------------------------------
+#if __name__ == "__main__":
 
 #    BG_file = os.path.join(
-#        "lhc_run_sims_zero_err_10",
+#        "lhc_run_hybrid_DES_lSST10_sims/noise/lsst10_nz",
 #        "run_1",
 #        "source_catalog_0.npy"
 #    )
 
-#    base_sim_dir = "lhc_run_sims_zero_err_10"
-    run_id = 1
+#    base_sim_dir = "lhc_run_lsst_sims/lsst_1"
 
-    # Load data
-    bg_z = read_sim_background(BG_file)
-    lens_z = load_lens_redshifts(base_sim_dir, run_id)
+##    BG_file = os.path.join(
+##        "lhc_run_sims_zero_err_10",
+##        "run_1",
+##        "source_catalog_0.npy"
+##    )
 
-    # Compute mean redshifts
-    lens_mean_z = mean_redshift_from_pdf(lens_z, bins=60)
-    bg_mean_z   = mean_redshift_from_pdf(bg_z,   bins=60)
+##    base_sim_dir = "lhc_run_sims_zero_err_10"
+#    run_id = 1
 
-    print("Mean lens redshift =", lens_mean_z)
-    print("Mean background redshift =", bg_mean_z)
+#    # Load data
+#    bg_z = read_sim_background(BG_file)
+#    lens_z = load_lens_redshifts(base_sim_dir, run_id)
 
-    # Plot distribution with mean lines
-    plot_redshift_distributions(
-        lens_z, bg_z,
-        z_cut=0.7,
-        savepath=outpath,
-        lens_mean=lens_mean_z,
-        bg_mean=bg_mean_z
-    )
+#    # Compute mean redshifts
+#    lens_mean_z = mean_redshift_from_pdf(lens_z, bins=60)
+#    bg_mean_z   = mean_redshift_from_pdf(bg_z,   bins=60)
 
+#    print("Mean lens redshift =", lens_mean_z)
+#    print("Mean background redshift =", bg_mean_z)
+
+#    # Plot distribution with mean lines
+#    plot_redshift_distributions(
+#        lens_z, bg_z,
+#        z_cut=0.7,
+#        savepath=outpath,
+#        lens_mean=lens_mean_z,
+#        bg_mean=bg_mean_z
+#    )
+
+"""
+for hybrid DES 
+Mean lens redshift = 0.6831240322425233
+Mean background redshift = 0.9980838856736988
+
+"""
 
 
 
@@ -1020,3 +1026,151 @@ ridge points in regions of insufficient survey coverage,
 #plt.close()
 
 #print(f"[saved] Plots written to: {out_dir}")
+
+
+
+
+import os
+import glob
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================================
+# Plot style
+# ============================================================
+plt.rcParams.update({
+    "figure.figsize": (7.5, 5.2),
+    "figure.dpi": 100,
+
+    "axes.linewidth": 1.6,
+    "axes.labelsize": 15,
+    "axes.titlesize": 15,
+
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "xtick.major.size": 8,
+    "ytick.major.size": 8,
+    "xtick.major.width": 1.4,
+    "ytick.major.width": 1.4,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+
+    "font.family": "serif",
+    "legend.frameon": False,
+})
+
+
+# ============================================================
+# Paths
+# ============================================================
+base_dir = "imulation_ridges_comparative_analysis_debug/normal_mesh_x2/band_0.1/shear_test_run_1"
+
+signal_file = os.path.join(base_dir, "shear_p15.csv")
+noise_files = sorted(
+    glob.glob(os.path.join(base_dir, "shear", "shear_noise_p15_*.csv"))
+)
+
+plot_dir = os.path.join(base_dir, "plots", "p15_simple")
+os.makedirs(plot_dir, exist_ok=True)
+
+
+# ============================================================
+# Load signal
+# ============================================================
+signal = np.loadtxt(signal_file, delimiter=",", skiprows=1)
+
+bin_center_rad = signal[:, 0]
+r_arcmin = np.degrees(bin_center_rad) * 60.0
+
+gplus_sig  = signal[:, 2]
+gcross_sig = signal[:, 3]
+
+
+# ============================================================
+# Load noise realizations
+# ============================================================
+gplus_noise  = []
+gcross_noise = []
+
+for f in noise_files:
+    d = np.loadtxt(f, delimiter=",", skiprows=1)
+    gplus_noise.append(d[:, 2])
+    gcross_noise.append(d[:, 3])
+
+gplus_noise  = np.array(gplus_noise)
+gcross_noise = np.array(gcross_noise)
+
+gplus_mean  = gplus_noise.mean(axis=0)
+gcross_mean = gcross_noise.mean(axis=0)
+
+gplus_std  = gplus_noise.std(axis=0, ddof=1)
+gcross_std = gcross_noise.std(axis=0, ddof=1)
+
+
+# ============================================================
+# Subtracted profiles
+# ============================================================
+gplus_sub  = gplus_sig  - gplus_mean
+gcross_sub = gcross_sig - gcross_mean
+
+
+# ============================================================
+# Plot helper
+# ============================================================
+def plot_profile(x, y, yerr, ylabel, fname):
+    plt.figure()
+    plt.errorbar(x, y, yerr=yerr, fmt="o-", capsize=4, markersize=4)
+    plt.xscale("log")
+    plt.xlabel("Separation [arcmin]")
+    plt.ylabel(ylabel)
+    plt.grid(True, which="both", ls="--", alpha=0.4)
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir, fname), dpi=200)
+    plt.close()
+
+
+# ============================================================
+# Plots
+# ============================================================
+
+# 1) Noise mean gamma+
+plot_profile(
+    r_arcmin,
+    gplus_mean,
+    gplus_std,
+    r"$\langle \gamma_+^{\rm rand} \rangle$",
+    "noise_mean_gplus.png",
+)
+
+# 2) Noise mean gamma_x
+plot_profile(
+    r_arcmin,
+    gcross_mean,
+    gcross_std,
+    r"$\langle \gamma_{\times}^{\rm rand} \rangle$",
+    "noise_mean_gcross.png",
+)
+
+# 3) Noise-subtracted gamma+
+plot_profile(
+    r_arcmin,
+    gplus_sub,
+    gplus_std,
+    r"$\gamma_+ - \langle \gamma_+^{\rm rand} \rangle$",
+    "signal_minus_noise_gplus.png",
+)
+
+# 4) Noise-subtracted gamma_x
+plot_profile(
+    r_arcmin,
+    gcross_sub,
+    gcross_std,
+    r"$\gamma_{\times} - \langle \gamma_{\times}^{\rm rand} \rangle$",
+    "signal_minus_noise_gcross.png",
+)
+
+print(f"[DONE] Plots written to: {plot_dir}")
+
