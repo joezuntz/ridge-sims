@@ -46,7 +46,7 @@ ridge_file = os.path.join(
     "hybrid_DES_sim/run_1_zcut07/band_0.1/mesh_2/Ridges_final_p15/shape_err_run_1_ridges_p15_contracted.h5"
 )
 #signal_bg  = os.path.join(parent_dir, "lhc_run_sims/run_1/source_catalog_cutzl04.h5")
-signal_bg  = os.path.join(parent_dir, "lhc_run_hybrid_DES_lSST10_sims/noise/lsst10_nz/source_catalog_cutzl0.70.h5")
+signal_bg  = os.path.join(parent_dir, "lhc_run_hybrid_DES_lSST10_sims/noise/lsst10_nz/run_1/source_catalog_cutzl0.70.h5")
 
 noise_dir  = os.path.join(current_dir, "hybrid_DES_sim/noise")
 out_dir    = os.path.join(current_dir, "shear_hybrid_DES/run_1/band_0.1/mesh_2")
