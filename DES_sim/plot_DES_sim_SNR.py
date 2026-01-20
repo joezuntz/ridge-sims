@@ -213,8 +213,8 @@ if __name__ == "__main__":
     # Run from: DES_sim/shear/run_1/band_0.1/mesh_2/
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    shear_csv = os.path.join(base_dir, "run_1_p15_signal_shear.csv")
-    noise_files = sorted(glob.glob(os.path.join(base_dir, "random_rotations", "shear_random_*.csv")))
+    shear_csv = os.path.join(base_dir, "shear/run_1/band_0.1/mesh_2/run_1_p15_signal_shear.csv")
+    noise_files = sorted(glob.glob(os.path.join(base_dir, "shear/run_1/band_0.1/mesh_2/random_rotations", "shear_random_*.csv")))
 
     plot_dir = os.path.join(base_dir, "plots", "p15")
 
