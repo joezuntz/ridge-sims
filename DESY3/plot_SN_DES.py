@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 # ============================================================
-# Global plotting style 
+# Global plotting style
 # ============================================================
 plt.rcParams.update({
     "figure.figsize": (8, 6.8),
@@ -42,10 +42,35 @@ plt.rcParams.update({
 })
 
 
+def inv_cov(cov, eps=1e-12):
+    try:
+        return np.linalg.inv(cov)
+    except np.linalg.LinAlgError:
+        print("[WARN] Covariance singular -> adding diagonal regularization.")
+        cov_reg = cov + np.eye(cov.shape[0]) * eps
+        return np.linalg.inv(cov_reg)
+
+
+def plot_1d(arcmin_centers, y, yerr, ylabel, outpath, marker="o", label=None):
+    plt.figure(figsize=(7.5, 5.2))
+    plt.errorbar(
+        arcmin_centers, y, yerr=yerr,
+        fmt=f"{marker}-", capsize=4, elinewidth=1.2, markersize=4,
+        label=label
+    )
+    plt.xscale("log")
+    plt.xlabel("Separation [arcmin]")
+    plt.ylabel(ylabel)
+    plt.grid(True, which="both", ls="--", alpha=0.4)
+    if label is not None:
+        plt.legend(frameon=False)
+    plt.tight_layout()
+    plt.savefig(outpath, dpi=200)
+    plt.close()
+
 
 def run_analysis(case_label, shear_csv, noise_files, plot_dir, plot_suffix=""):
     print(f"\n=== Running analysis for {case_label} ===")
-
     os.makedirs(plot_dir, exist_ok=True)
 
     # --- Load signal ---
@@ -88,34 +113,24 @@ def run_analysis(case_label, shear_csv, noise_files, plot_dir, plot_suffix=""):
     g_plus_sub = g_plus_signal - g_plus_noise_mean
     g_cross_sub = g_cross_signal - g_cross_noise_mean
 
-    # --- Covariance matrices from noise realizations ---
+    # --- Covariance matrices from noise realizations (for sigma) ---
     cov_plus = np.cov(all_g_plus_noise, rowvar=False, ddof=1)
     cov_cross = np.cov(all_g_cross_noise, rowvar=False, ddof=1)
-
-    # Regularize if singular
-    def inv_cov(cov, eps=1e-12):
-        try:
-            return np.linalg.inv(cov)
-        except np.linalg.LinAlgError:
-            print("[WARN] Covariance singular -> adding diagonal regularization.")
-            cov_reg = cov + np.eye(cov.shape[0]) * eps
-            return np.linalg.inv(cov_reg)
 
     cov_plus_inv = inv_cov(cov_plus)
     cov_cross_inv = inv_cov(cov_cross)
 
-    # --- Chi-square against zero model ---
+    # --- Chi-square against zero model (KEEP) ---
     d_plus = g_plus_sub
     d_cross = g_cross_sub
-
-    chi2_plus = d_plus @ cov_plus_inv @ d_plus
-    chi2_cross = d_cross @ cov_cross_inv @ d_cross
     dof = len(d_plus)
+
+    chi2_plus = float(d_plus @ cov_plus_inv @ d_plus)
+    chi2_cross = float(d_cross @ cov_cross_inv @ d_cross)
 
     pval_plus = 1 - stats.chi2.cdf(chi2_plus, dof)
     pval_cross = 1 - stats.chi2.cdf(chi2_cross, dof)
 
-    # two-tailed sigma
     sigma_plus = stats.norm.isf(pval_plus / 2.0) if pval_plus > 0 else np.inf
     sigma_cross = stats.norm.isf(pval_cross / 2.0) if pval_cross > 0 else np.inf
 
@@ -123,108 +138,68 @@ def run_analysis(case_label, shear_csv, noise_files, plot_dir, plot_suffix=""):
     print(f"[g_cross] chi2 = {chi2_cross:.2f}, dof = {dof}, p = {pval_cross:.3e}, ~ {sigma_cross:.2f}σ")
 
     # ==========================================================
-    # Plot style: errorbar caps 
+    # 4 separate plots (requested)
     # ==========================================================
-    eb_kwargs_plus = dict(fmt="o-", capsize=4, elinewidth=1.2, markersize=4)
-    eb_kwargs_cross = dict(fmt="s-", capsize=4, elinewidth=1.2, markersize=4)
 
-    # --------------------------
-    # 1) Noise mean ± std
-    # --------------------------
-    plt.figure(figsize=(7.5, 5.2))
-    plt.errorbar(arcmin_centers, g_plus_noise_mean, yerr=g_plus_noise_std, label=r"$g_+$ noise", **eb_kwargs_plus)
-    plt.errorbar(arcmin_centers, g_cross_noise_mean, yerr=g_cross_noise_std, label=r"$g_{\times}$ noise", **eb_kwargs_cross)
-    plt.xscale("log")
-    plt.xlabel("Separation [arcmin]")
-    plt.ylabel("Shear")
-    plt.grid(True, which="both", ls="--", alpha=0.4)
-    plt.legend(frameon=False)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, f"noise_only{plot_suffix}.png"), dpi=200)
-    plt.close()
+    # 1) mean noise gamma+
+    plot_1d(
+        arcmin_centers,
+        g_plus_noise_mean,
+        g_plus_noise_std,
+        ylabel=r"$\langle \gamma_+^{\rm rand} \rangle$",
+        outpath=os.path.join(plot_dir, f"noise_mean_gplus{plot_suffix}.png"),
+        marker="o",
+    )
 
-    # --------------------------
-    # 2) Raw vs noise-subtracted
-    # --------------------------
-    fig, ax = plt.subplots(1, 2, figsize=(13.5, 5.0), sharex=True)
+    # 2) mean noise gamma_x
+    plot_1d(
+        arcmin_centers,
+        g_cross_noise_mean,
+        g_cross_noise_std,
+        ylabel=r"$\langle \gamma_{\times}^{\rm rand} \rangle$",
+        outpath=os.path.join(plot_dir, f"noise_mean_gcross{plot_suffix}.png"),
+        marker="s",
+    )
 
-    ax[0].plot(arcmin_centers, g_plus_signal, "--", linewidth=1.2, label="Raw")
-    ax[0].errorbar(arcmin_centers, g_plus_sub, yerr=g_plus_noise_std, label="Signal − ⟨noise⟩", **eb_kwargs_plus)
-    ax[0].set_xscale("log")
-    ax[0].set_xlabel("Separation [arcmin]")
-    ax[0].set_ylabel(r"$\gamma_+$")
-    ax[0].grid(True, which="both", ls="--", alpha=0.4)
-    ax[0].legend(frameon=False)
+    # 3) subtracted gamma+
+    plot_1d(
+        arcmin_centers,
+        g_plus_sub,
+        g_plus_noise_std,
+        ylabel=r"$\gamma_+ - \langle \gamma_+^{\rm rand} \rangle$",
+        outpath=os.path.join(plot_dir, f"signal_minus_noise_gplus{plot_suffix}.png"),
+        marker="o",
+    )
 
-    ax[1].plot(arcmin_centers, g_cross_signal, "--", linewidth=1.2, label="Raw")
-    ax[1].errorbar(arcmin_centers, g_cross_sub, yerr=g_cross_noise_std, label="Signal − ⟨noise⟩", **eb_kwargs_cross)
-    ax[1].set_xscale("log")
-    ax[1].set_xlabel("Separation [arcmin]")
-    ax[1].set_ylabel(r"$\gamma_{\times}$")
-    ax[1].grid(True, which="both", ls="--", alpha=0.4)
-    ax[1].legend(frameon=False)
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, f"signal_vs_noise_subtracted{plot_suffix}.png"), dpi=200)
-    plt.close()
-
-    # --------------------------
-    # 3) Subtracted only (with std as error)
-    # --------------------------
-    plt.figure(figsize=(7.5, 5.2))
-    plt.errorbar(arcmin_centers, g_plus_sub, yerr=g_plus_noise_std, label=r"$\gamma_+$ (signal − ⟨noise⟩)", **eb_kwargs_plus)
-    plt.errorbar(arcmin_centers, g_cross_sub, yerr=g_cross_noise_std, label=r"$\gamma_{\times}$ (signal − ⟨noise⟩)", **eb_kwargs_cross)
-    plt.xscale("log")
-    plt.xlabel("Separation [arcmin]")
-    plt.ylabel("Shear")
-    plt.grid(True, which="both", ls="--", alpha=0.4)
-    plt.legend(frameon=False)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, f"signal_minus_noise{plot_suffix}.png"), dpi=200)
-    plt.close()
-
-    # --------------------------
-    # 4) Covariance matrices
-    # --------------------------
-    fig, ax = plt.subplots(1, 2, figsize=(12.5, 5.0))
-
-    im0 = ax[0].imshow(cov_plus, origin="lower", aspect="auto")
-    ax[0].set_title(r"Covariance: $\gamma_+$")
-    ax[0].set_xlabel("Bin")
-    ax[0].set_ylabel("Bin")
-    fig.colorbar(im0, ax=ax[0], shrink=0.85)
-
-    im1 = ax[1].imshow(cov_cross, origin="lower", aspect="auto")
-    ax[1].set_title(r"Covariance: $\gamma_{\times}$")
-    ax[1].set_xlabel("Bin")
-    ax[1].set_ylabel("Bin")
-    fig.colorbar(im1, ax=ax[1], shrink=0.85)
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, f"covariance{plot_suffix}.png"), dpi=200)
-    plt.close()
+    # 4) subtracted gamma_x
+    plot_1d(
+        arcmin_centers,
+        g_cross_sub,
+        g_cross_noise_std,
+        ylabel=r"$\gamma_{\times} - \langle \gamma_{\times}^{\rm rand} \rangle$",
+        outpath=os.path.join(plot_dir, f"signal_minus_noise_gcross{plot_suffix}.png"),
+        marker="s",
+    )
 
     print(f"[DONE] Plots saved in: {plot_dir}")
 
 
 if __name__ == "__main__":
     # ------------------------------------------------------------
-    # Paths relative to DESY3
+    # KEEP directory logic exactly as in your script
     # ------------------------------------------------------------
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     shear_dir = os.path.join(current_dir, "shear")
 
-    #  plot directory
+    # plot directory (unchanged)
     plot_dir = os.path.join(shear_dir, "plots", "p15")
     os.makedirs(plot_dir, exist_ok=True)
-    # -----------------------------------
 
     shear_csv = os.path.join(shear_dir, "shear_p15.csv")
 
-    noise_files = sorted(
-        glob.glob(os.path.join(shear_dir, "shear_random_p15_*.csv"))
-    )
+    # if your noise files are named differently, only change this glob pattern
+    noise_files = sorted(glob.glob(os.path.join(shear_dir, "shear_random_p15_*.csv")))
 
     if not os.path.exists(shear_csv):
         raise FileNotFoundError(f"Missing signal shear file: {shear_csv}")
@@ -239,4 +214,3 @@ if __name__ == "__main__":
         plot_dir=plot_dir,
         plot_suffix="_p15",
     )
-
