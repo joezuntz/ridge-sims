@@ -66,11 +66,6 @@ def discover_run_dirs(base_root, nz_dir="lsst10_nz", err_modes=("noise", "zero_e
 
 if __name__ == "__main__":
 
-    # Your simulation folder lives at:
-    #   ~/WL_Mehraveh/ridge-sims/lhc_run_hybrid_DES_lSST10_sims
-    #
-    # With current_dir = .../ridge-sims/<this_script_folder>
-    # parent_dir points to .../ridge-sims
     sim_root_name = "lhc_run_hybrid_DES_lSST10_sims"
     base_root = os.path.join(parent_dir, sim_root_name)
 
@@ -82,7 +77,7 @@ if __name__ == "__main__":
         print("\n=== Processing run directory ===")
         print(rd)
 
-        # Apply your background cut / conversion
+        # Apply background cut / conversion
         convert_all_backgrounds(rd, z_cut=0.7)
 
     print("\n[INFO] Done.")
