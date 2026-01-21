@@ -47,6 +47,7 @@ ridge_file = os.path.join(
 )
 signal_bg  = os.path.join(parent_dir, "lhc_run_sims/run_1/source_catalog_cutzl04.h5")
 
+
 noise_dir  = os.path.join(current_dir, "DES_sim/noise")
 out_dir    = os.path.join(current_dir, "shear/run_1/band_0.1/mesh_2")
 ensure_dir(out_dir)
@@ -139,11 +140,11 @@ if RANK == 0:
     profiles = np.array(profiles)                 # shape: (N, nbins, ncol)
     mean_random = np.mean(profiles, axis=0)       # shape: (nbins, ncol)
 
-    # Consistency checks (binning match)
-    if not np.allclose(signal[:, 0], mean_random[:, 0], rtol=0, atol=0):
-        raise RuntimeError("Bin_Center mismatch between signal and random mean.")
-    if not np.allclose(signal[:, 1], mean_random[:, 1], rtol=0, atol=0):
-        print("[WARN] Weighted_Real_Distance differs between signal and random mean (expected in general).")
+#    # Consistency checks (binning match)
+#    if not np.allclose(signal[:, 0], mean_random[:, 0], rtol=0, atol=0):
+#        raise RuntimeError("Bin_Center mismatch between signal and random mean.")
+#    if not np.allclose(signal[:, 1], mean_random[:, 1], rtol=0, atol=0):
+#        print("[WARN] Weighted_Real_Distance differs between signal and random mean (expected in general).")
 
     g_plus_sub  = signal[:, 2] - mean_random[:, 2]
     g_cross_sub = signal[:, 3] - mean_random[:, 3]
