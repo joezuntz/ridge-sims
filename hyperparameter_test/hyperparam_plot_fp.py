@@ -160,7 +160,7 @@ def plot_shear_fp():
     ax_gx.set_title(r"$\gamma_{\times}$ vs $\theta$")
 
     cbar_gx = fig_gx.colorbar(sm, ax=ax_gx, pad=0.02)
-    cbar_gx.set_label("Final percentage (fp)")
+    cbar_gx.set_label("Density threshold")
 
     # ----------------------------------------------------
     # Save as PDF
