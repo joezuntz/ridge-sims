@@ -167,7 +167,6 @@ if __name__ == "__main__":
     # Hybrid directory
     target_dir = os.path.join(
         base_dir,
-        "DES_sim",
         "shear_hybrid_DES",
         "run_1",
         "band_0.1",
