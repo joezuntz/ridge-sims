@@ -1030,147 +1030,210 @@ ridge points in regions of insufficient survey coverage,
 
 
 
+#import os
+#import glob
+#import numpy as np
+#import matplotlib.pyplot as plt
+
+## ============================================================
+## Plot style
+## ============================================================
+#plt.rcParams.update({
+#    "figure.figsize": (7.5, 5.2),
+#    "figure.dpi": 100,
+
+#    "axes.linewidth": 1.6,
+#    "axes.labelsize": 15,
+#    "axes.titlesize": 15,
+
+#    "xtick.direction": "in",
+#    "ytick.direction": "in",
+#    "xtick.major.size": 8,
+#    "ytick.major.size": 8,
+#    "xtick.major.width": 1.4,
+#    "ytick.major.width": 1.4,
+#    "xtick.labelsize": 13,
+#    "ytick.labelsize": 13,
+
+#    "xtick.minor.visible": True,
+#    "ytick.minor.visible": True,
+
+#    "font.family": "serif",
+#    "legend.frameon": False,
+#})
+
+
+## ============================================================
+## Paths
+## ============================================================
+#base_dir = "simulation_ridges_comparative_analysis_debug/normal_mesh_x2/band_0.1/shear_test_run_1"
+
+#signal_file = os.path.join(base_dir, "shear_p15.csv")
+#noise_files = sorted(
+#    glob.glob(os.path.join(base_dir, "shear", "shear_noise_p15_*.csv"))
+#)
+
+#plot_dir = os.path.join(base_dir, "plots", "p15_simple")
+#os.makedirs(plot_dir, exist_ok=True)
+
+
+## ============================================================
+## Load signal
+## ============================================================
+#signal = np.loadtxt(signal_file, delimiter=",", skiprows=1)
+
+#bin_center_rad = signal[:, 0]
+#r_arcmin = np.degrees(bin_center_rad) * 60.0
+
+#gplus_sig  = signal[:, 2]
+#gcross_sig = signal[:, 3]
+
+
+## ============================================================
+## Load noise realizations
+## ============================================================
+#gplus_noise  = []
+#gcross_noise = []
+
+#for f in noise_files:
+#    d = np.loadtxt(f, delimiter=",", skiprows=1)
+#    gplus_noise.append(d[:, 2])
+#    gcross_noise.append(d[:, 3])
+
+#gplus_noise  = np.array(gplus_noise)
+#gcross_noise = np.array(gcross_noise)
+
+#gplus_mean  = gplus_noise.mean(axis=0)
+#gcross_mean = gcross_noise.mean(axis=0)
+
+#gplus_std  = gplus_noise.std(axis=0, ddof=1)
+#gcross_std = gcross_noise.std(axis=0, ddof=1)
+
+
+## ============================================================
+## Subtracted profiles
+## ============================================================
+#gplus_sub  = gplus_sig  - gplus_mean
+#gcross_sub = gcross_sig - gcross_mean
+
+
+## ============================================================
+## Plot helper
+## ============================================================
+#def plot_profile(x, y, yerr, ylabel, fname):
+#    plt.figure()
+#    plt.errorbar(x, y, yerr=yerr, fmt="o-", capsize=4, markersize=4)
+#    plt.xscale("log")
+#    plt.xlabel("Separation [arcmin]")
+#    plt.ylabel(ylabel)
+#    plt.grid(True, which="both", ls="--", alpha=0.4)
+#    plt.tight_layout()
+#    plt.savefig(os.path.join(plot_dir, fname), dpi=200)
+#    plt.close()
+
+
+## ============================================================
+## Plots
+## ============================================================
+
+## 1) Noise mean gamma+
+#plot_profile(
+#    r_arcmin,
+#    gplus_mean,
+#    gplus_std,
+#    r"$\langle \gamma_+^{\rm rand} \rangle$",
+#    "noise_mean_gplus.png",
+#)
+
+## 2) Noise mean gamma_x
+#plot_profile(
+#    r_arcmin,
+#    gcross_mean,
+#    gcross_std,
+#    r"$\langle \gamma_{\times}^{\rm rand} \rangle$",
+#    "noise_mean_gcross.png",
+#)
+
+## 3) Noise-subtracted gamma+
+#plot_profile(
+#    r_arcmin,
+#    gplus_sub,
+#    gplus_std,
+#    r"$\gamma_+ - \langle \gamma_+^{\rm rand} \rangle$",
+#    "signal_minus_noise_gplus.png",
+#)
+
+## 4) Noise-subtracted gamma_x
+#plot_profile(
+#    r_arcmin,
+#    gcross_sub,
+#    gcross_std,
+#    r"$\gamma_{\times} - \langle \gamma_{\times}^{\rm rand} \rangle$",
+#    "signal_minus_noise_gcross.png",
+#)
+
+#print(f"[DONE] Plots written to: {plot_dir}")
+
 import os
-import glob
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ============================================================
-# Plot style
-# ============================================================
+# --------------------------------------------------
+# Minimal plotting style
+# --------------------------------------------------
 plt.rcParams.update({
-    "figure.figsize": (7.5, 5.2),
-    "figure.dpi": 100,
-
-    "axes.linewidth": 1.6,
-    "axes.labelsize": 15,
-    "axes.titlesize": 15,
-
+    "figure.figsize": (7, 5),
+    "axes.linewidth": 1.4,
     "xtick.direction": "in",
     "ytick.direction": "in",
-    "xtick.major.size": 8,
-    "ytick.major.size": 8,
-    "xtick.major.width": 1.4,
-    "ytick.major.width": 1.4,
-    "xtick.labelsize": 13,
-    "ytick.labelsize": 13,
-
-    "xtick.minor.visible": True,
-    "ytick.minor.visible": True,
-
     "font.family": "serif",
-    "legend.frameon": False,
+    "savefig.bbox": "tight",
 })
 
-
-# ============================================================
+# --------------------------------------------------
 # Paths
-# ============================================================
-base_dir = "simulation_ridges_comparative_analysis_debug/normal_mesh_x2/band_0.1/shear_test_run_1"
+# --------------------------------------------------
+base_dir = "DES_sim"
 
-signal_file = os.path.join(base_dir, "shear_p15.csv")
-noise_files = sorted(
-    glob.glob(os.path.join(base_dir, "shear", "shear_noise_p15_*.csv"))
+shear_csv = os.path.join(
+    base_dir,
+    "shear_hybrid_DES",
+    "run_1",
+    "band_0.1",
+    "mesh_2",
+    "run_1_p15_signal_shear.csv",
 )
 
-plot_dir = os.path.join(base_dir, "plots", "p15_simple")
+plot_dir = os.path.join(base_dir, "shear_hybrid_DES", "plots_p15_hybrid")
 os.makedirs(plot_dir, exist_ok=True)
 
+out_png = os.path.join(plot_dir, "gamma_plus_only.png")
 
-# ============================================================
-# Load signal
-# ============================================================
-signal = np.loadtxt(signal_file, delimiter=",", skiprows=1)
+# --------------------------------------------------
+# Load data
+# --------------------------------------------------
+data = np.loadtxt(shear_csv, delimiter=",", skiprows=1)
 
-bin_center_rad = signal[:, 0]
+bin_center_rad = data[:, 0]
 r_arcmin = np.degrees(bin_center_rad) * 60.0
+gamma_plus = data[:, 2]
 
-gplus_sig  = signal[:, 2]
-gcross_sig = signal[:, 3]
+# --------------------------------------------------
+# Plot γ+
+# --------------------------------------------------
+plt.figure()
+plt.plot(r_arcmin, gamma_plus, "o-", markersize=4)
+plt.xscale("log")
+plt.xlabel("Separation [arcmin]")
+plt.ylabel(r"$\gamma_+$")
+plt.grid(True, which="both", ls="--", alpha=0.4)
+plt.tight_layout()
 
+plt.savefig(out_png, dpi=200)
+plt.close()
 
-# ============================================================
-# Load noise realizations
-# ============================================================
-gplus_noise  = []
-gcross_noise = []
-
-for f in noise_files:
-    d = np.loadtxt(f, delimiter=",", skiprows=1)
-    gplus_noise.append(d[:, 2])
-    gcross_noise.append(d[:, 3])
-
-gplus_noise  = np.array(gplus_noise)
-gcross_noise = np.array(gcross_noise)
-
-gplus_mean  = gplus_noise.mean(axis=0)
-gcross_mean = gcross_noise.mean(axis=0)
-
-gplus_std  = gplus_noise.std(axis=0, ddof=1)
-gcross_std = gcross_noise.std(axis=0, ddof=1)
+print(f"[SAVED] {out_png}")
 
 
-# ============================================================
-# Subtracted profiles
-# ============================================================
-gplus_sub  = gplus_sig  - gplus_mean
-gcross_sub = gcross_sig - gcross_mean
 
-
-# ============================================================
-# Plot helper
-# ============================================================
-def plot_profile(x, y, yerr, ylabel, fname):
-    plt.figure()
-    plt.errorbar(x, y, yerr=yerr, fmt="o-", capsize=4, markersize=4)
-    plt.xscale("log")
-    plt.xlabel("Separation [arcmin]")
-    plt.ylabel(ylabel)
-    plt.grid(True, which="both", ls="--", alpha=0.4)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, fname), dpi=200)
-    plt.close()
-
-
-# ============================================================
-# Plots
-# ============================================================
-
-# 1) Noise mean gamma+
-plot_profile(
-    r_arcmin,
-    gplus_mean,
-    gplus_std,
-    r"$\langle \gamma_+^{\rm rand} \rangle$",
-    "noise_mean_gplus.png",
-)
-
-# 2) Noise mean gamma_x
-plot_profile(
-    r_arcmin,
-    gcross_mean,
-    gcross_std,
-    r"$\langle \gamma_{\times}^{\rm rand} \rangle$",
-    "noise_mean_gcross.png",
-)
-
-# 3) Noise-subtracted gamma+
-plot_profile(
-    r_arcmin,
-    gplus_sub,
-    gplus_std,
-    r"$\gamma_+ - \langle \gamma_+^{\rm rand} \rangle$",
-    "signal_minus_noise_gplus.png",
-)
-
-# 4) Noise-subtracted gamma_x
-plot_profile(
-    r_arcmin,
-    gcross_sub,
-    gcross_std,
-    r"$\gamma_{\times} - \langle \gamma_{\times}^{\rm rand} \rangle$",
-    "signal_minus_noise_gcross.png",
-)
-
-print(f"[DONE] Plots written to: {plot_dir}")
 
