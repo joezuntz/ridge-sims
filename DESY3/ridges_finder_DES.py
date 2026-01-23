@@ -311,7 +311,7 @@ def main():
     # ----------------------------------------------------------
     # STAGE 2 — CONTRACTION
     # ----------------------------------------------------------
-    contracted_file = ridge_file.replace(".h5", "_contracted.h5")
+    contracted_file = ridge_file.replace(".h5", "_contracted_update.h5")                 #update
 
     if RANK == 0 and os.path.exists(ridge_file) and not os.path.exists(contracted_file):
 
