@@ -19,7 +19,6 @@ bg_file = os.path.join(
 # Filaments from shear pipeline
 filament_h5 = os.path.join(
     current_dir,
-    "DES_sim",
     "shear",
     "run_1",
     "band_0.1",
