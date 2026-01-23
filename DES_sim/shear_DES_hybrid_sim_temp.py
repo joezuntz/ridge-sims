@@ -43,13 +43,13 @@ n_random_rotations = 100 # How many noise files to use
 
 ridge_file = os.path.join(
     current_dir,
-    "hybrid_DES_sim/run_1_zcut07/band_0.1/mesh_2/Ridges_final_p15/shape_err_run_1_ridges_p15_contracted.h5"
+    "hybrid_DES_sim/run_1_zcut07/band_0.1/mesh_2/Ridges_final_p15/shape_err_run_1_ridges_p15_contracted_updated.h5"  # update
 )
 #signal_bg  = os.path.join(parent_dir, "lhc_run_sims/run_1/source_catalog_cutzl04.h5")
 signal_bg  = os.path.join(parent_dir, "lhc_run_hybrid_DES_lSST10_sims/noise/lsst10_nz/run_1/source_catalog_cutzl0.70.h5")
 
 noise_dir  = os.path.join(current_dir, "hybrid_DES_sim/noise")
-out_dir    = os.path.join(current_dir, "shear_hybrid_DES/run_1/band_0.1/mesh_2")
+out_dir    = os.path.join(current_dir, "shear_hybrid_DES_update/run_1/band_0.1/mesh_2")        # update
 ensure_dir(out_dir)
 
 filament_h5   = os.path.join(out_dir, "run_1_p15_filaments.h5")
@@ -126,49 +126,62 @@ for nf in noise_files:
 # NOISE SUBTRACTION:
 # ============================================================
 
-if RANK == 0:
-    # Load signal
-    signal = np.loadtxt(signal_shear, delimiter=",", skiprows=1)
+#if RANK == 0:
+#    # Load signal
+#    signal = np.loadtxt(signal_shear, delimiter=",", skiprows=1)
 
-    # Load all random profiles that exist
-    profiles = []
-    for rcsv in random_csvs:
-        if not os.path.exists(rcsv):
-            raise FileNotFoundError(f"Missing random shear CSV (expected): {rcsv}")
-        profiles.append(np.loadtxt(rcsv, delimiter=",", skiprows=1))
+#    # Load all random profiles that exist
+#    profiles = []
+#    for rcsv in random_csvs:
+#        if not os.path.exists(rcsv):
+#            raise FileNotFoundError(f"Missing random shear CSV (expected): {rcsv}")
+#        profiles.append(np.loadtxt(rcsv, delimiter=",", skiprows=1))
 
-    profiles = np.array(profiles)                 # shape: (N, nbins, ncol)
-    mean_random = np.mean(profiles, axis=0)       # shape: (nbins, ncol)
+#    profiles = np.array(profiles)                 # shape: (N, nbins, ncol)
+#    mean_random = np.mean(profiles, axis=0)       # shape: (nbins, ncol)
 
-    # Consistency checks (binning match)
-    if not np.allclose(signal[:, 0], mean_random[:, 0], rtol=0, atol=0):
-        raise RuntimeError("Bin_Center mismatch between signal and random mean.")
-    if not np.allclose(signal[:, 1], mean_random[:, 1], rtol=0, atol=0):
-        print("[WARN] Weighted_Real_Distance differs between signal and random mean (expected in general).")
+#    # Consistency checks (binning match)
+#    if not np.allclose(signal[:, 0], mean_random[:, 0], rtol=0, atol=0):
+#        raise RuntimeError("Bin_Center mismatch between signal and random mean.")
+#    if not np.allclose(signal[:, 1], mean_random[:, 1], rtol=0, atol=0):
+#        print("[WARN] Weighted_Real_Distance differs between signal and random mean (expected in general).")
 
-    g_plus_sub  = signal[:, 2] - mean_random[:, 2]
-    g_cross_sub = signal[:, 3] - mean_random[:, 3]
+#    g_plus_sub  = signal[:, 2] - mean_random[:, 2]
+#    g_cross_sub = signal[:, 3] - mean_random[:, 3]
 
-    out = np.column_stack((
-        signal[:, 0],   # Bin_Center
-        signal[:, 1],   # Weighted_Real_Distance (keep signal's)
-        g_plus_sub,
-        g_cross_sub,
-        signal[:, 4],   # Counts (signal)
-        signal[:, 5],   # bin_weight (signal)
-    ))
+#    out = np.column_stack((
+#        signal[:, 0],   # Bin_Center
+#        signal[:, 1],   # Weighted_Real_Distance (keep signal's)
+#        g_plus_sub,
+#        g_cross_sub,
+#        signal[:, 4],   # Counts (signal)
+#        signal[:, 5],   # bin_weight (signal)
+#    ))
 
-    np.savetxt(
-        subtracted_shear,
-        out,
-        delimiter=",",
-        header="Bin_Center,Weighted_Real_Distance,"
-               "Weighted_g_plus_subtracted,"
-               "Weighted_g_cross_subtracted,"
-               "Counts,bin_weight",
-        comments="",
-    )
+#    np.savetxt(
+#        subtracted_shear,
+#        out,
+#        delimiter=",",
+#        header="Bin_Center,Weighted_Real_Distance,"
+#               "Weighted_g_plus_subtracted,"
+#               "Weighted_g_cross_subtracted,"
+#               "Counts,bin_weight",
+#        comments="",
+#    )
 
-    print(f"[rank 0] Saved random-subtracted shear → {subtracted_shear}")
+#    print(f"[rank 0] Saved random-subtracted shear → {subtracted_shear}")
 
-COMM.Barrier()
+#COMM.Barrier()
+
+
+"""
+
+Full: 
+<g1> : 1.675765166493628e-05
+<g2> : 4.5623869676050074e-05
+std(g1): 0.27003402427117723
+std(g2): 0.2699843438770727
+
+"""
+
+
