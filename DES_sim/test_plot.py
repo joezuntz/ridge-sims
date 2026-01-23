@@ -42,8 +42,8 @@ def main():
 
     # Load background RA/DEC
     with h5py.File(bg_file, "r") as f:
-        ra_bg  = f["ra"][:]
-        dec_bg = f["dec"][:]
+        ra_bg  = f["RA"][:]
+        dec_bg = f["DEC"][:]
         
     ra_min, ra_max = float(np.min(ra_bg)), float(np.max(ra_bg))
     dec_min, dec_max = float(np.min(dec_bg)), float(np.max(dec_bg))
