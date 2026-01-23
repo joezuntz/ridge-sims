@@ -94,17 +94,27 @@ import matplotlib.pyplot as plt
 
 
 
+import os
+import numpy as np
+import h5py
+import matplotlib.pyplot as plt
 
+# ============================================================
 # PATHS
-
+# ============================================================
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
 
+# DES background (degrees in file)
 bg_file = os.path.join(parent_dir, "des-data", "des-y3-ridges-background-v2_cutzl0.40.h5")
 
-# Filaments 
-filament_h5 = os.path.join(current_dir, "filaments", "filaments_p15.h5")
-fil_dataset_name = "data"  
+# contracted ridges 
+ridge_file = os.path.join(
+    current_dir,
+    "DES_ridge_analysis",
+    "Ridges_analysis",
+    "DESY3_ridges_p15__mesh2_band0.10_contracted_update.h5"
+)
 
 out_dir = os.path.join(current_dir, "test_plots")
 os.makedirs(out_dir, exist_ok=True)
@@ -113,22 +123,43 @@ os.makedirs(out_dir, exist_ok=True)
 def main():
     if not os.path.exists(bg_file):
         raise FileNotFoundError(f"Background file not found:\n{bg_file}")
-    if not os.path.exists(filament_h5):
-        raise FileNotFoundError(f"Filament file not found:\n{filament_h5}")
+    if not os.path.exists(ridge_file):
+        raise FileNotFoundError(f"Contracted ridge file not found:\n{ridge_file}")
 
-    # Load background RA/DEC
-  
+    # ------------------------------------------------------------
+    # Load background RA/DEC (DEG) and apply the SAME shift used in ridge finding
+    # ------------------------------------------------------------
     with h5py.File(bg_file, "r") as f:
         ra_bg  = f["ra"][:]
         dec_bg = f["dec"][:]
 
-    ra_min, ra_max = float(np.min(ra_bg)), float(np.max(ra_bg))
-    dec_min, dec_max = float(np.min(dec_bg)), float(np.max(dec_bg))
+    ra_bg = (ra_bg + 180.0) % 360.0  # shift to match ridge-finder convention
 
-    #Background density image
+    # ------------------------------------------------------------
+    # Load contracted ridges (RAD) -> convert to DEG
+    # ------------------------------------------------------------
+    with h5py.File(ridge_file, "r") as f:
+        ridges = f["ridges"][:]
 
-    bins_ra = 1400
-    bins_dec = 900
+    dec_r = np.degrees(ridges[:, 0])  # NEW: radians -> degrees
+    ra_r  = np.degrees(ridges[:, 1])  # NEW: radians -> degrees
+
+    # ------------------------------------------------------------
+    # Define plotting region from ridges
+    # ------------------------------------------------------------
+    pad_deg = 1.0
+    ra_min, ra_max = ra_r.min() - pad_deg, ra_r.max() + pad_deg
+    dec_min, dec_max = dec_r.min() - pad_deg, dec_r.max() + pad_deg
+
+    # if span is huge, just use full range
+    if (ra_max - ra_min) > 300:
+        ra_min, ra_max = 0.0, 360.0
+
+    # ------------------------------------------------------------
+    # Background density image in the same window
+    # ------------------------------------------------------------
+    bins_ra = 800
+    bins_dec = 500
 
     H, xedges, yedges = np.histogram2d(
         ra_bg, dec_bg,
@@ -137,28 +168,10 @@ def main():
     )
     H = np.log10(H + 1.0)
 
-    #  Load filament points (RA/DEC/Label)
-
-    with h5py.File(filament_h5, "r") as h:
-        d = h[fil_dataset_name][:]
-        ra_fil  = d["RA"]
-        dec_fil = d["DEC"]
-        lab     = d["Filament_Label"]
-
-    # drop noise label if we use -1 
-    keep = (lab >= 0)
-    ra_fil, dec_fil, lab = ra_fil[keep], dec_fil[keep], lab[keep]
-
-    #subsample filaments 
-    max_fil_pts = 2_000_000
-    if ra_fil.size > max_fil_pts:
-        idx = np.random.default_rng(0).choice(ra_fil.size, size=max_fil_pts, replace=False)
-        ra_fil, dec_fil, lab = ra_fil[idx], dec_fil[idx], lab[idx]
-
-    # ----------------------------
+    # ------------------------------------------------------------
     # Plot
-    # ----------------------------
-    out_png = os.path.join(out_dir, "background_density_with_filaments.png")
+    # ------------------------------------------------------------
+    out_png = os.path.join(out_dir, "background_density_with_contracted_ridges_update.png")
 
     plt.figure(figsize=(10, 6.5))
     plt.imshow(
@@ -168,19 +181,31 @@ def main():
         extent=[ra_min, ra_max, dec_min, dec_max],
     )
 
-    #  overlap: all filament points as one layer
-    plt.scatter(ra_fil, dec_fil, s=0.2, alpha=0.9)
+    plt.scatter(ra_r, dec_r, s=0.2, alpha=0.9)
 
-    plt.xlabel("RA [deg]")
+    plt.xlabel("RA [deg] (shifted)")
     plt.ylabel("DEC [deg]")
-    plt.title("DES Y3 background density + filaments overlay")
+    plt.title("DES background density (shifted) + contracted ridges (update)")
     plt.tight_layout()
     plt.savefig(out_png, dpi=250)
     plt.close()
 
+    # ------------------------------------------------------------
+    # Numeric overlap sanity check
+    # ------------------------------------------------------------
+    inside = (
+        (ra_r >= ra_bg.min()) & (ra_r <= ra_bg.max()) &
+        (dec_r >= dec_bg.min()) & (dec_r <= dec_bg.max())
+    )
+    frac_inside = inside.mean()
+
     print(f"[OK] Saved → {out_png}")
+    print(f"[CHECK] Ridge points inside BG RA/DEC bounding box: {frac_inside*100:.2f}%")
+    print(f"[INFO] BG(shifted) RA range  = [{ra_bg.min():.3f}, {ra_bg.max():.3f}]")
+    print(f"[INFO] BG DEC range          = [{dec_bg.min():.3f}, {dec_bg.max():.3f}]")
+    print(f"[INFO] Ridges RA range       = [{ra_r.min():.3f}, {ra_r.max():.3f}]")
+    print(f"[INFO] Ridges DEC range      = [{dec_r.min():.3f}, {dec_r.max():.3f}]")
 
 
 if __name__ == "__main__":
     main()
-
