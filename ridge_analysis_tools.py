@@ -350,8 +350,10 @@ def load_mask(mask_filename, nside):
 def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_coverage=1.0):
     """Return boolean array of ridge points with coverage ≥ min_coverage."""
     radius = np.radians(radius_arcmin / 60.0)
-    theta_ridges = np.radians(90.0 - ridge_dec)
-    phi_ridges = np.radians(ridge_ra)
+    theta_ridges = (np.pi / 2.0) - ridge_dec          # NEW: ridge_dec is radians
+    phi_ridges = ridge_ra                              # NEW: ridge_ra is radians
+    #theta_ridges = np.radians(90.0 - ridge_dec)
+    #phi_ridges = np.radians(ridge_ra)
     vec_ridges = hp.ang2vec(theta_ridges, phi_ridges)
     keep_idx = np.zeros(len(ridge_ra), dtype=bool)
 
@@ -366,7 +368,8 @@ def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_
     return keep_idx
 
 
-def process_ridge_file(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir, plot_dir):
+
+def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir, plot_dir):
     """Apply the filter to one ridge file."""
     with h5py.File(ridge_file, "r") as f:
         ridges = f["ridges"][:]
@@ -389,9 +392,17 @@ def process_ridge_file(ridge_file, mask, nside, radius_arcmin, min_coverage, out
 
     # Plot diagnostic
     plot_file = os.path.join(plot_dir,os.path.basename(out_file).replace(".h5", "_diagnostic.png"))
+    
+    ridge_ra_deg = np.degrees(ridge_ra)                # NEW: convert for plotting
+    ridge_dec_deg = np.degrees(ridge_dec)              # NEW: convert for plotting
+    ridges_clean_ra_deg = np.degrees(ridges_clean[:,1])# NEW: convert for plotting
+    ridges_clean_dec_deg = np.degrees(ridges_clean[:,0])# NEW: convert for plotting
+
     plt.figure(figsize=(8, 6))
-    plt.scatter(ridge_ra, ridge_dec, s=1, alpha=0.3, label="All ridges")
-    plt.scatter(ridges_clean[:, 1], ridges_clean[:, 0], s=1, alpha=0.6, label="Filtered ridges")
+    plt.scatter(ridge_ra_deg, ridge_dec_deg, s=1, alpha=0.3, label="All ridges")                 # NEW
+    plt.scatter(ridges_clean_ra_deg, ridges_clean_dec_deg, s=1, alpha=0.6, label="Filtered ridges")# NEW
+    
+
     plt.xlabel("RA [deg]")
     plt.ylabel("Dec [deg]")
     plt.title(f"contracted ridges\nradius={radius_arcmin} arcmin, min_cov={min_coverage}")
