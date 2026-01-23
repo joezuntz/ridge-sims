@@ -182,6 +182,8 @@ def main():
     )
 
     plt.scatter(ra_r, dec_r, s=0.2, alpha=0.9)
+    
+    plt.scatter(ra_bg, dec_bg, s=0.05, alpha=0.02, color="gray")
 
     plt.xlabel("RA [deg] (shifted)")
     plt.ylabel("DEC [deg]")
