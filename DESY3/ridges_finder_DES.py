@@ -211,7 +211,8 @@ def run_catalog_filament_pipeline(
             results_plot(density_map, ridges_cut, plot_path)
 
 
-def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir, plot_dir):
+def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir, plot_dir,
+                             out_file=None):  # NEW
     """Apply the filter to one ridge file."""
     with h5py.File(ridge_file, "r") as f:
         ridges = f["ridges"][:]
@@ -228,16 +229,20 @@ def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverag
     print(f"[contracted] {os.path.basename(ridge_file)}: kept {len(ridges_clean)}/{n_total}")
 
     # Save to output folder
-    base_name = os.path.basename(ridge_file).replace(".h5", "_contracted.h5")
-    out_file = os.path.join(output_dir, base_name)
+    if out_file is None:  # NEW
+        base_name = os.path.basename(ridge_file).replace(".h5", "_contracted.h5")
+        out_file = os.path.join(output_dir, base_name)
+    else:  # NEW
+        out_file = os.path.join(output_dir, os.path.basename(out_file))
+
     with h5py.File(out_file, "w") as f:
         f.create_dataset("ridges", data=ridges_clean)
 
     # Plot diagnostic
     plot_file = os.path.join(plot_dir, os.path.basename(out_file).replace(".h5", "_diagnostic.png"))
     plt.figure(figsize=(8, 6))
-    plt.scatter(ridge_ra, ridge_dec, s=1, alpha=0.3, label="All ridges")
-    plt.scatter(ridges_clean[:, 1], ridges_clean[:, 0], s=1, alpha=0.6, label="Filtered ridges")
+    plt.scatter(np.degrees(ridge_ra), np.degrees(ridge_dec), s=1, alpha=0.3, label="All ridges")  # NEW
+    plt.scatter(np.degrees(ridges_clean[:, 1]), np.degrees(ridges_clean[:, 0]), s=1, alpha=0.6, label="Filtered ridges")  # NEW
     plt.xlabel("RA [deg]")
     plt.ylabel("Dec [deg]")
     plt.title(f"contracted ridges\nradius={radius_arcmin} arcmin, min_cov={min_coverage}")
@@ -247,7 +252,6 @@ def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverag
     plt.close()
 
     print(f"[plot] Saved diagnostic → {plot_file}")
-
 
 # ==============================================================
 # FIXED PARAMETERS
@@ -323,7 +327,7 @@ def main():
             min_coverage,
             ridges_dir,
             plots_dir,
-            out_file=contracted_file  # NEW
+            out_file= contracted_file  # NEW
         )
 
     COMM.barrier()
