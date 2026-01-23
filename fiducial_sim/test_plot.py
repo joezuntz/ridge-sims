@@ -18,7 +18,7 @@ bg_file = os.path.join(
     parent_dir,
     "lhc_DES_fiducial_sim",
     "run_1",
-    "source_catalog_cutzl04.h5"
+    "source_catalog_cutzl0.40.h5"
 )
 
 out_png = "sim_background_with_ridges.png"
