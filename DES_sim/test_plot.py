@@ -44,7 +44,7 @@ def main():
     with h5py.File(bg_file, "r") as f:
         ra_bg  = f["RA"][:]
         dec_bg = f["DEC"][:]
-        
+    ra_bg = (ra_bg + 180) % 360  
     ra_min, ra_max = float(np.min(ra_bg)), float(np.max(ra_bg))
     dec_min, dec_max = float(np.min(dec_bg)), float(np.max(dec_bg))
 
