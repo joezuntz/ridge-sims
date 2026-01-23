@@ -616,7 +616,7 @@ def read_DES_background(bg_file, comm=None):
             )
 
         bg_ra = f["ra"][s]
-        bg_ra = (bg_ra + 180) % 360  
+        #bg_ra = (bg_ra + 180) % 360                                    # Commented 
 
         bg_dec = f["dec"][s]
         g1 = f["g1"][s]
@@ -654,7 +654,7 @@ def read_DES_noise_background(bg_file, comm=None):
             s = slice(comm.rank * row_per_process, (comm.rank + 1) * row_per_process)
 
         bg_ra = f["ra"][s]
-        bg_ra = (bg_ra + 180) % 360
+        #bg_ra = (bg_ra + 180) % 360
 
         bg_dec = f["dec"][s]
         g1 = f["g1"][s]
