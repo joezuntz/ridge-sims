@@ -80,15 +80,19 @@ for fp in final_percentiles:
 
     # flip signs 
     
-        process_ridge_file(
+    shear_flip_csv = os.path.join(shear_dir, f"shear_p{fp:02d}_flipg1.csv")  
+
+    process_ridge_file(
         h5_file=h5_file,
         BG_data=bg_file,
         filament_h5=filament_h5,
-        shear_csv=shear_csv,
+        shear_csv=shear_csv,                 
         background_type="DES_noshift",
-        shear_flip_csv=True,
+        shear_flip_csv=shear_flip_csv,       
         comm=COMM,
     )
+    
+    COMM.Barrier()
 
     COMM.Barrier()
 
@@ -155,4 +159,4 @@ for fp in final_percentiles:
 
 #        print(f"[rank 0] Saved random-subtracted shear → {out_file}")
 
-    COMM.Barrier()
+#    COMM.Barrier()
