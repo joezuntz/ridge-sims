@@ -47,6 +47,15 @@ Cosmo_sim_ridges/S8/run_1/band_0.1/shear/
     └── shear_p15_flipG1.csv  # If not None
 """
 
+# Temporary helper
+def find_contracted_files_update(home_dir):
+    """find all '_contracted.h5' ridge files in directory."""
+    contracted_files = []
+    for root, _, files in os.walk(home_dir):
+        for f in files:
+            if f.endswith("_contracted_update.h5"):
+                contracted_files.append(os.path.join(root, f))
+    return contracted_files
 
 
 # ===============================================================
@@ -60,7 +69,7 @@ def main():
     final_percentiles = [15]
 
     # --- Find contracted ridge files ---
-    contracted_files = find_contracted_files(home_dir)
+    contracted_files = find_contracted_files_update(home_dir)                          # update
     if comm is None or COMM_WORLD.rank == 0:
         print(f"Found {len(contracted_files)} contracted ridge files.\n")
 
@@ -92,7 +101,7 @@ def main():
 
             # --- Build output dirs ---
             band_dir = os.path.dirname(h5_file)
-            shear_dir = os.path.join(band_dir, "shear")
+            shear_dir = os.path.join(band_dir, "shear_update")                            #Update
             os.makedirs(shear_dir, exist_ok=True)
 
             # --- Loop over percentiles ---

@@ -213,7 +213,7 @@ def main():
 
                     # === SAFETY CHECK 2: Skip if contracted output already exists ===
                     if CHECK_EXISTING_OUTPUTS:
-                        contracted_path = ridge_path.replace(".h5", "_contracted.h5")
+                        contracted_path = ridge_path.replace(".h5", "_contracted_update.h5")  # Update
                         if os.path.isfile(contracted_path):
                             print(f"[skip] Contracted file already exists: {contracted_path}")
                             continue
