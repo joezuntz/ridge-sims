@@ -43,23 +43,8 @@ def main():
         os.makedirs(plots_dir, exist_ok=True)
 
     COMM.barrier()  
-
-    # ridge_file for contraction
-    ridge_file = os.path.join(
-        ridges_dir,
-        f"{base_label}_run_{run_id}_ridges_p15.h5"
-    )
-
-    # Contraction params
-
-    radius_arcmin = 4.0
-    min_coverage = 0.9
-    nside = 512
-
-    mask_filename = os.path.join(parent_dir, "des-data", "desy3_gold_mask.npy")
-    mask = np.load(mask_filename) if RANK == 0 else None
-    mask = COMM.bcast(mask, root=0)
-
+    
+    
     # Ridges
     run_filament_pipeline( 
         bandwidth=bandwidth,
@@ -70,20 +55,7 @@ def main():
         N=N,
         z_cut=z_cut,
     )
-
-    COMM.barrier() 
-
-    # Contraction
-    if RANK == 0:
-        process_ridge_file_local(
-            ridge_file,
-            mask,
-            nside,
-            radius_arcmin,
-            min_coverage,
-            ridges_dir,
-            plots_dir
-        )
+    
 
 
 if __name__ == "__main__":
