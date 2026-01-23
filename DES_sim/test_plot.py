@@ -39,15 +39,13 @@ def main():
     if not os.path.exists(bg_file):
         raise FileNotFoundError(f"Background file not found:\n{bg_file}")
     if not os.path.exists(filament_h5):
-        raise 
-FileNotFoundError(f"Filament file not found:\n{filament_h5}")
+        raise FileNotFoundError(f"Filament file not found:\n{filament_h5}")
 
     # Load background RA/DEC
-  
     with h5py.File(bg_file, "r") as f:
         ra_bg  = f["ra"][:]
         dec_bg = f["dec"][:]
-
+        
     ra_min, ra_max = float(np.min(ra_bg)), float(np.max(ra_bg))
     dec_min, dec_max = float(np.min(dec_bg)), float(np.max(dec_bg))
 
