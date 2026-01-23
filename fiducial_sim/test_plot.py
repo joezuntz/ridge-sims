@@ -11,7 +11,7 @@ parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
 
 ridge_file = os.path.join(
     current_dir,
-    "shape_err_run_1_ridges_p15_contracted.h5"
+    "/DES_fiducial_sim/band_0.1_mesh_2/Ridges_final_p15/shape_err_run_1_ridges_p15_contracted.h5"
 )
 
 bg_file = os.path.join(
