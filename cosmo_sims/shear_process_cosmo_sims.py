@@ -69,7 +69,7 @@ def main():
     final_percentiles = [15]
 
     # --- Find contracted ridge files ---
-    contracted_files = find_contracted_files_update(home_dir)                          # update
+    contracted_files = find_contracted_files(home_dir)                         
     if comm is None or COMM_WORLD.rank == 0:
         print(f"Found {len(contracted_files)} contracted ridge files.\n")
 
@@ -101,7 +101,7 @@ def main():
 
             # --- Build output dirs ---
             band_dir = os.path.dirname(h5_file)
-            shear_dir = os.path.join(band_dir, "shear_update")                            #Update
+            shear_dir = os.path.join(band_dir, "shear")                           
             os.makedirs(shear_dir, exist_ok=True)
 
             # --- Loop over percentiles ---
