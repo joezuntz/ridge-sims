@@ -369,10 +369,56 @@ def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_
 
 
 
-def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir, plot_dir):
+#def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir, plot_dir):
+#    """Apply the filter to one ridge file."""
+#    with h5py.File(ridge_file, "r") as f:
+#        ridges = f["ridges"][:]
+#    ridge_dec = ridges[:, 0]
+#    ridge_ra = ridges[:, 1]
+#    n_total = len(ridges)
+
+#    keep_idx = ridge_edge_filter_disk(
+#        ridge_ra, ridge_dec, mask, nside,
+#        radius_arcmin=radius_arcmin, min_coverage=min_coverage
+#    )
+#    ridges_clean = ridges[keep_idx]
+#    print(f"[contracted] {os.path.basename(ridge_file)}: kept {len(ridges_clean)}/{n_total}")
+
+#    # Save to output folder
+#    base_name = os.path.basename(ridge_file).replace(".h5", "_contracted.h5")
+#    out_file = os.path.join(output_dir, base_name)
+#    with h5py.File(out_file, "w") as f:
+#        f.create_dataset("ridges", data=ridges_clean)
+
+#    # Plot diagnostic
+#    plot_file = os.path.join(plot_dir,os.path.basename(out_file).replace(".h5", "_diagnostic.png"))
+    
+#    ridge_ra_deg = np.degrees(ridge_ra)                # NEW: convert for plotting
+#    ridge_dec_deg = np.degrees(ridge_dec)              # NEW: convert for plotting
+#    ridges_clean_ra_deg = np.degrees(ridges_clean[:,1])# NEW: convert for plotting
+#    ridges_clean_dec_deg = np.degrees(ridges_clean[:,0])# NEW: convert for plotting
+
+#    plt.figure(figsize=(8, 6))
+#    plt.scatter(ridge_ra_deg, ridge_dec_deg, s=1, alpha=0.3, label="All ridges")                 # NEW
+#    plt.scatter(ridges_clean_ra_deg, ridges_clean_dec_deg, s=1, alpha=0.6, label="Filtered ridges")# NEW
+    
+
+#    plt.xlabel("RA [deg]")
+#    plt.ylabel("Dec [deg]")
+#    plt.title(f"contracted ridges\nradius={radius_arcmin} arcmin, min_cov={min_coverage}")
+#    plt.legend()
+#    plt.tight_layout()
+#    plt.savefig(plot_file, dpi=200)
+#    plt.close()
+
+#    print(f"[plot] Saved diagnostic → {plot_file}")
+
+def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir, plot_dir,
+                             out_file=None):  # NEW
     """Apply the filter to one ridge file."""
     with h5py.File(ridge_file, "r") as f:
         ridges = f["ridges"][:]
+
     ridge_dec = ridges[:, 0]
     ridge_ra = ridges[:, 1]
     n_total = len(ridges)
@@ -385,24 +431,20 @@ def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverag
     print(f"[contracted] {os.path.basename(ridge_file)}: kept {len(ridges_clean)}/{n_total}")
 
     # Save to output folder
-    base_name = os.path.basename(ridge_file).replace(".h5", "_contracted.h5")
-    out_file = os.path.join(output_dir, base_name)
+    if out_file is None:  # NEW
+        base_name = os.path.basename(ridge_file).replace(".h5", "_contracted.h5")
+        out_file = os.path.join(output_dir, base_name)
+    else:  # NEW
+        out_file = os.path.join(output_dir, os.path.basename(out_file))
+
     with h5py.File(out_file, "w") as f:
         f.create_dataset("ridges", data=ridges_clean)
 
     # Plot diagnostic
-    plot_file = os.path.join(plot_dir,os.path.basename(out_file).replace(".h5", "_diagnostic.png"))
-    
-    ridge_ra_deg = np.degrees(ridge_ra)                # NEW: convert for plotting
-    ridge_dec_deg = np.degrees(ridge_dec)              # NEW: convert for plotting
-    ridges_clean_ra_deg = np.degrees(ridges_clean[:,1])# NEW: convert for plotting
-    ridges_clean_dec_deg = np.degrees(ridges_clean[:,0])# NEW: convert for plotting
-
+    plot_file = os.path.join(plot_dir, os.path.basename(out_file).replace(".h5", "_diagnostic.png"))
     plt.figure(figsize=(8, 6))
-    plt.scatter(ridge_ra_deg, ridge_dec_deg, s=1, alpha=0.3, label="All ridges")                 # NEW
-    plt.scatter(ridges_clean_ra_deg, ridges_clean_dec_deg, s=1, alpha=0.6, label="Filtered ridges")# NEW
-    
-
+    plt.scatter(np.degrees(ridge_ra), np.degrees(ridge_dec), s=1, alpha=0.3, label="All ridges")  # NEW (units)
+    plt.scatter(np.degrees(ridges_clean[:, 1]), np.degrees(ridges_clean[:, 0]), s=1, alpha=0.6, label="Filtered ridges")  # NEW (units)
     plt.xlabel("RA [deg]")
     plt.ylabel("Dec [deg]")
     plt.title(f"contracted ridges\nradius={radius_arcmin} arcmin, min_cov={min_coverage}")
@@ -412,8 +454,6 @@ def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverag
     plt.close()
 
     print(f"[plot] Saved diagnostic → {plot_file}")
-
-
 
 
 

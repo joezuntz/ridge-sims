@@ -322,7 +322,8 @@ def main():
             radius_arcmin,
             min_coverage,
             ridges_dir,
-            plots_dir
+            plots_dir,
+            out_file=contracted_file  # NEW
         )
 
     COMM.barrier()
