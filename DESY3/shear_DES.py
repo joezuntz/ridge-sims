@@ -19,6 +19,10 @@ from ridge_analysis_tools import *
 COMM = MPI.COMM_WORLD
 RANK = COMM.rank
 
+
+
+
+
 # ------------------------------------------------------------
 # INPUTS 
 # ------------------------------------------------------------
@@ -26,8 +30,8 @@ RANK = COMM.rank
 h5_file = os.path.join(current_dir, "DES_ridge_analysis/Ridges_analysis/DESY3_ridges_p15__mesh2_band0.10_contracted_update.h5")   #Update  
 
 # Output directories
-filament_dir = os.path.join(current_dir, "filaments_update")                         # Update
-shear_dir    = os.path.join(current_dir, "shear_update")                             # Update
+filament_dir = os.path.join(current_dir, "filaments_update_noshift")                         # Update
+shear_dir    = os.path.join(current_dir, "shear_update_noshift")                             # Update
 os.makedirs(filament_dir, exist_ok=True)
 os.makedirs(shear_dir, exist_ok=True)
 
