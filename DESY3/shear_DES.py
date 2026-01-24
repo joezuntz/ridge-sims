@@ -104,7 +104,7 @@ COMM.Barrier()
 for fp in final_percentiles:
 
     filament_h5 = os.path.join(filament_dir, f"filaments_p{fp:02d}.h5")
-#    shear_csv   = os.path.join(shear_dir,    f"shear_p{fp:02d}.csv")
+    shear_csv   = os.path.join(shear_dir,    f"shear_p{fp:02d}.csv")
 
     # --------------------------------------------------------
     # SIGNAL 
