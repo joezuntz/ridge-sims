@@ -20,6 +20,45 @@ COMM = MPI.COMM_WORLD
 RANK = COMM.rank
 
 
+# Temporary helper 
+
+def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type, shear_flip_csv = None, comm=None):
+    """
+    Compute MST → filaments → shear from a contracted ridge file.
+    All paths are passed explicitly to keep the function file-agnostic.
+    """
+    if comm is None or comm.rank == 0:
+        print(f"[rank 0] Processing {h5_file}")
+
+        with h5py.File(h5_file, 'r') as f:
+            Ridges = f["ridges"][:]
+
+        mst = build_mst(Ridges)
+        branch_points = detect_branch_points(mst)
+        filament_segments = split_mst_at_branches(mst, branch_points)
+        filament_labels = segment_filaments_with_dbscan(Ridges, filament_segments)
+
+        save_filaments_to_hdf5(Ridges, filament_labels, filament_h5)
+        print(f"[save] Filaments → {filament_h5}")
+
+    if comm is not None:
+        comm.Barrier()
+
+    # --- Shear calculations ---
+    process_shear_sims(
+        filament_h5, BG_data, output_shear_file=shear_csv,
+        k=1, num_bins=20, comm=comm,
+        flip_g1=False, flip_g2=False, background_type= background_type,
+        nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+    )
+
+    if shear_flip_csv is not None:
+        process_shear_sims(
+            filament_h5, BG_data, output_shear_file=shear_flip_csv,
+            k=1, num_bins=20, comm=comm,
+            flip_g1=False, flip_g2=True, background_type=background_type,
+            nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+        )
 
 
 
@@ -30,8 +69,8 @@ RANK = COMM.rank
 h5_file = os.path.join(current_dir, "DES_ridge_analysis/Ridges_analysis/DESY3_ridges_p15__mesh2_band0.10_contracted_update.h5")   #Update  
 
 # Output directories
-filament_dir = os.path.join(current_dir, "filaments_update_noshift")                         # Update
-shear_dir    = os.path.join(current_dir, "shear_update_noshift")                             # Update
+filament_dir = os.path.join(current_dir, "filaments_flipg2")                         # Update
+shear_dir    = os.path.join(current_dir, "shear_flipg2")                             # Update
 os.makedirs(filament_dir, exist_ok=True)
 os.makedirs(shear_dir, exist_ok=True)
 
@@ -70,21 +109,21 @@ for fp in final_percentiles:
     # --------------------------------------------------------
     # SIGNAL 
     # --------------------------------------------------------
-    process_ridge_file(
-        h5_file=h5_file,
-        BG_data=bg_file,
-        filament_h5=filament_h5,
-        shear_csv=shear_csv,
-        background_type="DES_noshift",
-        shear_flip_csv=None,
-        comm=COMM,
-    )
+#    process_ridge_file(
+#        h5_file=h5_file,
+#        BG_data=bg_file,
+#        filament_h5=filament_h5,
+#        shear_csv=shear_csv,
+#        background_type="DES_noshift",
+#        shear_flip_csv=None,
+#        comm=COMM,
+#    )
 
-    COMM.Barrier()
+#    COMM.Barrier()
 
     # flip signs 
     
-    shear_flip_csv = os.path.join(shear_dir, f"shear_p{fp:02d}_flipg1.csv")  
+    shear_flip_csv = os.path.join(shear_dir, f"shear_p{fp:02d}_flipg2.csv")  
 
     process_ridge_file(
         h5_file=h5_file,
