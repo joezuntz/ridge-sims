@@ -137,7 +137,7 @@ for fp in final_percentiles:
     
     COMM.Barrier()
 
-    COMM.Barrier()
+
 
     # --------------------------------------------------------
     # NOISE 
