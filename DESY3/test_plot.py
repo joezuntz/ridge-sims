@@ -217,7 +217,7 @@ import matplotlib.pyplot as plt
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 csv_file = os.path.join(current_dir, "shear_flipg2", "shear_p15_flipg2.csv")
-out_png  = os.path.join(current_dir, "shear_fligg2", "gamma_plus_noshift_p15_flipg2.png")
+out_png  = os.path.join(current_dir, "shear_flipg2", "gamma_plus_noshift_p15_flipg2.png")
 
 if not os.path.exists(csv_file):
     raise FileNotFoundError(csv_file)
