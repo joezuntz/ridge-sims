@@ -22,7 +22,7 @@ RANK = COMM.rank
 
 # Temporary helper 
 
-def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type, shear_flip_csv = None, comm=None):
+def process_ridge_file_temp(h5_file, BG_data, filament_h5, shear_csv, background_type, shear_flip_csv = None, comm=None):
     """
     Compute MST → filaments → shear from a contracted ridge file.
     All paths are passed explicitly to keep the function file-agnostic.
@@ -45,18 +45,18 @@ def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type
         comm.Barrier()
 
     # --- Shear calculations ---
-    process_shear_sims(
-        filament_h5, BG_data, output_shear_file=shear_csv,
-        k=1, num_bins=20, comm=comm,
-        flip_g1=False, flip_g2=False, background_type= background_type,
-        nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
-    )
+#    process_shear_sims(
+#        filament_h5, BG_data, output_shear_file=shear_csv,
+#        k=1, num_bins=20, comm=comm,
+#        flip_g1=False, flip_g2=False, background_type= background_type,
+#        nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+#    )
 
     if shear_flip_csv is not None:
         process_shear_sims(
             filament_h5, BG_data, output_shear_file=shear_flip_csv,
             k=1, num_bins=20, comm=comm,
-            flip_g1=False, flip_g2=True, background_type=background_type,
+            flip_g1=True, flip_g2=True, background_type=background_type,
             nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
         )
 
@@ -69,8 +69,8 @@ def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type
 h5_file = os.path.join(current_dir, "DES_ridge_analysis/Ridges_analysis/DESY3_ridges_p15__mesh2_band0.10_contracted_update.h5")   #Update  
 
 # Output directories
-filament_dir = os.path.join(current_dir, "filaments_flipg2")                         # Update
-shear_dir    = os.path.join(current_dir, "shear_flipg2")                             # Update
+filament_dir = os.path.join(current_dir, "filaments_flipg1g2")                         # Update
+shear_dir    = os.path.join(current_dir, "shear_flipg1g2")                             # Update
 os.makedirs(filament_dir, exist_ok=True)
 os.makedirs(shear_dir, exist_ok=True)
 
