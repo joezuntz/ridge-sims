@@ -123,18 +123,16 @@ for fp in final_percentiles:
     shear_flip_csv = os.path.join(shear_dir, f"shear_p{fp:02d}_flipg2.csv")
 
     # Compute filaments only if missing
-    if (RANK == 0) and os.path.exists(filament_h5):
-        print(f"[rank 0] Reusing filaments -> {filament_h5}")
-    else:
-        process_ridge_file_DESY3(
-            h5_file=h5_file,
-            BG_data=bg_file,
-            filament_h5=filament_h5,
-            background_type="DES_noshift",
-            shear_csv=None,
-            shear_flip_csv=shear_flip_csv,
-            comm=COMM,
-        )
+
+    process_ridge_file_DESY3(
+        h5_file=h5_file,
+        BG_data=bg_file,
+        filament_h5=filament_h5,
+        background_type="DES_noshift",
+        shear_csv=None,
+        shear_flip_csv=shear_flip_csv,
+        comm=COMM,
+    )
 
     COMM.Barrier()
 
