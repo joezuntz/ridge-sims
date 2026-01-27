@@ -22,7 +22,7 @@ RANK = COMM.rank
 
 # Temporary helper 
 
-def process_ridge_file_DESY3(h5_file, BG_data, filament_h5, shear_csv = None, background_type, shear_flip_csv = None, comm=None):
+def process_ridge_file_DESY3(h5_file, BG_data, filament_h5, background_type , shear_csv = None, shear_flip_csv = None, comm=None):
     """
     Compute MST → filaments → shear from a contracted ridge file.
     All paths are passed explicitly to keep the function file-agnostic.
@@ -130,8 +130,8 @@ for fp in final_percentiles:
             h5_file=h5_file,
             BG_data=bg_file,
             filament_h5=filament_h5,
-            shear_csv=None,
             background_type="DES_noshift",
+            shear_csv=None,
             shear_flip_csv=shear_flip_csv,
             comm=COMM,
         )
