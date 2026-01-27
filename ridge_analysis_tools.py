@@ -1318,7 +1318,7 @@ def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type
         process_shear_sims(
             filament_h5, BG_data, output_shear_file=shear_flip_csv,
             k=1, num_bins=20, comm=comm,
-            flip_g1=True, flip_g2=False, background_type=background_type,
+            flip_g1=True, flip_g2=True, background_type=background_type,
             nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
         )
 

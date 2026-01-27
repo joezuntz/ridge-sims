@@ -22,7 +22,7 @@ RANK = COMM.rank
 
 # Temporary helper 
 
-def process_ridge_file_temp(h5_file, BG_data, filament_h5, shear_csv, background_type, shear_flip_csv = None, comm=None):
+def process_ridge_file_DESY3(h5_file, BG_data, filament_h5, shear_csv = None, background_type, shear_flip_csv = None, comm=None):
     """
     Compute MST → filaments → shear from a contracted ridge file.
     All paths are passed explicitly to keep the function file-agnostic.
@@ -45,22 +45,34 @@ def process_ridge_file_temp(h5_file, BG_data, filament_h5, shear_csv, background
         comm.Barrier()
 
     # --- Shear calculations ---
-#    process_shear_sims(
-#        filament_h5, BG_data, output_shear_file=shear_csv,
-#        k=1, num_bins=20, comm=comm,
-#        flip_g1=False, flip_g2=False, background_type= background_type,
-#        nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
-#    )
+    if shear_csv is not None:
+        process_shear_sims(
+            filament_h5, BG_data, output_shear_file=shear_csv,
+            k=1, num_bins=20, comm=comm,
+            flip_g1=False, flip_g2=False, background_type=background_type,
+            nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+        )
 
     if shear_flip_csv is not None:
         process_shear_sims(
             filament_h5, BG_data, output_shear_file=shear_flip_csv,
             k=1, num_bins=20, comm=comm,
-            flip_g1=True, flip_g2=True, background_type=background_type,
+            flip_g1=False, flip_g2=True, background_type=background_type,
             nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
         )
 
 
+R_CAL = 0.6805452481
+def apply_R_calibration_inplace(csv_path, R=R_CAL):
+    """
+    Divide Weighted_g_plus and Weighted_g_cross by R.
+    """
+    data = np.loadtxt(csv_path, delimiter=",", skiprows=1)
+    data[:, 2] /= R  # Weighted_g_plus
+    data[:, 3] /= R  # Weighted_g_cross
+
+    header = "Bin_Center,Weighted_Real_Distance,Weighted_g_plus,Weighted_g_cross,Counts,bin_weight"
+    np.savetxt(csv_path, data, delimiter=",", header=header, comments="")
 
 # ------------------------------------------------------------
 # INPUTS 
@@ -69,8 +81,8 @@ def process_ridge_file_temp(h5_file, BG_data, filament_h5, shear_csv, background
 h5_file = os.path.join(current_dir, "DES_ridge_analysis/Ridges_analysis/DESY3_ridges_p15__mesh2_band0.10_contracted_update.h5")   #Update  
 
 # Output directories
-filament_dir = os.path.join(current_dir, "filaments_flipg1g2")                         # Update
-shear_dir    = os.path.join(current_dir, "shear_flipg1g2")                             # Update
+filament_dir = os.path.join(current_dir, "filaments_flipg2")                         # Update
+shear_dir    = os.path.join(current_dir, "shear_flipg2")                             # Update
 os.makedirs(filament_dir, exist_ok=True)
 os.makedirs(shear_dir, exist_ok=True)
 
@@ -104,43 +116,34 @@ COMM.Barrier()
 for fp in final_percentiles:
 
     filament_h5 = os.path.join(filament_dir, f"filaments_p{fp:02d}.h5")
-    shear_csv   = os.path.join(shear_dir,    f"shear_p{fp:02d}.csv")
 
     # --------------------------------------------------------
-    # SIGNAL 
+    # SIGNAL
     # --------------------------------------------------------
-#    process_ridge_file(
-#        h5_file=h5_file,
-#        BG_data=bg_file,
-#        filament_h5=filament_h5,
-#        shear_csv=shear_csv,
-#        background_type="DES_noshift",
-#        shear_flip_csv=None,
-#        comm=COMM,
-#    )
+    shear_flip_csv = os.path.join(shear_dir, f"shear_p{fp:02d}_flipg2.csv")
 
-#    COMM.Barrier()
+    # Compute filaments only if missing
+    if (RANK == 0) and os.path.exists(filament_h5):
+        print(f"[rank 0] Reusing filaments -> {filament_h5}")
+    else:
+        process_ridge_file_DESY3(
+            h5_file=h5_file,
+            BG_data=bg_file,
+            filament_h5=filament_h5,
+            shear_csv=None,
+            background_type="DES_noshift",
+            shear_flip_csv=shear_flip_csv,
+            comm=COMM,
+        )
 
-    # flip signs 
-    
-    shear_flip_csv = os.path.join(shear_dir, f"shear_p{fp:02d}_flipg2.csv")  
-
-    process_ridge_file(
-        h5_file=h5_file,
-        BG_data=bg_file,
-        filament_h5=filament_h5,
-        shear_csv=shear_csv,                 
-        background_type="DES_noshift",
-        shear_flip_csv=shear_flip_csv,       
-        comm=COMM,
-    )
-    
     COMM.Barrier()
 
-
+    if RANK == 0:
+        apply_R_calibration_inplace(shear_flip_csv)
+    COMM.Barrier()
 
     # --------------------------------------------------------
-    # NOISE 
+    # NOISE
     # --------------------------------------------------------
 #    all_random_profiles = []
 
@@ -151,55 +154,16 @@ for fp in final_percentiles:
 #        if not os.path.exists(noise_bg):
 #            raise FileNotFoundError(f"Missing noise catalog: {noise_bg}")
 
-#        process_ridge_file(
-#            h5_file=h5_file,
-#            BG_data=noise_bg,
-#            filament_h5=filament_h5,
-#            shear_csv=random_csv,
+#        process_shear_sims(
+#            filament_h5, noise_bg, output_shear_file=random_csv,
+#            k=1, num_bins=20, comm=COMM,
+#            flip_g1=False, flip_g2=True,
 #            background_type="noise_noshift",
-#            shear_flip_csv=None,
-#            comm=COMM,
+#            nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
 #        )
 
 #        COMM.Barrier()
-
 #        if RANK == 0:
+#            apply_R_calibration_inplace(random_csv)
 #            all_random_profiles.append(np.loadtxt(random_csv, delimiter=",", skiprows=1))
-
-#    # --------------------------------------------------------
-#    # SUBTRACTION (rank 0 only)
-#    # --------------------------------------------------------
-#    if RANK == 0:
-#        all_random_profiles = np.array(all_random_profiles)
-#        mean_random = np.mean(all_random_profiles, axis=0)
-
-#        shear_data = np.loadtxt(shear_csv, delimiter=",", skiprows=1)
-
-#        g_plus_sub  = shear_data[:, 2] - mean_random[:, 2]
-#        g_cross_sub = shear_data[:, 3] - mean_random[:, 3]
-
-#        out = np.column_stack((
-#            shear_data[:, 0],
-#            shear_data[:, 1],
-#            g_plus_sub,
-#            g_cross_sub,
-#            shear_data[:, 4],
-#            shear_data[:, 5],
-#        ))
-
-#        out_file = os.path.join(shear_dir, f"shear_p{fp:02d}_randomsub.csv")
-
-#        np.savetxt(
-#            out_file,
-#            out,
-#            delimiter=",",
-#            header="Bin_Center,Weighted_Real_Distance,"
-#                   "Weighted_g_plus_subtracted,"
-#                   "Weighted_g_cross_subtracted,"
-#                   "Counts,bin_weight",
-#            comments="",
-#        )
-
-#        print(f"[rank 0] Saved random-subtracted shear → {out_file}")
-
-#    COMM.Barrier()
+#        COMM.Barrier()
