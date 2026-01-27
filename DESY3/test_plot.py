@@ -217,7 +217,7 @@ import matplotlib.pyplot as plt
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 csv_file = os.path.join(current_dir, "shear_flipg2", "shear_p15_flipg2.csv")
-out_png  = os.path.join(current_dir, "shear_flipg2", "gamma_plus_noshift_p15_flipg2.png")
+out_png  = os.path.join(current_dir, "shear_flipg2", "gamma_plus_noshift_p15_flipg2_Rcal.png")
 
 if not os.path.exists(csv_file):
     raise FileNotFoundError(csv_file)
@@ -226,10 +226,10 @@ if not os.path.exists(csv_file):
 d = np.loadtxt(csv_file, delimiter=",", skiprows=1)
 
 bin_center = d[:, 0]          # radians
-real_dist  = d[:, 1]          # radians (weighted)
+real_dist  = d[:, 1]          # radians 
 g_plus     = d[:, 2]
 
-# plot vs distance in arcmin (more interpretable)
+# plot vs distance in arcmin 
 x_arcmin = np.degrees(real_dist) * 60.0
 
 plt.figure(figsize=(7.5, 6.0))
