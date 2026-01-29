@@ -124,44 +124,44 @@ for fp in final_percentiles:
 
     # Compute filaments only if missing
 
-    process_ridge_file_DESY3(
-        h5_file=h5_file,
-        BG_data=bg_file,
-        filament_h5=filament_h5,
-        background_type="DES_noshift",
-        shear_csv=None,
-        shear_flip_csv=shear_flip_csv,
-        comm=COMM,
-    )
+#    process_ridge_file_DESY3(
+#        h5_file=h5_file,
+#        BG_data=bg_file,
+#        filament_h5=filament_h5,
+#        background_type="DES_noshift",
+#        shear_csv=None,
+#        shear_flip_csv=shear_flip_csv,
+#        comm=COMM,
+#    )
 
-    COMM.Barrier()
+#    COMM.Barrier()
 
-    if RANK == 0:
-        apply_R_calibration_inplace(shear_flip_csv)
-    COMM.Barrier()
+#    if RANK == 0:
+#        apply_R_calibration_inplace(shear_flip_csv)
+#    COMM.Barrier()
 
     # --------------------------------------------------------
     # NOISE
     # --------------------------------------------------------
-#    all_random_profiles = []
+    all_random_profiles = []
 
-#    for i in range(n_random_rotations):
-#        noise_bg = os.path.join(noise_dir, f"source_catalog_noise_{i:03d}.h5")
-#        random_csv = os.path.join(shear_dir, f"shear_random_p{fp:02d}_{i:03d}.csv")
+    for i in range(n_random_rotations):
+        noise_bg = os.path.join(noise_dir, f"source_catalog_noise_{i:03d}.h5")
+        random_csv = os.path.join(shear_dir, f"shear_random_p{fp:02d}_{i:03d}.csv")
 
-#        if not os.path.exists(noise_bg):
-#            raise FileNotFoundError(f"Missing noise catalog: {noise_bg}")
+        if not os.path.exists(noise_bg):
+            raise FileNotFoundError(f"Missing noise catalog: {noise_bg}")
 
-#        process_shear_sims(
-#            filament_h5, noise_bg, output_shear_file=random_csv,
-#            k=1, num_bins=20, comm=COMM,
-#            flip_g1=False, flip_g2=True,
-#            background_type="noise_noshift",
-#            nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
-#        )
+        process_shear_sims(
+            filament_h5, noise_bg, output_shear_file=random_csv,
+            k=1, num_bins=20, comm=COMM,
+            flip_g1=False, flip_g2=True,
+            background_type="noise_noshift",
+            nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+        )
 
-#        COMM.Barrier()
-#        if RANK == 0:
-#            apply_R_calibration_inplace(random_csv)
-#            all_random_profiles.append(np.loadtxt(random_csv, delimiter=",", skiprows=1))
-#        COMM.Barrier()
+        COMM.Barrier()
+        if RANK == 0:
+            apply_R_calibration_inplace(random_csv)
+            all_random_profiles.append(np.loadtxt(random_csv, delimiter=",", skiprows=1))
+        COMM.Barrier()
