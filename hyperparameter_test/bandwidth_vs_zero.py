@@ -108,6 +108,24 @@ for f in sorted(os.listdir(SHEAR_ROOT)):
 bw_vals = np.array(bw_vals)
 theta0_vals = np.array(theta0_vals)
 
+
+#only positive
+m = np.isfinite(bw_vals) & np.isfinite(theta0_vals) & (bw_vals > 0) & (theta0_vals > 0)
+
+log_bw  = np.log10(bw_vals[m])
+log_th0 = np.log10(theta0_vals[m])
+
+# linear fit in log-log space
+alpha, logA = np.polyfit(log_bw, log_th0, 1)
+A = 10**logA
+
+print(f"Power-law fit:")
+print(f"  theta0 = A * bandwidth^alpha")
+print(f"  A     = {A:.3g}")
+print(f"  alpha = {alpha:.3f}")
+
+
+
 # plot
 fig, ax = plt.subplots()
 sc = ax.scatter(
@@ -123,6 +141,17 @@ ax.set_title(r"$\gamma_+(\theta)=0$")
 
 ax.set_yscale("log")
 ax.set_xscale("log")
+
+
+# plot fit line
+bw_fit = np.logspace(np.log10(bw_vals[m].min()),
+                     np.log10(bw_vals[m].max()), 200)
+theta_fit = A * bw_fit**alpha
+
+ax.plot(bw_fit, theta_fit, color="black", lw=1.8, ls="--",
+        label=rf"$\theta_0 \propto \mathrm{{band}}^{{{alpha:.2f}}}$")
+
+ax.legend()
 
 cbar = fig.colorbar(sc, ax=ax, pad=0.02)
 cbar.set_label("Bandwidth")
