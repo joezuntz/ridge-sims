@@ -122,11 +122,12 @@ ax.set_title(r"$\gamma_+(\theta)=0$")
 
 
 ax.set_yscale("log")
+ax.set_xscale("log")
 
 cbar = fig.colorbar(sc, ax=ax, pad=0.02)
 cbar.set_label("Bandwidth")
 
-out = os.path.join(OUTPUT_ROOT, "zero_crossing_scatter_vs_bandwidth.pdf")
+out = os.path.join(OUTPUT_ROOT, "zero_crossing_scatter_vs_bandwidth_log_log.pdf")
 fig.savefig(out, bbox_inches="tight")
 plt.close(fig)
 
