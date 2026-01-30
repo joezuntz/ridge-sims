@@ -52,7 +52,7 @@ os.makedirs(OUTPUT_ROOT, exist_ok=True)
 RAD_COL   = "Weighted_Real_Distance"  
 GPLUS_COL = "Weighted_g_plus"
 
-ALL_CROSSINGS = True   # True: plot every zero crossing found; False: only the first one
+ALL_CROSSINGS = False   # True: plot every zero crossing found; False: only the first one
 
 def zero_crossings(theta, y):
     """Return all theta values where y crosses 0 by sign change, using linear interpolation in theta."""
