@@ -5,6 +5,46 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as colors
 
+
+
+# ------------------------------------------------------------
+# Publication-style parameters
+# ------------------------------------------------------------
+plt.rcParams.update({
+    "figure.figsize": (8, 6.8),
+    "figure.dpi": 100,
+
+    "axes.linewidth": 1.6,
+    "axes.labelsize": 15,
+    "axes.titlesize": 15,
+
+    # Major ticks
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "xtick.major.size": 8,
+    "ytick.major.size": 8,
+    "xtick.major.width": 1.4,
+    "ytick.major.width": 1.4,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+
+    # Minor ticks 
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+    "xtick.minor.size": 3.5,
+    "ytick.minor.size": 3.5,
+    "xtick.minor.width": 1.0,
+    "ytick.minor.width": 1.0,
+
+    "font.family": "serif",
+
+    "legend.frameon": False,
+    "legend.fontsize": 12,
+
+    "savefig.bbox": "tight",
+})
+
+#================================================================
 SHEAR_ROOT  = os.path.join("parameter_test", "shear_vs_bandwidth")
 OUTPUT_ROOT = os.path.abspath("hyperparam_plot")
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
@@ -77,8 +117,8 @@ sc = ax.scatter(
 )
 
 ax.set_xlabel("Bandwidth")
-ax.set_ylabel(r"Zero-crossing separation $\theta_0$ [arcmin]")
-ax.set_title(r"Locations where $\gamma_+(\theta)=0$")
+ax.set_ylabel(r"separation $\theta_0$ [arcmin]")
+ax.set_title(r"$\gamma_+(\theta)=0$")
 
 
 ax.set_yscale("log")
