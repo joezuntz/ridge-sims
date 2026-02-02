@@ -203,11 +203,11 @@ def plot_shear_all_categories():
         atol = 1e-6  
         fid_mask = np.isclose(vals_arr, fid_val, atol=atol, rtol=0) if fid_val is not None else np.zeros_like(vals_arr, dtype=bool) 
 
-#        # nearest if exact fiducial not present
-#        if fid_val is not None and not np.any(fid_mask):  
-#            idx = int(np.argmin(np.abs(vals_arr - fid_val)))  
-#            fid_mask = np.zeros_like(vals_arr, dtype=bool)  
-#            fid_mask[idx] = True  
+        # nearest if exact fiducial not present
+        if fid_val is not None and not np.any(fid_mask):  
+            idx = int(np.argmin(np.abs(vals_arr - fid_val)))  
+            fid_mask = np.zeros_like(vals_arr, dtype=bool)  
+            fid_mask[idx] = True  
 
         # Plot non-fiducial first  
         for (df, val), is_fid in zip(shear_list, fid_mask):  
