@@ -78,7 +78,7 @@ def main():
     # ----------------------------------------------------------
     mesh_N = 2
     bandwidth = 0.1
-    final_percentiles = [10, 25, 40, 55, 70]   
+    final_percentiles = [15] #[10, 25, 40, 55, 70]   
     run_ids = range(1, 2)  
 
     # Filament finder params (match your ridge_analysis_tools defaults)
