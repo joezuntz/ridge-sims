@@ -16,7 +16,7 @@ os.chdir(current_dir)
 
 #shear directories
 DESY3_shear_dir = os.path.join(parent_dir, "DESY3/shear_flipg2")  
-DESY3_shear_csv = os.path.join(DESY3_shear_dir, "shear_p15.csv")
+DESY3_shear_csv = os.path.join(DESY3_shear_dir, "gamma_plus_noshift_p15_flipg2_Rcal.png")
 
 sim_shear_dir = os.path.join(parent_dir, "fiducial_sim/shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15") 
 sim_shear_csv = os.path.join(sim_shear_dir, "signal_shear.csv")
