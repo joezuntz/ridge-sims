@@ -66,21 +66,21 @@ gcross = "Weighted_g_cross"
 # loading function
 
 def load_shear_files(data_dir, tag):
-    """
-    Loads CSVs matching:
-        shear_<tag>_<value>.csv
-    """
-    prefix = f"shear_{tag}_"
+
+    prefixes = [f"shear_{tag}_", f"run_1_shear_{tag}_"] 
     out = []
 
     for f in os.listdir(data_dir):
-        if not (f.startswith(prefix) and f.endswith(".csv")):
+        if not f.endswith(".csv"):
             continue
 
-        value = float(f[len(prefix):-4])  
-        df = pd.read_csv(os.path.join(data_dir, f))
-        out.append((value, df))
-        print(f"Loaded: {os.path.join(data_dir, f)}")
+        for prefix in prefixes:  
+            if f.startswith(prefix):
+                value = float(f[len(prefix):-4]) 
+                df = pd.read_csv(os.path.join(data_dir, f))
+                out.append((value, df))
+                print(f"Loaded: {os.path.join(data_dir, f)}")
+                break
 
     out.sort(key=lambda x: x[0])
     return out
