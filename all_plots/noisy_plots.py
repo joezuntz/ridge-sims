@@ -133,9 +133,6 @@ def run_analysis(case_label, shear_csv, noise_files, plot_dir):
     g_plus_noise_std = np.std(all_g_plus_noise, axis=0, ddof=1)
     g_cross_noise_std = np.std(all_g_cross_noise, axis=0, ddof=1)
 
-    # --- Subtract mean noise ---
-    g_plus_sub = g_plus_signal - g_plus_noise_mean
-    g_cross_sub = g_cross_signal - g_cross_noise_mean
 
     # --- Covariance matrices from noise realizations ---
     cov_plus = np.cov(all_g_plus_noise, rowvar=False, ddof=1)
@@ -153,8 +150,8 @@ def run_analysis(case_label, shear_csv, noise_files, plot_dir):
     cov_cross_inv = hartlap * cov_cross_inv  
 
     # --- Chi-square ---
-    d_plus = g_plus_sub
-    d_cross = g_cross_sub
+    d_plus = g_plus_signal      
+    d_cross = g_cross_signal    
     dof = len(d_plus)
 
     chi2_plus = float(d_plus @ cov_plus_inv @ d_plus)
@@ -206,23 +203,23 @@ def run_analysis(case_label, shear_csv, noise_files, plot_dir):
         marker="s",
     )
 
-    # 3) subtracted gamma+
+    # 3) signal gamma+
     plot_1d(
         arcmin_centers,
-        g_plus_sub,
+        g_plus_signal,              
         g_plus_noise_std,
-        ylabel=r"$\gamma_+ - \langle \gamma_+^{\rm rand} \rangle$",
-        outpath=os.path.join(plot_dir, f"signal_minus_noise_gplus.png"),
+        ylabel=r"$\gamma_+$",       
+        outpath=os.path.join(plot_dir, f"signal_gplus.png"),
         marker="o",
     )
-
-    # 4) subtracted gamma_x
+    
+    # 4) signal gamma_x
     plot_1d(
         arcmin_centers,
-        g_cross_sub,
+        g_cross_signal,             
         g_cross_noise_std,
-        ylabel=r"$\gamma_{\times} - \langle \gamma_{\times}^{\rm rand} \rangle$",
-        outpath=os.path.join(plot_dir, f"signal_minus_noise_gcross.png"),
+        ylabel=r"$\gamma_{\times}$",
+        outpath=os.path.join(plot_dir, f"signal_gcross.png"),
         marker="s",
     )
 
