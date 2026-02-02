@@ -147,7 +147,8 @@ for fp in final_percentiles:
 
     for i in range(n_random_rotations):
         noise_bg = os.path.join(noise_dir, f"source_catalog_noise_{i:03d}.h5")
-        random_csv = os.path.join(shear_dir, f"shear_random_p{fp:02d}_{i:03d}.csv")
+        random_csv = os.path.join(shear_dir, f"random_rotations/shear_random_p{fp:02d}_{i:03d}.csv")
+        os.makedirs(random_csv, exist_ok=True)
 
         if not os.path.exists(noise_bg):
             raise FileNotFoundError(f"Missing noise catalog: {noise_bg}")
@@ -155,7 +156,7 @@ for fp in final_percentiles:
         process_shear_sims(
             filament_h5, noise_bg, output_shear_file=random_csv,
             k=1, num_bins=20, comm=COMM,
-            flip_g1=False, flip_g2=True,
+            flip_g1=False, flip_g2=False,
             background_type="noise_noshift",
             nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
         )
