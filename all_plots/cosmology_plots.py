@@ -9,9 +9,7 @@ from matplotlib.colors import Normalize
 current_dir = os.path.dirname(os.path.abspath(__file__))      
 parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))  
 
-
 os.chdir(os.path.join(parent_dir, "cosmo_sims"))
-
 
 # parameters --------------------------------------------------
 
@@ -119,15 +117,33 @@ def get_param_value(category, run):
 
     else:
         return None
-# ------------------------------------------------------------
-# Helper
-# ------------------------------------------------------------
+
+
+
 def load_shear_file(path):
     if not os.path.exists(path):
         return None
     try:
         return pd.read_csv(path)
     except Exception:
+        return None
+
+# --- fiducial values --------------
+Omega_m_fid = 0.32
+S8_fid = 0.78
+sigma8_fid = S8_fid / np.sqrt(Omega_m_fid / 0.3)
+
+def get_fiducial_value_for_category(category):
+    # returns the fiducial "val" in the same variable used for colorbar 
+    if category == "sigma8_fixed":
+        return Omega_m_fid         
+    elif category == "Om_fixed":
+        return sigma8_fid           
+    elif category == "S8":
+        return S8_fid               
+    elif category == "S8_perp":
+        return Omega_m_fid          
+    else:
         return None
 
 # ------------------------------------------------------------
@@ -180,7 +196,23 @@ def plot_shear_all_categories():
         fig_gplus, ax_gplus = plt.subplots(figsize=(8, 6))
         fig_gx, ax_gx = plt.subplots(figsize=(8, 6))
 
-        for df, val in shear_list:
+        # --- Added: identify fiducial (float-safe) ---
+        fid_val = get_fiducial_value_for_category(cat)  
+        vals_arr = np.array([v for _, v in shear_list], dtype=float)  
+
+        atol = 1e-6  
+        fid_mask = np.isclose(vals_arr, fid_val, atol=atol, rtol=0) if fid_val is not None else np.zeros_like(vals_arr, dtype=bool) 
+
+#        # nearest if exact fiducial not present
+#        if fid_val is not None and not np.any(fid_mask):  
+#            idx = int(np.argmin(np.abs(vals_arr - fid_val)))  
+#            fid_mask = np.zeros_like(vals_arr, dtype=bool)  
+#            fid_mask[idx] = True  
+
+        # Plot non-fiducial first  
+        for (df, val), is_fid in zip(shear_list, fid_mask):  
+            if is_fid: 
+                continue  
 
             rad_col = "Weighted_Real_Distance"
             gplus_col = "Weighted_g_plus"
@@ -189,8 +221,26 @@ def plot_shear_all_categories():
             arcmin_centers = np.degrees(df[rad_col].values) * 60.0
             color = cmap(norm(val))
 
-            ax_gplus.plot(arcmin_centers, df[gplus_col], alpha=0.6, color=color)
-            ax_gx.plot(arcmin_centers, df[gcross_col], alpha=0.6, color=color)
+            ax_gplus.plot(arcmin_centers, df[gplus_col], alpha=0.6, color=color, lw=1.6) 
+            ax_gx.plot(arcmin_centers, df[gcross_col], alpha=0.6, color=color, lw=1.6)  
+
+        # Plot fiducial last with outline + thicker stroke 
+        for (df, val), is_fid in zip(shear_list, fid_mask):  
+            if not is_fid: 
+                continue  
+
+            rad_col = "Weighted_Real_Distance"
+            gplus_col = "Weighted_g_plus"
+            gcross_col = "Weighted_g_cross"
+
+            arcmin_centers = np.degrees(df[rad_col].values) * 60.0
+            fid_color = cmap(norm(val))
+
+            ax_gplus.plot(arcmin_centers, df[gplus_col], color="k", lw=3.4, alpha=0.95, zorder=10)  
+            ax_gplus.plot(arcmin_centers, df[gplus_col], color=fid_color, lw=2.4, alpha=1.0, zorder=11)  
+
+            ax_gx.plot(arcmin_centers, df[gcross_col], color="k", lw=3.4, alpha=0.95, zorder=10)  
+            ax_gx.plot(arcmin_centers, df[gcross_col], color=fid_color, lw=2.4, alpha=1.0, zorder=11)  
 
         
         # Colorbar
