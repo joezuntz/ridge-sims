@@ -196,14 +196,14 @@ def plot_shear_all_categories():
         fig_gplus, ax_gplus = plt.subplots(figsize=(8, 6))
         fig_gx, ax_gx = plt.subplots(figsize=(8, 6))
 
-        # --- Added: identify fiducial (float-safe) ---
+        # identify fiducial
         fid_val = get_fiducial_value_for_category(cat)  
         vals_arr = np.array([v for _, v in shear_list], dtype=float)  
 
         atol = 1e-6  
         fid_mask = np.isclose(vals_arr, fid_val, atol=atol, rtol=0) if fid_val is not None else np.zeros_like(vals_arr, dtype=bool) 
 
-        # nearest if exact fiducial not present
+        # nearest choice below tolerance
         if fid_val is not None and not np.any(fid_mask):  
             idx = int(np.argmin(np.abs(vals_arr - fid_val)))  
             fid_mask = np.zeros_like(vals_arr, dtype=bool)  
