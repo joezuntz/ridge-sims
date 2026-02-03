@@ -15,7 +15,7 @@ os.chdir(current_dir)
 #parameters --------------------------------------------------
 
 plt.rcParams.update({
-    "figure.figsize": (8, 6.8),
+    "figure.figsize": (6, 4.5),
     "figure.dpi": 100,
 
     "axes.linewidth": 1.6,
@@ -78,6 +78,8 @@ def load_shear_files(data_dir, tag):
             if f.startswith(prefix):
                 value = float(f[len(prefix):-4]) 
                 df = pd.read_csv(os.path.join(data_dir, f))
+                df[gplus] /= 1e-3
+                df[gcross] /= 1e-3
                 out.append((value, df))
                 print(f"Loaded: {os.path.join(data_dir, f)}")
                 break
@@ -181,14 +183,14 @@ def plot_shear_family(shear_data, param_label, out_prefix, fiducial_value):
     # Axes styling + colorbars
     ax_gplus.set_xscale("log")
     ax_gplus.set_xlabel(r"$\theta$ [arcmin]")
-    ax_gplus.set_ylabel(r"$\gamma_{+}$")
+    ax_gplus.set_ylabel(r"$\gamma_{+}$ / $10^{-3}$")
     ax_gplus.set_title(r"$\gamma_{+}$ vs $\theta$")
     cbar_gplus = fig_gplus.colorbar(sm, ax=ax_gplus, pad=0.02)
     cbar_gplus.set_label(param_label)
 
     ax_gx.set_xscale("log")
     ax_gx.set_xlabel(r"$\theta$ [arcmin]")
-    ax_gx.set_ylabel(r"$\gamma_{\times}$")
+    ax_gx.set_ylabel(r"$\gamma_{\times}$ /  $10^{-3}$")
     ax_gx.set_title(r"$\gamma_{\times}$ vs $\theta$")
     cbar_gx = fig_gx.colorbar(sm, ax=ax_gx, pad=0.02)
     cbar_gx.set_label(param_label)

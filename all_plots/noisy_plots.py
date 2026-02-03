@@ -12,7 +12,7 @@ parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
 
 os.chdir(current_dir)
 
-
+CALIBRATION_R_FACTOR = 0.6805452481
 
 #shear directories
 DESY3_shear_dir = os.path.join(parent_dir, "DESY3/shear_flipg2")  
@@ -61,7 +61,7 @@ plt.rcParams.update({
 
     "font.family": "serif",
 
-    "legend.frameon": False,
+    # "legend.frameon": False,
     "legend.fontsize": 12,
 
     "savefig.bbox": "tight",
@@ -79,24 +79,20 @@ def inv_cov(cov, eps=1e-12):
 
 
 def plot_1d(arcmin_centers, y, yerr, ylabel, outpath, marker="o", label=None):
-    plt.figure(figsize=(7.5, 5.2))
     plt.errorbar(
         arcmin_centers, y, yerr=yerr,
-        fmt=f"{marker}-", capsize=4, elinewidth=1.2, markersize=4,
+        fmt=f"{marker}", capsize=4, elinewidth=1.2, markersize=4,
         label=label
     )
+    print(arcmin_centers, y, yerr)
     plt.xscale("log")
     plt.xlabel("Separation [arcmin]")
     plt.ylabel(ylabel)
-    plt.grid(True, which="both", ls="--", alpha=0.4)
-    if label is not None:
-        plt.legend(frameon=False)
-    plt.tight_layout()
-    plt.savefig(outpath, dpi=200)
-    plt.close()
+    plt.xlim(1, 60)
+    # plt.grid(True, which="both", ls="--", alpha=0.4)
 
 
-def run_analysis(case_label, shear_csv, noise_files, plot_dir):
+def run_analysis(case_label, shear_csv, noise_files, plot_dir, xmove=1):
     print(f"\n=== Running analysis for {case_label} ===")
     os.makedirs(plot_dir, exist_ok=True)
 
@@ -156,9 +152,11 @@ def run_analysis(case_label, shear_csv, noise_files, plot_dir):
 
     chi2_plus = float(d_plus @ cov_plus_inv @ d_plus)
     chi2_cross = float(d_cross @ cov_cross_inv @ d_cross)
+    print('XXX', chi2_plus**0.5)
 
     pval_plus = 1 - stats.chi2.cdf(chi2_plus, dof)
     pval_cross = 1 - stats.chi2.cdf(chi2_cross, dof)
+
 
     sigma_plus = stats.norm.isf(pval_plus / 2.0) if pval_plus > 0 else np.inf
     sigma_cross = stats.norm.isf(pval_cross / 2.0) if pval_cross > 0 else np.inf
@@ -183,61 +181,81 @@ def run_analysis(case_label, shear_csv, noise_files, plot_dir):
     # -------------- plots -----------------------------
     
 
-    # 1) mean noise gamma+
-    plot_1d(
-        arcmin_centers,
-        g_plus_noise_mean,
-        g_plus_noise_std,
-        ylabel=r"$\langle \gamma_+^{\rm rand} \rangle$",
-        outpath=os.path.join(plot_dir, f"noise_mean_gplus.png"),
-        marker="o",
-    )
+    # # 1) mean noise gamma+
+    # plot_1d(
+    #     arcmin_centers,
+    #     g_plus_noise_mean,
+    #     g_plus_noise_std,
+    #     ylabel=r"$\langle \gamma_+^{\rm rand} \rangle$",
+    #     outpath=os.path.join(plot_dir, f"noise_mean_gplus.png"),
+    #     marker="o",
+    # )
 
-    # 2) mean noise gamma_x
-    plot_1d(
-        arcmin_centers,
-        g_cross_noise_mean,
-        g_cross_noise_std,
-        ylabel=r"$\langle \gamma_{\times}^{\rm rand} \rangle$",
-        outpath=os.path.join(plot_dir, f"noise_mean_gcross.png"),
-        marker="s",
-    )
+    # # 2) mean noise gamma_x
+    # plot_1d(
+    #     arcmin_centers,
+    #     g_cross_noise_mean,
+    #     g_cross_noise_std,
+    #     ylabel=r"$\langle \gamma_{\times}^{\rm rand} \rangle$",
+    #     outpath=os.path.join(plot_dir, f"noise_mean_gcross.png"),
+    #     marker="s",
+    # )
+
+    if case_label == "DES-Y3":
+        print(f" Applying calibration factor R = {CALIBRATION_R_FACTOR} to signal plots.")
+        g_plus_signal /= CALIBRATION_R_FACTOR
+        g_cross_signal /= CALIBRATION_R_FACTOR
+        g_plus_noise_std /= CALIBRATION_R_FACTOR
+        g_cross_noise_std /= CALIBRATION_R_FACTOR
 
     # 3) signal gamma+
     plot_1d(
-        arcmin_centers,
-        g_plus_signal,              
-        g_plus_noise_std,
-        ylabel=r"$\gamma_+$",       
+        arcmin_centers * xmove,
+        g_plus_signal / 1e-3,
+        g_plus_noise_std / 1e-3,
+        ylabel=r"$\gamma_+$ /  $10^{-3}$",       
         outpath=os.path.join(plot_dir, f"signal_gplus.png"),
         marker="o",
+        label=case_label,
     )
     
-    # 4) signal gamma_x
-    plot_1d(
-        arcmin_centers,
-        g_cross_signal,             
-        g_cross_noise_std,
-        ylabel=r"$\gamma_{\times}$",
-        outpath=os.path.join(plot_dir, f"signal_gcross.png"),
-        marker="s",
-    )
+    # # 4) signal gamma_x
+    # plot_1d(
+    #     arcmin_centers,
+    #     g_cross_signal,             
+    #     g_cross_noise_std,
+    #     ylabel=r"$\gamma_{\times}$",
+    #     outpath=os.path.join(plot_dir, f"signal_gcross.png"),
+    #     marker="s",
+    # )
 
-    print(f"Plots saved in: {plot_dir}")
+    # print(f"Plots saved in: {plot_dir}")
 
 
 if __name__ == "__main__":
+    outpath = os.path.join("combined-des-sim/signal_gplus.pdf")
+    plt.figure(figsize=(6, 4.5))
 
-    run_analysis(
-        case_label="DESY3",
-        shear_csv=DESY3_shear_csv,
-        noise_files=DESY3_noise_files,
-        plot_dir=DESY3_plot_dir,
-    )
-    
+
     run_analysis(
         case_label="Simulation",
         shear_csv=sim_shear_csv,
         noise_files=sim_noise_files,
         plot_dir=sim_plot_dir,
+        xmove=0.98
     )
+
+    run_analysis(
+        case_label="DES-Y3",
+        shear_csv=DESY3_shear_csv,
+        noise_files=DESY3_noise_files,
+        plot_dir=DESY3_plot_dir,
+        xmove=1.02
+    )
+    
+
+    plt.tight_layout()
+    plt.legend(loc='lower right')
+    plt.axhline(0, color='black', ls='-', lw=1.0)
+    plt.savefig(outpath, dpi=200)
+    plt.close()

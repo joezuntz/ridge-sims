@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.colors import Normalize
+from matplotlib.lines import Line2D
 
 # Path setup --------------------------------------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))      
@@ -150,10 +151,10 @@ def get_fiducial_value_for_category(category):
 # Main plotting
 # ------------------------------------------------------------
 CATEGORY_TITLES = {
-    "Om_fixed": r"$\Omega_m\ \mathrm{fixed}$",
-    "sigma8_fixed": r"$\sigma_8\ \mathrm{fixed}$",
+    "Om_fixed": r"$\sigma_8$",
+    "sigma8_fixed": r"$\Omega_m$",
     "S8": r"$S_8$",
-    "S8_perp": r"$S_8^{\perp}$",
+    "S8_perp": r"$S_8^{\perp}$      ",  # the extra spaces here stop the perp symbol from overlapping with colorbar
 }
 
 
@@ -193,8 +194,8 @@ def plot_shear_all_categories():
         norm = Normalize(vmin=min(param_values), vmax=max(param_values))
         cmap = cm.get_cmap("coolwarm")
 
-        fig_gplus, ax_gplus = plt.subplots(figsize=(8, 6))
-        fig_gx, ax_gx = plt.subplots(figsize=(8, 6))
+        fig_gplus, ax_gplus = plt.subplots(figsize=(6, 4.5))
+        # fig_gx, ax_gx = plt.subplots(figsize=(8, 6))
 
         # identify fiducial
         fid_val = get_fiducial_value_for_category(cat)  
@@ -209,80 +210,88 @@ def plot_shear_all_categories():
             fid_mask = np.zeros_like(vals_arr, dtype=bool)  
             fid_mask[idx] = True  
 
+        rad_col = "Weighted_Real_Distance"
+        gplus_col = "Weighted_g_plus"
+        gcross_col = "Weighted_g_cross"
+        gcross_style = 'dashed'
+
+
+
         # Plot non-fiducial first  
-        for (df, val), is_fid in zip(shear_list, fid_mask):  
+        for (df, val), is_fid in zip(shear_list, fid_mask):
+            df[gplus_col] /= 1e-3
+            df[gcross_col] /= 1e-3
             if is_fid: 
                 continue  
-
-            rad_col = "Weighted_Real_Distance"
-            gplus_col = "Weighted_g_plus"
-            gcross_col = "Weighted_g_cross"
 
             arcmin_centers = np.degrees(df[rad_col].values) * 60.0
             color = cmap(norm(val))
 
             ax_gplus.plot(arcmin_centers, df[gplus_col], alpha=0.6, color=color, lw=1.6) 
-            ax_gx.plot(arcmin_centers, df[gcross_col], alpha=0.6, color=color, lw=1.6)  
+            ax_gplus.plot(arcmin_centers, df[gcross_col], alpha=0.6, color=color, lw=1.6, linestyle=gcross_style)  
 
-        # Plot fiducial last with outline + thicker stroke 
-        for (df, val), is_fid in zip(shear_list, fid_mask):  
-            if not is_fid: 
-                continue  
+        # # Plot fiducial last with outline + thicker stroke 
+        # for (df, val), is_fid in zip(shear_list, fid_mask):  
+        #     if not is_fid: 
+        #         continue  
 
-            rad_col = "Weighted_Real_Distance"
-            gplus_col = "Weighted_g_plus"
-            gcross_col = "Weighted_g_cross"
+        #     arcmin_centers = np.degrees(df[rad_col].values) * 60.0
+        #     fid_color = cmap(norm(val))
 
-            arcmin_centers = np.degrees(df[rad_col].values) * 60.0
-            fid_color = cmap(norm(val))
+        #     ax_gplus.plot(arcmin_centers, df[gplus_col], color="k", lw=3.4, alpha=0.95, zorder=10)  
+        #     ax_gplus.plot(arcmin_centers, df[gplus_col], color=fid_color, lw=2.4, alpha=1.0, zorder=11)  
 
-            ax_gplus.plot(arcmin_centers, df[gplus_col], color="k", lw=3.4, alpha=0.95, zorder=10)  
-            ax_gplus.plot(arcmin_centers, df[gplus_col], color=fid_color, lw=2.4, alpha=1.0, zorder=11)  
-
-            ax_gx.plot(arcmin_centers, df[gcross_col], color="k", lw=3.4, alpha=0.95, zorder=10)  
-            ax_gx.plot(arcmin_centers, df[gcross_col], color=fid_color, lw=2.4, alpha=1.0, zorder=11)  
+        #     ax_gplus.plot(arcmin_centers, df[gcross_col], color="k", lw=3.4, alpha=0.95, zorder=10, linestyle=gcross_style)  
+        #     ax_gplus.plot(arcmin_centers, df[gcross_col], color=fid_color, lw=2.4, alpha=1.0, zorder=11, linestyle=gcross_style)
 
         
         # Colorbar
         
         sm = cm.ScalarMappable(norm=norm, cmap=cmap)
         sm.set_array([])
+        title_cat = CATEGORY_TITLES.get(cat, cat)
 
-        fig_gplus.colorbar(sm, ax=ax_gplus, pad=0.02)
-        fig_gx.colorbar(sm, ax=ax_gx, pad=0.02)
+        fig_gplus.colorbar(sm, ax=ax_gplus, pad=0.02, label=title_cat)
+        # fig_gx.colorbar(sm, ax=ax_gx, pad=0.02)
 
         
         # g+
-        
-        title_cat = CATEGORY_TITLES.get(cat, cat)
-        
+                
         ax_gplus.set_xscale("log")
-        ax_gplus.set_title(title_cat + r": $\gamma_{+}$")
+        ax_gplus.set_ylim(-2, 1.5)
+        # ax_gplus.set_xscale("log")
+        # ax_gplus.set_title(title_cat + r": $\gamma_{+}$")
         ax_gplus.set_xlabel(r"$\theta [arcmin]$")
-        ax_gplus.set_ylabel(r" $\gamma_{+}$")
+        ax_gplus.set_ylabel(r" $\gamma /  10^{-3}$")
 
         
         # g×
    
-        ax_gx.set_xscale("log")
-        ax_gx.set_title(title_cat + r": $\gamma_{\times}$")
-        ax_gx.set_xlabel(r"$\theta [arcmin]$")
-        ax_gx.set_ylabel(r"$\gamma_{times}$")
+        # ax_gx.set_xscale("log")
+        # ax_gx.set_title(title_cat + r": $\gamma_{\times}$")
+        # ax_gx.set_xlabel(r"$\theta [arcmin]$")
+        # ax_gx.set_ylabel(r"$\gamma_{times}$")
 
+        # Add legend with proxy artists
+        legend_elements = [
+            Line2D([0], [0], color='black', lw=1.6, label=r'$\gamma_{+}$'),
+            Line2D([0], [0], color='black', lw=1.6, linestyle='dashed', label=r'$\gamma_{\times}$')
+        ]
+        ax_gplus.legend(handles=legend_elements, loc='best')
 
         # Save 
-
+        plt.tight_layout()
         fig_gplus.savefig(
             os.path.join(OUTPUT_ROOT, f"{cat}_gplus_all_runs.pdf"),
             bbox_inches="tight"
         )
-        fig_gx.savefig(
-            os.path.join(OUTPUT_ROOT, f"{cat}_gcross_all_runs.pdf"),
-            bbox_inches="tight"
-        )
+        # fig_gx.savefig(
+        #     os.path.join(OUTPUT_ROOT, f"{cat}_gcross_all_runs.pdf"),
+        #     bbox_inches="tight"
+        # )
 
         plt.close(fig_gplus)
-        plt.close(fig_gx)
+        # plt.close(fig_gx)
 
         print(f" saved {cat}_gplus_all_runs.pdf")
         print(f" saved {cat}_gcross_all_runs.pdf\n")
