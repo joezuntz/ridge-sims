@@ -234,6 +234,7 @@ def run_analysis(case_label, shear_csv, noise_files, plot_dir, xmove=1):
 
 if __name__ == "__main__":
     outpath = os.path.join("combined-des-sim/signal_gplus.pdf")
+    os.makedirs(outpath, exist_ok=True)
     plt.figure(figsize=(6, 4.5))
 
 
