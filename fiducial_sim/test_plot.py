@@ -87,35 +87,42 @@ import matplotlib.pyplot as plt
 #print(f"[OK] Saved → {out_png}")
 
 
-
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-#csv_file = os.path.join(current_dir, "shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15/signal_shear.csv")
-csv_file = os.path.join(current_dir, "shear_no_endpoint/signal_shear.csv")
-out_png  = os.path.join(current_dir, "shear_no_endpoint", "gamma_plus_no_endpoints.png")
+csv_file2 = os.path.join(current_dir, "shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15/signal_shear.csv")
+csv_file  = os.path.join(current_dir, "shear_no_endpoint/signal_shear.csv")
+out_png   = os.path.join(current_dir, "shear_no_endpoint", "gamma_plus_no_endpoints.png")
 
 if not os.path.exists(csv_file):
     raise FileNotFoundError(csv_file)
 
 # load (skip header row)
-d = np.loadtxt(csv_file, delimiter=",", skiprows=1)
+d2 = np.loadtxt(csv_file2, delimiter=",", skiprows=1)
+d  = np.loadtxt(csv_file,  delimiter=",", skiprows=1)
 
-bin_center = d[:, 0]          # radians
-real_dist  = d[:, 1]          # radians (weighted)
+# --- no-endpoint ---
+real_dist  = d[:, 1]
 g_plus     = d[:, 2]
+x_arcmin   = np.degrees(real_dist) * 60.0
 
-# plot vs distance in arcmin (more interpretable)
-x_arcmin = np.degrees(real_dist) * 60.0
+# --- full filaments ---
+real_dist2 = d2[:, 1]
+g_plus2    = d2[:, 2]
+x_arcmin2  = np.degrees(real_dist2) * 60.0
 
 plt.figure(figsize=(7.5, 6.0))
-plt.plot(x_arcmin, g_plus, marker="o", lw=1.5, ms=4)
+plt.plot(x_arcmin,  g_plus,  marker="o", lw=1.5, ms=4, label="No endpoints")
+plt.plot(x_arcmin2, g_plus2, marker="s", lw=1.5, ms=4, label="All filaments")
+
 plt.xscale("log")
 plt.xlabel("Angular separation [arcmin]")
 plt.ylabel(r"$\gamma_{+}$")
 plt.title(r"shear profile $\gamma_{+}$")
+plt.legend()
 plt.grid(True, which="both", ls="--", alpha=0.3)
 plt.tight_layout()
 plt.savefig(out_png, dpi=250)
 plt.close()
 
 print(f"[OK] Saved → {out_png}")
+
