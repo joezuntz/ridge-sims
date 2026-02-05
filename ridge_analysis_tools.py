@@ -1317,19 +1317,22 @@ def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type
 
     # --- Shear calculations ---
     process_shear_sims(
-        filament_h5, BG_data, output_shear_file=shear_csv,
-        k=1, num_bins=20, comm=comm,
-        flip_g1=False, flip_g2=False, background_type= background_type,
-        nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0,
-        skip_end_points=False, min_filament_points=0
-    )
+    filament_h5, BG_data, output_shear_file=shear_csv,
+    k=1, num_bins=20, comm=comm,
+    flip_g1=False, flip_g2=False, background_type=background_type,
+    nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0,
+    skip_end_points=skip_end_points,
+    min_filament_points=min_filament_points,
+)
 
     if shear_flip_csv is not None:
         process_shear_sims(
             filament_h5, BG_data, output_shear_file=shear_flip_csv,
             k=1, num_bins=20, comm=comm,
             flip_g1=True, flip_g2=True, background_type=background_type,
-            nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+            nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0,
+            skip_end_points=skip_end_points,
+            min_filament_points=min_filament_points,
         )
 
 
