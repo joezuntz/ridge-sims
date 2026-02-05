@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Arc, Ellipse
 import numpy as np
+from matplotlib.legend_handler import HandlerPatch
+import matplotlib.patches as mpatches
 
 plt.rcParams.update({
     "font.family": "serif",
@@ -21,8 +23,17 @@ def draw_bar_with_cap(x0, y0, x1, y1, capsize=0.05):
     plt.plot([x0 - dy*capsize, x0 + dy*capsize], [y0 + dx*capsize, y0 - dx*capsize], 'k-', lw=2)
     plt.plot([x1 - dy*capsize, x1 + dy*capsize], [y1 + dx*capsize, y1 - dx*capsize], 'k-', lw=2)
 
+
+class HandlerEllipse(HandlerPatch):
+   def create_artists(self, legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans):
+      center = 0.5 * width - 0.5 * xdescent, 0.5 * height - 0.5 * ydescent
+      p = mpatches.Ellipse(xy=center, width=width + xdescent, height=height + ydescent)
+      self.update_prop(p, orig_handle, legend)
+      p.set_transform(trans)
+      return [p]
+
 # plt.figure(figsize=(4, 4))
-fig, axes = plt.subplots(2, 1, figsize=(4, 8))
+fig, axes = plt.subplots(2, 1, figsize=(5, 10))
 
 ax = axes[0]
 x_ridge = 5*np.array([0.2, 0.25, 0.3, 0.32, 0.4, 0.45, 0.50, 0.52, 0.54, 0.56, 0.6, 0.62, 0.65, 0.7])
@@ -47,16 +58,18 @@ for i, (xb, yb) in enumerate(zip(x_bg, y_bg)):
 
     if i == 1:
         angle = 0
+        label=  "Background\ngalaxy"
     else:
         angle = np.random.uniform(0, 360)
+        label = None
 
-    bg = Ellipse((xb, yb), width=0.2, height=0.1, angle=angle, facecolor="orange", zorder=5)
+    bg = Ellipse((xb, yb), width=0.2, height=0.1, angle=angle, facecolor="orange", zorder=5, label=label)
     ax.add_artist(bg)
 
 
 
 # ax.plot(x_bg, y_bg, 'o', markersize=10, color="orange", label="Background galaxies")
-ax.legend(loc="upper center", frameon=False)
+ax.legend(loc="upper center", frameon=False, handler_map={Ellipse: HandlerEllipse()}, fontsize=12)
 ax.axis('equal')
 ax.set_xticks([])
 ax.set_yticks([])
