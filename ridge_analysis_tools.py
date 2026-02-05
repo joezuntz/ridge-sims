@@ -1149,7 +1149,7 @@ def get_nearby_sources(raf, decf, pixel_regions, nside_coverage):
 
 def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=20, comm=comm,
                        flip_g1=False, flip_g2=False, background_type=None, nside_coverage=32,
-                       min_distance_arcmin=1.0, max_distance_arcmin=60.0):
+                       min_distance_arcmin=1.0, max_distance_arcmin=60.0, skip_end_points=False, min_filament_points=0):
 
     min_ang_rad = np.radians(min_distance_arcmin/60)
     max_ang_rad = np.radians(max_distance_arcmin/60)
@@ -1211,6 +1211,10 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         filament_mask = np.where(labels == label)[0]
         filament_coords = np.array([dec_filaments[filament_mask], ra_filaments[filament_mask]]).T
 
+        if filament_mask.size < min_filament_points:
+            print(f"[{rank}] Skipping filament {filament_index} (label {label}) with only {filament_mask.size} points")
+            continue
+
         # Pull out sources within adjacent low-resolution healpix pixels
         source_coords, ra_subset, dec_subset, g1_subset, g2_subset, z_subset, weights_subset = get_nearby_sources(
             ra_filaments[filament_mask], dec_filaments[filament_mask], pixel_regions, nside_coverage
@@ -1247,6 +1251,11 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
         bins = np.logspace(np.log10(min_ang_rad), np.log10(max_ang_rad), num_bins + 1) # This is now moved to the top
         bin_indices = np.digitize(distances[:, 0], bins) - 1
         valid_bins = (bin_indices >= 0) & (bin_indices < num_bins)
+
+        if skip_end_points:
+            # optionally skip pairs where the filament point is at the end of the filament
+            mask = (indices[:, 0] > 0) & (indices[:, 0] < len(filament_coords) - 1)
+            valid_bins = valid_bins & mask
 
         # Accumulate the total tangential and cross shear in each bin,
         # together with the counts, weights, and actual (as opposed to nominal) distances.
