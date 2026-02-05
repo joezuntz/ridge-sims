@@ -92,7 +92,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 #csv_file = os.path.join(current_dir, "shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15/signal_shear.csv")
 csv_file = os.path.join(current_dir, "shear_no_endpoint/signal_shear.csv")
-out_png  = os.path.join(current_dir, "shear", "gamma_plus_DES_fiducial.png")
+out_png  = os.path.join(current_dir, "shear_no_endpoint", "gamma_plus.png")
 
 if not os.path.exists(csv_file):
     raise FileNotFoundError(csv_file)
