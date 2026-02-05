@@ -1293,7 +1293,7 @@ def process_shear_sims(filament_file, bg_data, output_shear_file, k=1, num_bins=
 
 
 
-def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type, shear_flip_csv = None, comm=None):
+def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type, skip_end_points=False, min_filament_points=0, shear_flip_csv = None, comm=None):
     """
     Compute MST → filaments → shear from a contracted ridge file.
     All paths are passed explicitly to keep the function file-agnostic.
@@ -1320,7 +1320,8 @@ def process_ridge_file(h5_file, BG_data, filament_h5, shear_csv, background_type
         filament_h5, BG_data, output_shear_file=shear_csv,
         k=1, num_bins=20, comm=comm,
         flip_g1=False, flip_g2=False, background_type= background_type,
-        nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0
+        nside_coverage=32, min_distance_arcmin=1.0, max_distance_arcmin=60.0,
+        skip_end_points=False, min_filament_points=0
     )
 
     if shear_flip_csv is not None:

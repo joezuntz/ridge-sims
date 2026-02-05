@@ -46,7 +46,8 @@ signal_bg = os.path.join(parent_dir, "lhc_DES_fiducial_sim", f"run_{run_id}", "s
 noise_dir = os.path.join(parent_dir, "DES_sim/DES_sim/noise")  # same noise files as previous sims
 
 # Output shear directory 
-out_dir = os.path.join("shear", ridge_home, f"run_{run_id}_p{p_final}")
+#out_dir = os.path.join("shear", ridge_home, f"run_{run_id}_p{p_final}")
+out_dir = "shear_no_endpoint"
 random_dir = os.path.join(out_dir, "random_rotations")
 
 if RANK == 0:
@@ -71,7 +72,9 @@ if need_signal:
         filament_h5=filament_h5,
         shear_csv=signal_shear,
         background_type=BACKGROUND_TYPE_SIGNAL,
-        shear_flip_csv=None,
+        skip_end_points=True, 
+        min_filament_points=3,
+        shear_flip_csv=None,    
         comm=COMM
     )
 COMM.Barrier()
@@ -79,30 +82,30 @@ COMM.Barrier()
 # Noise shear 
 
 
-noise_files = sorted(glob.glob(os.path.join(noise_dir, "source_catalog_noise_*.h5")))
+#noise_files = sorted(glob.glob(os.path.join(noise_dir, "source_catalog_noise_*.h5")))
 
 
-noise_files = noise_files[:n_random_rotations]
+#noise_files = noise_files[:n_random_rotations]
 
-for i, nf in enumerate(noise_files):
-    random_csv = os.path.join(random_dir, f"shear_random_{i:03d}.csv")
+#for i, nf in enumerate(noise_files):
+#    random_csv = os.path.join(random_dir, f"shear_random_{i:03d}.csv")
 
-    exists = True
-    if RANK == 0:
-        exists = os.path.exists(random_csv)
-    exists = COMM.bcast(exists, root=0)
-    if exists:
-        continue
+#    exists = True
+#    if RANK == 0:
+#        exists = os.path.exists(random_csv)
+#    exists = COMM.bcast(exists, root=0)
+#    if exists:
+#        continue
 
-    process_shear_sims(
-        filament_file=filament_h5,
-        bg_data=nf,
-        output_shear_file=random_csv,
-        k=1, num_bins=20, comm=COMM,
-        flip_g1=False, flip_g2=False,
-        background_type=BACKGROUND_TYPE_NOISE,
-        nside_coverage=32,
-        min_distance_arcmin=1.0,
-        max_distance_arcmin=60.0
-    )
-    COMM.Barrier()
+#    process_shear_sims(
+#        filament_file=filament_h5,
+#        bg_data=nf,
+#        output_shear_file=random_csv,
+#        k=1, num_bins=20, comm=COMM,
+#        flip_g1=False, flip_g2=False,
+#        background_type=BACKGROUND_TYPE_NOISE,
+#        nside_coverage=32,
+#        min_distance_arcmin=1.0,
+#        max_distance_arcmin=60.0
+#    )
+#    COMM.Barrier()
