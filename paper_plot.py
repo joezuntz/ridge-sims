@@ -187,8 +187,9 @@ fig, ax = plt.subplots()
 ax.scatter(subset_deg[:, 1], subset_deg[:, 0], s=4, color="black")
 ax.set_xlabel("RA [deg]")    
 ax.set_ylabel("DEC [deg]")    
+ax.invert_xaxis()
 format_axes(ax)
-fig.savefig(os.path.join(output_dir, "ridges_points.pdf"))
+fig.savefig(os.path.join(output_dir, "ridges-points.pdf"))
 plt.close(fig)
 
 ############################################################
@@ -209,9 +210,10 @@ if len(branches) > 0:
                s=14, color="red", zorder=5)
 
 ax.set_xlabel("RA [deg]")   
-ax.set_ylabel("DEC [deg]")    
+ax.set_ylabel("DEC [deg]")   
+ax.invert_xaxis() 
 format_axes(ax)
-fig.savefig(os.path.join(output_dir, "mst_branches.pdf"))
+fig.savefig(os.path.join(output_dir, "mst-branches.pdf"))
 plt.close(fig)
 
 ############################################################
@@ -228,9 +230,10 @@ for lab in np.unique(labels):
         ax.scatter(subset_deg[m, 1], subset_deg[m, 0], s=4)
 
 ax.set_xlabel("RA [deg]")    
-ax.set_ylabel("DEC [deg]")    
+ax.set_ylabel("DEC [deg]")  
+ax.invert_xaxis()  
 format_axes(ax)
-fig.savefig(os.path.join(output_dir, "dbscan_filaments.pdf"))
+fig.savefig(os.path.join(output_dir, "dbscan-filaments.pdf"))
 plt.close(fig)
 
 print("PDF plots saved.")
