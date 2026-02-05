@@ -8,6 +8,19 @@ plt.rcParams.update({
 
 
 
+def draw_bar_with_cap(x0, y0, x1, y1, capsize=0.05):
+    # line from (x0, y0) to (x1, y1)
+    plt.plot([x0, x1], [y0, y1], 'k-', lw=2)
+
+    # line perpendicular to that line through (x0, y0)
+    dx = x1 - x0
+    dy = y1 - y0
+    length = np.sqrt(dx**2 + dy**2)
+    dx /= length
+    dy /= length
+    plt.plot([x0 - dy*capsize, x0 + dy*capsize], [y0 + dx*capsize, y0 - dx*capsize], 'k-', lw=2)
+    plt.plot([x1 - dy*capsize, x1 + dy*capsize], [y1 + dx*capsize, y1 - dx*capsize], 'k-', lw=2)
+
 # plt.figure(figsize=(4, 4))
 fig, axes = plt.subplots(2, 1, figsize=(4, 8))
 
@@ -106,14 +119,27 @@ ax.add_artist(arc)
 angle = (theta1 + 90) / 2
 x_text = x_bg[0] + 0.2 * np.cos(np.radians(angle))
 y_text = y_bg[0] + 0.2 * np.sin(np.radians(angle))
-ax.text(x_text, y_text, r'$\theta$', fontsize=16, color="k", ha='center', va='center')
+ax.text(x_text, y_text, r'$\phi$', fontsize=16, color="k", ha='center', va='center')
+
+
+# draw a measurement bar along the line from the bg point to the ridge point
+xm = x_bg[0] + 0.075
+ym = y_bg[0] + 0.025
+# ax.plot([xm, xm+dx*length*0.85], [ym, ym+dy*length*0.85], 'k-', lw=2)
+draw_bar_with_cap(xm, ym, xm+dx*length*0.85, ym+dy*length*0.85, capsize=0.025)
+# draw caps on the measurement bar, perpendicular to the bar
+# ax.plot([xm - dy*0.025, xm + dy*0.025], [ym + dx*0.05, ym - dx*0.025], 'k-', lw=2)
+# ax.plot([xm + dx*length*0.85 - dy*0.025, xm + dx*length*0.85 + dy*0.025], [ym + dy*length*0.85 + dx*0.025, ym + dy*length*0.85 - dx*0.05], 'k-', lw=2)
+
+
+ax.text(xm+dx*length*0.45+0.05, ym+dy*length*0.45-0.05, r'$\theta$', fontsize=16, color="k", ha='center', va='center')
 
 ax.axis('equal')
 ax.set_xticks([])
 ax.set_yticks([])
 ax.set_xlim(1.765, 2.535)
 ax.set_ylim(-1.25, -0.18)
-# (np.float64(1.7650000000000001), np.float64(2.535)) (np.float64(-1.248407105452864), np.float64(-0.18345078548985486))
+
 
 plt.subplots_adjust(hspace=0.05)
 plt.savefig("ridge_lensing_diagram.pdf", bbox_inches="tight")
