@@ -158,23 +158,11 @@ def inv_cov(cov, eps=1e-12):
         return np.linalg.inv(cov_reg)
 
 
-def plot_1d(arcmin_centers, y, yerr, ylabel, outpath, marker="o", label=None):
-    plt.errorbar(
-        arcmin_centers, y, yerr=yerr,
-        fmt=f"{marker}", capsize=4, elinewidth=1.2, markersize=4,
-        label=label
-    )
-    print(arcmin_centers, y, yerr)
-    plt.xscale("log")
-    plt.xlabel("Separation [arcmin]")
-    plt.ylabel(ylabel)
-    plt.xlim(1, 60)
-    # plt.grid(True, which="both", ls="--", alpha=0.4)
 
 
 def run_analysis(case_label, shear_csv, noise_files):
     print(f"\n=== Running analysis for {case_label} ===")
-    os.makedirs(plot_dir, exist_ok=True)
+
 
     # --- Load signal ---
     signal_data = np.loadtxt(shear_csv, delimiter=",", skiprows=1)
