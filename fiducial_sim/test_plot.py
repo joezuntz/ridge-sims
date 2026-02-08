@@ -141,7 +141,7 @@ import matplotlib.pyplot as plt
 ############# ------------- X^2 Computation --------------------- ####################
 
 
-sim_shear_dir = os.path.join(parent_dir, "shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15") 
+sim_shear_dir = "shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15"
 sim_shear_csv = os.path.join(sim_shear_dir, "signal_shear.csv")
 
 
