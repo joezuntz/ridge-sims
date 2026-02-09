@@ -251,7 +251,7 @@ from scipy import stats
 ############# ------------- X^2 Computation --------------------- ####################
 
 
-DESY3_shear_dir = "DESY3/shear_flipg2"
+DESY3_shear_dir = "shear_flipg2"
 DESY3_shear_csv = os.path.join(DESY3_shear_dir, "shear_p15_flipg2.csv")
 
 
