@@ -350,8 +350,8 @@ if __name__ == "__main__":
 
     run_analysis(
         case_label="DESY3",
-        shear_csv=sim_shear_csv,
-        noise_files=sim_noise_files
+        shear_csv=DESY3_shear_csv,
+        noise_files=DESY3_noise_files
     )
     
 
