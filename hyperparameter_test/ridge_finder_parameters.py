@@ -56,58 +56,6 @@ COMM = MPI.COMM_WORLD
 RANK = COMM.rank
 
 
-#temporary local function --> Should be deleted 
-
-
-def process_ridge_file_local(ridge_file, mask, nside, radius_arcmin, min_coverage, output_dir, plot_dir):
-    """Apply the filter to one ridge file."""
-    with h5py.File(ridge_file, "r") as f:
-        ridges = f["ridges"][:]
-    ridge_dec = ridges[:, 0]
-    ridge_ra = ridges[:, 1]
-    n_total = len(ridges)
-
-    keep_idx = ridge_edge_filter_disk(
-        ridge_ra, ridge_dec, mask, nside,
-        radius_arcmin=radius_arcmin, min_coverage=min_coverage
-    )
-    ridges_clean = ridges[keep_idx]
-    print(f"[contracted] {os.path.basename(ridge_file)}: kept {len(ridges_clean)}/{n_total}")
-
-    # Save to output folder
-    base_name = os.path.basename(ridge_file).replace(".h5", "_contracted.h5")
-    out_file = os.path.join(output_dir, base_name)
-    with h5py.File(out_file, "w") as f:
-        f.create_dataset("ridges", data=ridges_clean)
-
-    # Plot diagnostic
-    plot_file = os.path.join(plot_dir,os.path.basename(out_file).replace(".h5", "_diagnostic.png"))
-    plt.figure(figsize=(8, 6))
-    plt.scatter(ridge_ra, ridge_dec, s=1, alpha=0.3, label="All ridges")
-    plt.scatter(ridges_clean[:, 1], ridges_clean[:, 0], s=1, alpha=0.6, label="Filtered ridges")
-    plt.xlabel("RA [deg]")
-    plt.ylabel("Dec [deg]")
-    plt.title(f"contracted ridges\nradius={radius_arcmin} arcmin, min_cov={min_coverage}")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(plot_file, dpi=200)
-    plt.close()
-
-    print(f"[plot] Saved diagnostic → {plot_file}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # ============================================================== 
@@ -118,7 +66,7 @@ def main():
     # ---------------------------------------------------------- 
     # PARAMETERS
     # ---------------------------------------------------------- 
-    N_list = [1, 1.5, 2] #[2.5, 3, 3.5, 4]
+    N_list = [5, 6, 7, 8]   #[1, 1.5, 2, 2.5, 3, 3.5, 4]
     run_ids = range(1, 2)
     bandwidth = 0.1
 
