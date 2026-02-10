@@ -98,7 +98,7 @@ from scipy import stats
 
 
 
-#current_dir = os.path.dirname(os.path.abspath(__file__))
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
 csv_file2 = os.path.join(current_dir, "shear/DES_fiducial_sim/band_0.1_mesh_5/run_1_p15/signal_shear.csv")
 #csv_file  = os.path.join(current_dir, "shear_no_endpoint/signal_shear.csv")
