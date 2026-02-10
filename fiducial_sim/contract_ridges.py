@@ -21,7 +21,7 @@ def main():
     
     base_label = "shape_err"
     run_id = 1
-    N = 2
+    N = 5
     bandwidth = 0.1
     
     # Output base
