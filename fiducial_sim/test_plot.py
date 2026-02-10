@@ -100,148 +100,148 @@ from scipy import stats
 
 #current_dir = os.path.dirname(os.path.abspath(__file__))
 
-#csv_file2 = os.path.join(current_dir, "shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15/signal_shear.csv")
+csv_file2 = os.path.join(current_dir, "shear/DES_fiducial_sim/band_0.1_mesh_5/run_1_p15/signal_shear.csv")
 #csv_file  = os.path.join(current_dir, "shear_no_endpoint/signal_shear.csv")
-#out_png   = os.path.join(current_dir, "shear_no_endpoint", "gamma_plus_no_endpoints.png")
+out_png   = os.path.join(current_dir, "shear", "gamma_plus_mesh25e5.png")
 
-#if not os.path.exists(csv_file):
-#    raise FileNotFoundError(csv_file)
+if not os.path.exists(csv_file):
+    raise FileNotFoundError(csv_file)
 
-## load (skip header row)
-#d2 = np.loadtxt(csv_file2, delimiter=",", skiprows=1)
+# load (skip header row)
+d2 = np.loadtxt(csv_file2, delimiter=",", skiprows=1)
 #d  = np.loadtxt(csv_file,  delimiter=",", skiprows=1)
 
-## --- no-endpoint ---
+# --- no-endpoint ---
 #real_dist  = d[:, 1]
 #g_plus     = d[:, 2]
 #x_arcmin   = np.degrees(real_dist) * 60.0
 
-## --- full filaments ---
-#real_dist2 = d2[:, 1]
-#g_plus2    = d2[:, 2]
-#x_arcmin2  = np.degrees(real_dist2) * 60.0
+# --- full filaments ---
+real_dist2 = d2[:, 1]
+g_plus2    = d2[:, 2]
+x_arcmin2  = np.degrees(real_dist2) * 60.0
 
-#plt.figure(figsize=(7.5, 6.0))
+plt.figure(figsize=(7.5, 6.0))
 #plt.plot(x_arcmin,  g_plus,  marker="o", lw=1.5, ms=4, label="No endpoints")
-#plt.plot(x_arcmin2, g_plus2, marker="s", lw=1.5, ms=4, label="All filaments")
+plt.plot(x_arcmin2, g_plus2, marker="s", lw=1.5, ms=4)#, label="All filaments")
 
-#plt.xscale("log")
-#plt.xlabel("Angular separation [arcmin]")
-#plt.ylabel(r"$\gamma_{+}$")
-#plt.title(r"shear profile $\gamma_{+}$")
+plt.xscale("log")
+plt.xlabel("Angular separation [arcmin]")
+plt.ylabel(r"$\gamma_{+}$")
+plt.title(r"shear profile $\gamma_{+}$")
 #plt.legend()
-#plt.grid(True, which="both", ls="--", alpha=0.3)
-#plt.tight_layout()
-#plt.savefig(out_png, dpi=250)
-#plt.close()
+plt.grid(True, which="both", ls="--", alpha=0.3)
+plt.tight_layout()
+plt.savefig(out_png, dpi=250)
+plt.close()
 
-#print(f"[OK] Saved → {out_png}")
+print(f"[OK] Saved → {out_png}")
 
 
 
 ############# ------------- X^2 Computation --------------------- ####################
 
 
-sim_shear_dir = "shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15"
-sim_shear_csv = os.path.join(sim_shear_dir, "signal_shear.csv")
+#sim_shear_dir = "shear/DES_fiducial_sim/band_0.1_mesh_2/run_1_p15"
+#sim_shear_csv = os.path.join(sim_shear_dir, "signal_shear.csv")
 
 
-sim_noise_files = sorted(glob.glob(os.path.join(sim_shear_dir, "random_rotations/shear_random_*.csv")))
+#sim_noise_files = sorted(glob.glob(os.path.join(sim_shear_dir, "random_rotations/shear_random_*.csv")))
 
-# Cov regularization 
-def inv_cov(cov, eps=1e-12):
-    try:
-        return np.linalg.inv(cov)
-    except np.linalg.LinAlgError:
-        print("[WARN] Covariance singular -> adding diagonal regularization.")
-        cov_reg = cov + np.eye(cov.shape[0]) * eps
-        return np.linalg.inv(cov_reg)
-
-
+## Cov regularization 
+#def inv_cov(cov, eps=1e-12):
+#    try:
+#        return np.linalg.inv(cov)
+#    except np.linalg.LinAlgError:
+#        print("[WARN] Covariance singular -> adding diagonal regularization.")
+#        cov_reg = cov + np.eye(cov.shape[0]) * eps
+#        return np.linalg.inv(cov_reg)
 
 
-def run_analysis(case_label, shear_csv, noise_files):
-    print(f"\n=== Running analysis for {case_label} ===")
 
 
-    # --- Load signal ---
-    signal_data = np.loadtxt(shear_csv, delimiter=",", skiprows=1)
-    bin_center_rad = signal_data[:, 0]
-    arcmin_centers = np.degrees(bin_center_rad) * 60.0
-
-    g_plus_signal = signal_data[:, 2]
-    g_cross_signal = signal_data[:, 3]
-
-    # --- Load noise realizations ---
-    all_g_plus_noise = []
-    all_g_cross_noise = []
-
-    used_noise = 0
-    for nf in noise_files:
-        if not os.path.exists(nf):
-            continue
-        data = np.loadtxt(nf, delimiter=",", skiprows=1)
-        all_g_plus_noise.append(data[:, 2])
-        all_g_cross_noise.append(data[:, 3])
-        used_noise += 1
+#def run_analysis(case_label, shear_csv, noise_files):
+#    print(f"\n=== Running analysis for {case_label} ===")
 
 
-    all_g_plus_noise = np.array(all_g_plus_noise)
-    all_g_cross_noise = np.array(all_g_cross_noise)
+#    # --- Load signal ---
+#    signal_data = np.loadtxt(shear_csv, delimiter=",", skiprows=1)
+#    bin_center_rad = signal_data[:, 0]
+#    arcmin_centers = np.degrees(bin_center_rad) * 60.0
+
+#    g_plus_signal = signal_data[:, 2]
+#    g_cross_signal = signal_data[:, 3]
+
+#    # --- Load noise realizations ---
+#    all_g_plus_noise = []
+#    all_g_cross_noise = []
+
+#    used_noise = 0
+#    for nf in noise_files:
+#        if not os.path.exists(nf):
+#            continue
+#        data = np.loadtxt(nf, delimiter=",", skiprows=1)
+#        all_g_plus_noise.append(data[:, 2])
+#        all_g_cross_noise.append(data[:, 3])
+#        used_noise += 1
 
 
-    # --- Noise mean/std ---
-    g_plus_noise_mean = np.mean(all_g_plus_noise, axis=0)
-    g_cross_noise_mean = np.mean(all_g_cross_noise, axis=0)
-
-    g_plus_noise_std = np.std(all_g_plus_noise, axis=0, ddof=1)
-    g_cross_noise_std = np.std(all_g_cross_noise, axis=0, ddof=1)
+#    all_g_plus_noise = np.array(all_g_plus_noise)
+#    all_g_cross_noise = np.array(all_g_cross_noise)
 
 
-    # --- Covariance matrices from noise realizations ---
-    cov_plus = np.cov(all_g_plus_noise, rowvar=False, ddof=1)
-    cov_cross = np.cov(all_g_cross_noise, rowvar=False, ddof=1)
+#    # --- Noise mean/std ---
+#    g_plus_noise_mean = np.mean(all_g_plus_noise, axis=0)
+#    g_cross_noise_mean = np.mean(all_g_cross_noise, axis=0)
 
-    cov_plus_inv = inv_cov(cov_plus)
-    cov_cross_inv = inv_cov(cov_cross)
+#    g_plus_noise_std = np.std(all_g_plus_noise, axis=0, ddof=1)
+#    g_cross_noise_std = np.std(all_g_cross_noise, axis=0, ddof=1)
 
-    # --- Hartlap factor ---
-    N = used_noise
-    p = cov_plus.shape[0]
+
+#    # --- Covariance matrices from noise realizations ---
+#    cov_plus = np.cov(all_g_plus_noise, rowvar=False, ddof=1)
+#    cov_cross = np.cov(all_g_cross_noise, rowvar=False, ddof=1)
+
+#    cov_plus_inv = inv_cov(cov_plus)
+#    cov_cross_inv = inv_cov(cov_cross)
+
+#    # --- Hartlap factor ---
+#    N = used_noise
+#    p = cov_plus.shape[0]
     
-    if N > p + 2:
-        hartlap = (N - p - 2) / (N - 1)
-        cov_plus_inv  = hartlap * cov_plus_inv
-        cov_cross_inv = hartlap * cov_cross_inv
-    else:
-        print(f"Hartlap invalid (N={N}, p={p}). Skipping Hartlap correction.")
+#    if N > p + 2:
+#        hartlap = (N - p - 2) / (N - 1)
+#        cov_plus_inv  = hartlap * cov_plus_inv
+#        cov_cross_inv = hartlap * cov_cross_inv
+#    else:
+#        print(f"Hartlap invalid (N={N}, p={p}). Skipping Hartlap correction.")
     
-    # --- Chi-square ---
-    d_plus  = g_plus_signal
-    d_cross = g_cross_signal
-    dof = len(d_plus)
+#    # --- Chi-square ---
+#    d_plus  = g_plus_signal
+#    d_cross = g_cross_signal
+#    dof = len(d_plus)
     
-    chi2_plus  = float(d_plus  @ cov_plus_inv  @ d_plus)
-    chi2_cross = float(d_cross @ cov_cross_inv @ d_cross)
+#    chi2_plus  = float(d_plus  @ cov_plus_inv  @ d_plus)
+#    chi2_cross = float(d_cross @ cov_cross_inv @ d_cross)
     
-    print(f"[g_plus]  chi2 = {chi2_plus:.3f}, dof = {dof}, chi2/dof = {chi2_plus/dof:.3f}")
-    print(f"[g_cross] chi2 = {chi2_cross:.3f}, dof = {dof}, chi2/dof = {chi2_cross/dof:.3f}")
+#    print(f"[g_plus]  chi2 = {chi2_plus:.3f}, dof = {dof}, chi2/dof = {chi2_plus/dof:.3f}")
+#    print(f"[g_cross] chi2 = {chi2_cross:.3f}, dof = {dof}, chi2/dof = {chi2_cross/dof:.3f}")
     
-    # p-values without
-    pval_plus  = stats.chi2.sf(chi2_plus,  dof)
-    pval_cross = stats.chi2.sf(chi2_cross, dof)
+#    # p-values without
+#    pval_plus  = stats.chi2.sf(chi2_plus,  dof)
+#    pval_cross = stats.chi2.sf(chi2_cross, dof)
     
-    print(f"[g_plus]  p = {pval_plus:.3e}")
-    print(f"[g_cross] p = {pval_cross:.3e}")
+#    print(f"[g_plus]  p = {pval_plus:.3e}")
+#    print(f"[g_cross] p = {pval_cross:.3e}")
     
     
     
-if __name__ == "__main__":
+#if __name__ == "__main__":
 
 
-    run_analysis(
-        case_label="DES fiducial sim (run_1_p15)",
-        shear_csv=sim_shear_csv,
-        noise_files=sim_noise_files
-    )
+#    run_analysis(
+#        case_label="DES fiducial sim (run_1_p15)",
+#        shear_csv=sim_shear_csv,
+#        noise_files=sim_noise_files
+#    )
     
