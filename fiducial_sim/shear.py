@@ -48,7 +48,7 @@ noise_dir = os.path.join(parent_dir, "DES_sim/DES_sim/noise")  # same noise file
 # Output shear directory 
 #out_dir = os.path.join("shear", ridge_home, f"run_{run_id}_p{p_final}")
 out_dir = "shear/DES_fiducial_sim/band_0.1_mesh_5"
-#random_dir = os.path.join(out_dir, "random_rotations")
+random_dir = os.path.join(out_dir, "random_rotations")
 
 if RANK == 0:
     os.makedirs(out_dir, exist_ok=True)
