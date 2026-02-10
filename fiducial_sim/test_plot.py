@@ -104,8 +104,8 @@ csv_file2 = os.path.join(current_dir, "shear/DES_fiducial_sim/band_0.1_mesh_5/ru
 #csv_file  = os.path.join(current_dir, "shear_no_endpoint/signal_shear.csv")
 out_png   = os.path.join(current_dir, "shear", "gamma_plus_mesh25e5.png")
 
-if not os.path.exists(csv_file):
-    raise FileNotFoundError(csv_file)
+#if not os.path.exists(csv_file):
+#    raise FileNotFoundError(csv_file)
 
 # load (skip header row)
 d2 = np.loadtxt(csv_file2, delimiter=",", skiprows=1)
