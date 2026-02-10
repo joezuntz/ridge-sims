@@ -19,7 +19,7 @@ RANK = COMM.rank
 
 base_label = "shape_err"
 run_id = 1
-N = 2
+N = 5
 bandwidth = 0.1
 p_final = 15
 
@@ -72,8 +72,8 @@ if need_signal:
         filament_h5=filament_h5,
         shear_csv=signal_shear,
         background_type=BACKGROUND_TYPE_SIGNAL,
-        skip_end_points=True, 
-        min_filament_points=3,
+        skip_end_points=False, 
+        min_filament_points=0,
         shear_flip_csv=None,    
         comm=COMM
     )
