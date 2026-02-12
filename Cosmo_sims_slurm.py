@@ -9,11 +9,11 @@ from ridge_sims.config import Config
 # Global setup
 # =====================
 
-base_sim_dir = "lhc_cosmo_sims_zero_err"
+base_sim_dir = "lhc_cosmo_sims2_zero_err"
 
 # Fiducial values
-Omega_m_fid = 0.32
-S8_fid = 0.78
+Omega_m_fid = 0.3
+S8_fid = 0.8
 sigma8_fid = S8_fid / np.sqrt(Omega_m_fid / 0.3)
 
 categories = ["S8", "S8_perp", "Om_fixed", "sigma8_fixed"]
@@ -21,36 +21,53 @@ num_per_category = 10
 
 
 def get_parameters(category, run_idx):
-    """Return Omega_m and sigma8 for a given category and run index."""
+
     Omega_m_range = np.linspace(0.24, 0.40, num_per_category)
-    sigma8_range = np.linspace(0.66, 0.88, num_per_category)
-    S8_range = np.linspace(0.65, 0.95, num_per_category)  # Even spacing in S8
+    sigma8_range  = np.linspace(0.66, 0.88, num_per_category)
+    S8_range      = np.linspace(0.65, 0.95, num_per_category)
 
-    if category == "S8":
-    
-        Omega_m = Omega_m_range[run_idx]
-        S8 = S8_range[run_idx]
-        sigma8 = S8 / np.sqrt(Omega_m / 0.3)
+    # S8_perp = sigma8 * (Omega_m/0.3)^(-2)
+    S8perp_fid = sigma8_fid * (Omega_m_fid / 0.3)**(-2.0)
+    S8perp_range = np.linspace(0.5 * S8perp_fid,
+                               1.5 * S8perp_fid,
+                               num_per_category)
 
-    elif category == "S8_perp":
-        # Constant S8, varying Omega_m
+    mid = num_per_category // 2
+    Omega_m_range[mid] = Omega_m_fid
+    sigma8_range[mid]  = sigma8_fid
+    S8_range[mid]      = S8_fid
+    S8perp_range[mid]  = S8perp_fid
+
+    if category == "sigma8_fixed":
         Omega_m = Omega_m_range[run_idx]
-        sigma8 = S8_fid * np.sqrt(0.3 / Omega_m)
+        sigma8  = sigma8_fid
 
     elif category == "Om_fixed":
-        # Fixed Omega_m, varying sigma8
         Omega_m = Omega_m_fid
-        sigma8 = sigma8_range[run_idx]
+        sigma8  = sigma8_range[run_idx]
 
-    elif category == "sigma8_fixed":
-        # Fixed sigma8, varying Omega_m
-        Omega_m = Omega_m_range[run_idx]
-        sigma8 = sigma8_fid
+    elif category == "S8":
+        S8 = S8_range[run_idx]
+        S8perp = S8perp_fid
+
+        x = (S8 / S8perp)**(1.0 / 2.5)   
+        Omega_m = 0.3 * x
+        sigma8  = S8 / np.sqrt(x)
+
+    elif category == "S8_perp":
+        S8 = S8_fid
+        S8perp = S8perp_range[run_idx]
+
+        x = (S8 / S8perp)**(1.0 / 2.5)
+        Omega_m = 0.3 * x
+        sigma8  = S8 / np.sqrt(x)
 
     else:
         raise ValueError(f"Unknown category: {category}")
 
     return Omega_m, sigma8
+
+
 
 
 def run_cosmology(category, run_idx):
