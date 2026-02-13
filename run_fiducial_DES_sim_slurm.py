@@ -9,11 +9,11 @@ from ridge_sims.config import Config
 # =====================
 
 # single DES fiducial run
-base_sim_dir = "lhc_DES_fiducial_sim"
+base_sim_dir = "lhc_sim_sigma_e_0"
 
 # Fiducial cosmology values
-Omega_m_fid = 0.32
-S8_fid = 0.78
+Omega_m_fid = 0.30
+S8_fid = 0.80
 sigma8_fid = S8_fid / np.sqrt(Omega_m_fid / 0.3)
 
 def run_des_fiducial():
@@ -31,11 +31,11 @@ def run_des_fiducial():
         sigma8=sigma8,
         sim_dir=sim_dir,
         seed=0,
-        include_shape_noise=True,  
+        include_shape_noise=False,  
     )
     config.save()
 
-    print(f"Starting DES fiducial run: {run_id}")
+    print(f"Starting run: {run_id}")
     print(f"  Omega_m={Omega_m:.4f}, sigma8={sigma8:.4f}, S8={S8:.4f}")
     print(f"  Directory: {sim_dir}")
     sys.stdout.flush()
@@ -44,7 +44,7 @@ def run_des_fiducial():
     step2(config); print("  -> step2 complete"); sys.stdout.flush()
     step3(config); print("  -> step3 complete"); sys.stdout.flush()
 
-    print(f"Finished DES fiducial run: {run_id}")
+    print(f"Finished run: {run_id}")
     sys.stdout.flush()
 
 if __name__ == "__main__":
