@@ -42,7 +42,7 @@ def run_des_fiducial():
 
     step1(config); print("  -> step1 complete"); sys.stdout.flush()
     step2(config); print("  -> step2 complete"); sys.stdout.flush()
-    step3(config); print("  -> step3 complete"); sys.stdout.flush()
+    step3(config, sigma_e_default=0.0); print("  -> step3 complete"); sys.stdout.flush()
 
     print(f"Finished run: {run_id}")
     sys.stdout.flush()
