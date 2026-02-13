@@ -64,7 +64,7 @@ def step2(config):
     print("Step 2 complete")
 
 
-def step3(config):
+def step3(config, sigma_e_default=1e-3):
     """
     Generate catalog files
     """
@@ -80,9 +80,8 @@ def step3(config):
     # if we want no noise in sims
     if not config.include_shape_noise:
         print("Shape noise disabled: setting sigma_e[:] = 1e-3")
-        #sample.sigma_e[:] = np.full_like(sample.sigma_e, 1e-3)
-        sample.sigma_e[:] = np.full_like(sample.sigma_e, 0.0)
-        
+        sample.sigma_e[:] = np.full_like(sample.sigma_e, , sigma_e_default)
+
     # Load the results of the previous step
     with open(config.g_ell_file, "rb") as f:
         gls = pickle.load(f)
