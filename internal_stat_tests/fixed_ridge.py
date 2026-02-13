@@ -1,0 +1,113 @@
+import os, sys
+import numpy as np
+import h5py
+import matplotlib.pyplot as plt
+from mpi4py import MPI
+
+
+# PATH 
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
+
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+os.chdir(current_dir)
+
+import dredge_scms
+from ridge_analysis_tools import *
+
+COMM = MPI.COMM_WORLD
+RANK = COMM.rank
+
+
+def main():
+
+
+    # PARAMETERS
+
+    N_fixed = 2
+    bandwidth_list = [0.1]
+    run_ids = range(1, 2)
+
+    sim_bases = {
+        "zero_err": "lhc_run_sims_zero_err_10",
+    }
+
+    output_base = "shear_stat_test"
+    if RANK == 0:
+        os.makedirs(output_base, exist_ok=True)
+
+    # CONTRACTION PARAMETERS
+
+    radius_arcmin = 4.0
+    min_coverage  = 0.9
+    nside         = 512
+
+    mask_filename = os.path.join(parent_dir, "des-data", "desy3_gold_mask.npy")
+    mask = np.load(mask_filename) if RANK == 0 else None
+    mask = COMM.bcast(mask, root=0)
+
+
+    # MAIN LOOPS
+
+    for base_label, base_folder in sim_bases.items():
+
+        base_sim_dir = os.path.join(parent_dir, base_folder)
+
+        for run_id in run_ids:
+            for bandwidth in bandwidth_list:
+
+                N = N_fixed
+
+                # DIRECTORY STRUCTURE
+
+                home_dir = os.path.join(
+                    output_base,
+                    f"run_{run_id}_mesh_{N}_band_{bandwidth:.2f}"
+                )
+
+                ridges_dir = os.path.join(home_dir, "Ridges_final_p15")
+                plots_dir  = os.path.join(home_dir, "plots_by_final_percentile")
+
+                if RANK == 0:
+                    os.makedirs(ridges_dir, exist_ok=True)
+                    os.makedirs(plots_dir, exist_ok=True)
+
+                ridge_file = os.path.join(
+                    ridges_dir,
+                    f"{base_label}_run_{run_id}_ridges_p15.h5"
+                )
+
+
+                # STAGE 1 — FILAMENT PIPELINE
+                run_filament_pipeline(
+                    bandwidth=bandwidth,
+                    base_sim_dir=base_sim_dir,
+                    run_ids=[run_id],
+                    base_label=base_label,
+                    home_dir=home_dir,
+                    N=N
+                )
+
+                COMM.barrier()
+
+                # STAGE 2 — CONTRACTION 
+                if RANK == 0:
+                    process_ridge_file_local(
+                        ridge_file,
+                        mask,
+                        nside,
+                        radius_arcmin,
+                        min_coverage,
+                        ridges_dir,
+                        plots_dir
+                    )
+
+                COMM.barrier()
+
+
+# RUN
+if __name__ == "__main__":
+    main()
