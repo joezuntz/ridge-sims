@@ -184,14 +184,14 @@ def plot_shear_family(shear_data, param_label, out_prefix, fiducial_value):
     ax_gplus.set_xscale("log")
     ax_gplus.set_xlabel(r"$\theta$ [arcmin]")
     ax_gplus.set_ylabel(r"$\gamma_{+}$ / $10^{-3}$")
-    ax_gplus.set_title(r"$\gamma_{+}$ vs $\theta$")
+    # ax_gplus.set_title(r"$\gamma_{+}$ vs $\theta$")
     cbar_gplus = fig_gplus.colorbar(sm, ax=ax_gplus, pad=0.02)
     cbar_gplus.set_label(param_label)
 
     ax_gx.set_xscale("log")
     ax_gx.set_xlabel(r"$\theta$ [arcmin]")
     ax_gx.set_ylabel(r"$\gamma_{\times}$ /  $10^{-3}$")
-    ax_gx.set_title(r"$\gamma_{\times}$ vs $\theta$")
+    # ax_gx.set_title(r"$\gamma_{\times}$ vs $\theta$")
     cbar_gx = fig_gx.colorbar(sm, ax=ax_gx, pad=0.02)
     cbar_gx.set_label(param_label)
 
@@ -214,17 +214,18 @@ def plot_shear_family(shear_data, param_label, out_prefix, fiducial_value):
 def plot_shear_meshsizes():
     mesh_dir = os.path.join(parent_dir, "hyperparameter_test/parameter_test/shear_vs_meshsize")
     shear_data = load_shear_files(mesh_dir, tag="mesh")
-    plot_shear_family(shear_data, param_label="Mesh size", out_prefix="mesh_sizes", fiducial_value=2.0)
+    shear_data = [(float(v) * 0.5, df) for v, df in shear_data]
+    plot_shear_family(shear_data, param_label="Number Ridge Points / $10^6$", out_prefix="mesh_sizes", fiducial_value=1.0)
 
 def plot_shear_bandwidths():
     band_dir = os.path.join(parent_dir, "hyperparameter_test/parameter_test/shear_vs_bandwidth")
     shear_data = load_shear_files(band_dir, tag="band")
-    plot_shear_family(shear_data, param_label="Bandwidth", out_prefix="bandwidths", fiducial_value=0.1)
+    plot_shear_family(shear_data, param_label="Bandwidth / rad", out_prefix="bandwidths", fiducial_value=0.1)
 
 def plot_shear_fp():
     fp_dir = os.path.join(parent_dir, "hyperparameter_test/parameter_test/shear_vs_fp")
     shear_data = load_shear_files(fp_dir, tag="fp")
-    plot_shear_family(shear_data, param_label="Density threshold", out_prefix="threshold", fiducial_value=15.0)
+    plot_shear_family(shear_data, param_label="Density threshold percentile", out_prefix="threshold", fiducial_value=15.0)
 
 
 
