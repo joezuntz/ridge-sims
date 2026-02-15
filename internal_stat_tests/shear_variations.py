@@ -9,6 +9,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 os.chdir(current_dir)
 
+import glob
 from mpi4py import MPI
 from ridge_analysis_tools import *
 comm = MPI.COMM_WORLD
