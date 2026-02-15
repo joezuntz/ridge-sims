@@ -45,7 +45,7 @@ def main():
         parent_dir, "lhc_run_sims_zero_err_10", "run_1", "source_catalog_cutzl04.h5"
     )
 
-    out_root = os.path.join(ridges_root, "shear_repeats")
+    out_root = os.path.join(ridge_root, "shear_repeats")
     if rank == 0:
         os.makedirs(out_root, exist_ok=True)
 
