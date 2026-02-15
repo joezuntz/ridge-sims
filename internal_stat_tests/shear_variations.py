@@ -1,8 +1,7 @@
 import os, sys
 
 
-comm = MPI.COMM_WORLD
-rank = comm.rank
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
@@ -12,8 +11,8 @@ os.chdir(current_dir)
 
 from mpi4py import MPI
 from ridge_analysis_tools import *
-COMM = MPI.COMM_WORLD
-RANK = COMM.rank
+comm = MPI.COMM_WORLD
+rank = comm.rank
 
 
 
