@@ -1,6 +1,5 @@
 import os, sys
-from mpi4py import MPI
-from ridge_analysis_tools import *
+
 
 comm = MPI.COMM_WORLD
 rank = comm.rank
@@ -10,6 +9,11 @@ parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 os.chdir(current_dir)
+
+from mpi4py import MPI
+from ridge_analysis_tools import *
+
+
 
 
 
