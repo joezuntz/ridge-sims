@@ -12,7 +12,8 @@ os.chdir(current_dir)
 
 from mpi4py import MPI
 from ridge_analysis_tools import *
-
+COMM = MPI.COMM_WORLD
+RANK = COMM.rank
 
 
 
