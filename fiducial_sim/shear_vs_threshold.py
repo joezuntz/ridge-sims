@@ -90,6 +90,7 @@ def main():
     # -----------------------------------------------------------
     # Background catalog 
     # -----------------------------------------------------------
+    
     BG_data = os.path.join(
         parent_dir,
         "lhc_run_sims_zero_err_10",
@@ -104,13 +105,13 @@ def main():
     # -----------------------------------------------------------
     # Noise catalogs 
     # -----------------------------------------------------------
-    n_random_rotations = 50
-    BACKGROUND_TYPE_NOISE = "noise"
+    n_random_rotations = 100
 
     # -----------------------------------------------------------
     # Discover contracted ridge files
     # -----------------------------------------------------------
     contracted_files = None
+    contracted_file_path = os.path.join(output_base, "run_1_mesh_2_band_0.1")
     if rank == 0:
         contracted_files = find_contracted_files(output_base)
         print(f"Found {len(contracted_files)} contracted ridge files under {output_base}\n")
@@ -225,7 +226,7 @@ def main():
                     output_shear_file=random_csv,
                     k=1, num_bins=20, comm=comm,
                     flip_g1=False, flip_g2=False,
-                    background_type=BACKGROUND_TYPE_NOISE,
+                    background_type="sim",
                     nside_coverage=32,
                     min_distance_arcmin=1.0,
                     max_distance_arcmin=60.0
