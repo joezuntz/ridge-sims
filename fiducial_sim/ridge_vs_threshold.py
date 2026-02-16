@@ -46,7 +46,7 @@ def main():
     mesh_size = int(mesh_N * 5e5)
 
     sim_bases = {
-        "shape_error": "lhc_DES_fiducial_sim/run_1",
+        "shape_error": "lhc_DES_fiducial_sim",
     }
 
     # Output root
