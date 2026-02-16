@@ -14,14 +14,7 @@ if parent_dir not in sys.path:
 os.chdir(current_dir)
 
 import dredge_scms
-from ridge_analysis_tools import (
-    load_coordinates,
-    build_density_map,
-    redo_cuts,
-    results_plot,
-    ridge_edge_filter_disk,
-)
-
+from ridge_analysis_tools import *
 COMM = MPI.COMM_WORLD
 RANK = COMM.rank
 
