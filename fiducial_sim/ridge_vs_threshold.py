@@ -219,34 +219,37 @@ def main():
                     if fp_exists:
                         summary["skipped_existing_fp_outputs"].append({"run": run_id, "fp": fp})
                 fp_exists = COMM.bcast(fp_exists, root=0)
-                if fp_exists:
-                    continue
+                fp_exists = COMM.bcast(fp_exists, root=0)
 
-                # Apply cut + save/plot
-                if RANK == 0:
-                    try:
-                        ridges_cut = redo_cuts(
-                            ridges, initial_density, final_density,
-                            initial_percentile=0,
-                            final_percentile=fp
-                        )
 
-                        with h5py.File(ridge_file, "w") as f:
-                            f.create_dataset("ridges", data=ridges_cut)
-                            f.create_dataset("initial_density", data=initial_density)
-                            f.create_dataset("final_density", data=final_density)
-
-                        if density_map is not None:
-                            results_plot(density_map, ridges_cut, plot_file)
-
-                        summary["completed_fp_outputs"].append({"run": run_id, "fp": fp})
-                        print(f"[rank 0] Saved ridges → {ridge_file}")
-                        print(f"[rank 0] Saved plot  → {plot_file}")
-
-                    except Exception as e:
-                        summary["errors_fp_outputs"].append({"run": run_id, "fp": fp, "error": str(e)})
-
-                COMM.barrier()
+                if not fp_exists:  
+                
+                    # Apply cut + save/plot
+                    if RANK == 0:
+                        try:
+                            ridges_cut = redo_cuts(
+                                ridges, initial_density, final_density,
+                                initial_percentile=0,
+                                final_percentile=fp
+                            )
+                
+                            with h5py.File(ridge_file, "w") as f:
+                                f.create_dataset("ridges", data=ridges_cut)
+                                f.create_dataset("initial_density", data=initial_density)
+                                f.create_dataset("final_density", data=final_density)
+                
+                            if density_map is not None:
+                                results_plot(density_map, ridges_cut, plot_file)
+                
+                            summary["completed_fp_outputs"].append({"run": run_id, "fp": fp})
+                            print(f"[rank 0] Saved ridges → {ridge_file}")
+                            print(f"[rank 0] Saved plot  → {plot_file}")
+                
+                        except Exception as e:
+                            summary["errors_fp_outputs"].append({"run": run_id, "fp": fp, "error": str(e)})
+                
+                COMM.barrier()   
+                
 
                 # ==================================================
                 # Stage 2: contraction for each fp output
