@@ -19,4 +19,4 @@ category_idx=$((SLURM_ARRAY_TASK_ID / num_per_category))
 category=${categories[$category_idx]}
 
 echo "Running category: $category (job ID: $SLURM_ARRAY_TASK_ID)"
-python missing_cosmo.py --job-id=$SLURM_ARRAY_TASK_ID
+python Cosmo_sims_slurm.py --job-id=$SLURM_ARRAY_TASK_ID
