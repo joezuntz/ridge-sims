@@ -175,11 +175,13 @@ def main():
             for N in N_list:
 
                 # folder structures
+                N_eff = N * n_repeats
+
                 mesh_root = os.path.join(
                     output_base,
                     f"run_{run_id}",
                     f"band_{bandwidth:.1f}",
-                    f"mesh_{N}",
+                    f"mesh_{N_eff}",
                 )
 
                 contracted_paths = []
