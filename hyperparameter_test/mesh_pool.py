@@ -144,13 +144,14 @@ def pool_contracted_files(contracted_files, out_path):
 # ==============================================================
 def main():
     # Parameters
-    N_list     = [7]            
+    N_list    = [2]
+           
     run_ids    = range(1, 2)
     bandwidth  = 0.1
     z_cut      = 0.4
     fraction   = None
 
-    n_repeats  = 20
+    n_repeats = 4 
     base_seed  = 3482364
 
     resume = True  # set False for forced fresh runs
