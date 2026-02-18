@@ -22,7 +22,7 @@ def run_filament_pipeline_local(bandwidth, base_sim_dir, run_id, base_label, hom
     mesh_size = int(N * 5e5)
 
     os.makedirs(home_dir, exist_ok=True)
-    checkpoint_dir = os.path.join(home_dir, "checkpoints")
+    checkpoint_dir = os.path.join(home_dir, f"checkpoints_{tag}")
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     coordinates = None
