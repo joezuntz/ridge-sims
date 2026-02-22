@@ -34,8 +34,8 @@ except ImportError:
 
 
 def main():
-    base_sim_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "lhc_cosmo_sims_zero_err"))
-    output_base = "Cosmo_sim_ridges"
+    base_sim_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "lhc_cosmo_sims2_zero_err"))
+    output_base = "Cosmo_sim2_ridges"
     os.makedirs(output_base, exist_ok=True)
     categories = [ "S8_perp", "Om_fixed", "sigma8_fixed", "S8"]
     num_runs = 10
@@ -109,7 +109,20 @@ if __name__ == "__main__":
     main()
 
 
+"""
+Final message :
 
+Missing input files (ignored):
+   - S8_perp/run_1
+   - S8_perp/run_2
+   - S8_perp/run_7
+   - Om_fixed/run_8
+   - Om_fixed/run_9
+   - Om_fixed/run_10
+   - S8/run_9
+   - S8/run_10
+
+"""
 
 
 
