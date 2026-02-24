@@ -93,9 +93,9 @@ def main():
     
     BG_data = os.path.join(
         parent_dir,
-        "lhc_run_sims_zero_err_10",
+        "lhc_DES_fiducial_sim",
         "run_1",
-        "source_catalog_cutzl04.h5"
+        "source_catalog_cutzl0.40.h5"
     )
     if rank == 0 and (not os.path.exists(BG_data)):
         print(f"[FATAL] Missing background file:\n  {BG_data}")
