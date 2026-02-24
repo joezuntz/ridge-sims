@@ -100,10 +100,10 @@ from scipy import stats
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-csv_file2 = os.path.join(current_dir, "density_threshold_test/shear_vs_threshold/run_1_shear_fp_40.csv")
+csv_file2 = os.path.join(current_dir, "density_threshold_test/signal_shear_p40.csv")
 #csv_file2 = os.path.join(current_dir, "shear/DES_fiducial_sim/band_0.1_mesh_5/run_1_p15/signal_shear.csv")
 #csv_file  = os.path.join(current_dir, "shear_no_endpoint/signal_shear.csv")
-out_png   = os.path.join(current_dir, "density_threshold_test", "gamma_plus_fp_40.png")
+out_png   = os.path.join(current_dir, "density_threshold_test", "gamma_plus_p_40.png")
 
 #if not os.path.exists(csv_file):
 #    raise FileNotFoundError(csv_file)
