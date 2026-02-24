@@ -37,11 +37,21 @@ except ImportError:
 #   Find contracted files in parameter_test/
 # ===============================================================
 
+#def find_contracted_files_parameter_test(root="parameter_test"):
+#    out = []
+#    for root_dir, dirs, files in os.walk(root):
+#        for f in files:
+#            if f.endswith("_contracted.h5"):
+#                out.append(os.path.join(root_dir, f))
+#    return sorted(out)
+
+
+
 def find_contracted_files_parameter_test(root="parameter_test"):
     out = []
     for root_dir, dirs, files in os.walk(root):
         for f in files:
-            if f.endswith("_contracted.h5"):
+            if ("_contracted" in f) and f.endswith(".h5"):
                 out.append(os.path.join(root_dir, f))
     return sorted(out)
 
@@ -60,7 +70,7 @@ def extract_mesh_from_path(path):
 # ===============================================================
 
 def main():
-
+    contracted_root = "parameter_test/run_1/band_0.1/mesh_8" # this should be adjusted later
     parameter_root = "parameter_test"
     out_root = os.path.join(parameter_root, "shear_vs_meshsize")
     os.makedirs(out_root, exist_ok=True)
@@ -81,7 +91,7 @@ def main():
             print(f"[FATAL] Missing background file:\n  {BG_data}")
         return
 
-    contracted_files = find_contracted_files_parameter_test(parameter_root)
+    contracted_files = find_contracted_files_parameter_test(contracted_root) # adjusted to the contracted root above
     if comm is None or comm.rank == 0:
         print(f"Found {len(contracted_files)} contracted ridge files.\n")
 
