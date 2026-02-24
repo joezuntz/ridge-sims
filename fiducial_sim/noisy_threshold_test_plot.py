@@ -152,7 +152,7 @@ if __name__ == "__main__":
         run_id=1,
         thresholds=(10, 15, 25, 40, 55, 70),
         outdir=os.path.join(current_dir, "density_threshold_test_plots"),
-        outfile="stacked_gplus_thresholds.pdf",
+        outfile="stacked_gplus_thresholds2.pdf",
         which="gplus",
         scale=1e-3,
         x_jitter_frac=0.010,
