@@ -139,7 +139,12 @@ def stacked_threshold_plot(
     print(f"Wrote: {outpath}")
 
 if __name__ == "__main__":
-    root = os.path.join(parent_dir, "fiducial_sim/density_threshold_test_plots", "shear_vs_threshold")
+    root = os.path.join(
+                        parent_dir,
+                        "fiducial_sim",
+                        "density_threshold_test",
+                        "shear_vs_threshold",
+                    )
     stacked_threshold_plot(
         root_dir=root,
         run_id=1,
