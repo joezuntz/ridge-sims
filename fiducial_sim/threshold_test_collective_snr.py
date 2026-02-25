@@ -11,7 +11,7 @@ parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
 os.chdir(current_dir)
 
 # threshold outputs:
-ROOT = os.path.join(parent_dir, "density_threshold_test", "shear_vs_threshold")
+ROOT = os.path.join(current_dir, "density_threshold_test", "shear_vs_threshold")
 
 
 THRESHOLDS = [10, 15, 25, 40, 55, 70]
