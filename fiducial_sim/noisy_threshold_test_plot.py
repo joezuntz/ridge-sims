@@ -124,7 +124,6 @@ def stacked_threshold_plot(
             markersize=3.5,
             color=color,
             alpha=0.95,
-            label=f"fp={thr} (Nrand={Nrand})",
         )
 
     ax.set_xscale("log")
@@ -134,9 +133,8 @@ def stacked_threshold_plot(
     ax.axhline(0, color="black", lw=1.0)
 
     cbar = plt.colorbar(sm, ax=ax, pad=0.02)
-    cbar.set_label("Final percentile threshold (fp)")
+    cbar.set_label("Density thresholds")
 
-    ax.legend(loc="lower right", frameon=True)
 
     outpath = os.path.join(outdir, outfile)
     plt.tight_layout()
