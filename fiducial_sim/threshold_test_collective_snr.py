@@ -157,8 +157,8 @@ if __name__ == "__main__":
             f"{r['pval_plus']:>8.2e}   "
             f"{r['chi2_cross']:>7.3f}  "
             f"{r['chi2dof_cross']:>10.3f}  "
-            f"{r['snr_cross']:>6.2f}  "
-            f"{r['pval_cross']:>8.2e}"
+            f"{r['snr_plus']:>6.2f}  "
+            f"{r['pval_plus']:>8.2e}"
         )
 
     # save CSV summary 
