@@ -97,6 +97,63 @@ ridge_file = os.path.join(
     "Cosmo_sim2_ridges/S8/run_3/band_0.1/Ridges_final_p15/S8_run_3_ridges_p15.h5"
 )
 
+# ----------------- MASK OVERLAY TEST -----------------
+# This checks whether the mask hit pixels living on top of ridge sky region.
+
+hit_pix = np.load(mask_filename)
+maxpix = int(hit_pix.max())
+
+mask_nside = None
+for ns in [256, 512, 1024, 2048, 4096, 8192]:
+    if maxpix < hp.nside2npix(ns):
+        mask_nside = ns
+        break
+
+print("hit_pix stats: min/max/len =", int(hit_pix.min()), int(hit_pix.max()), len(hit_pix))
+print("inferred mask nside =", mask_nside)
+if mask_nside is None:
+    raise ValueError("Could not infer NSIDE from hit_pix.max(); hit_pix may not be healpix indices.")
+
+# load ridges (for overlay region)
+with h5py.File(ridge_file, "r") as f:
+    ridges_tmp = f["ridges"][:]
+ridge_dec_tmp = ridges_tmp[:, 0]  # rad
+ridge_ra_tmp  = ridges_tmp[:, 1]  # rad
+
+# sample mask pixels for plotting
+NMASK = 300_000
+if len(hit_pix) > NMASK:
+    samp = hit_pix[np.random.choice(len(hit_pix), size=NMASK, replace=False)]
+else:
+    samp = hit_pix
+
+theta, phi = hp.pix2ang(mask_nside, samp)  # theta colat, phi lon
+ra_mask_deg  = np.degrees(phi)
+dec_mask_deg = np.degrees(0.5*np.pi - theta)
+
+# overlay plot: ridges (deg) + mask hit pixels (deg)
+overlay_png = os.path.join(ridge_dir, "mask_overlay_vs_ridges_TEST.png")
+plt.figure(figsize=(8, 6))
+plt.scatter(np.degrees(ridge_ra_tmp), np.degrees(ridge_dec_tmp),
+            s=1, alpha=0.05, label="Ridges (all)")
+plt.scatter(ra_mask_deg, dec_mask_deg,
+            s=0.2, alpha=0.15, label=f"Mask hit pix (nside={mask_nside})")
+plt.xlabel("RA [deg]")
+plt.ylabel("Dec [deg]")
+plt.title("Mask hit-pixels overlay vs ridges")
+plt.legend(markerscale=10)
+plt.tight_layout()
+plt.savefig(overlay_png, dpi=200)
+plt.close()
+print("saved:", overlay_png)
+
+#####################################
+
+
+
+
+
+
 # outputs next to the ridge file
 ridge_dir = os.path.dirname(ridge_file)
 out_h5    = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.h5")
