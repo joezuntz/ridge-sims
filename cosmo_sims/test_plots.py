@@ -35,8 +35,8 @@ output_path = "Cosmo_sim2_ridges/overlay_test_S8_run3.png"
 # ---- LOAD BACKGROUND ----
 with h5py.File(bg_file, "r") as f:
     print("BG keys:", list(f.keys()))
-    ra_bg  = f["ra"][:]
-    dec_bg = f["dec"][:]
+    ra_bg  = f["RA"][:]
+    dec_bg = f["DEC"][:]
 
 # ---- LOAD RIDGES ----
 with h5py.File(ridge_file, "r") as f:
