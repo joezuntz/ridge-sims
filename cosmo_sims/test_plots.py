@@ -37,7 +37,7 @@ with h5py.File(bg_file, "r") as f:
     print("BG keys:", list(f.keys()))
     ra_bg  = f["RA"][:]
     dec_bg = f["DEC"][:]
-    bg_ra = (bg_ra + 180) % 360
+    ra_bg = (bg_ra + 180) % 360
     
     
 ra_bg  = np.radians(ra_bg)
