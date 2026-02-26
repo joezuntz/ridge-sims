@@ -1,20 +1,20 @@
-#import os
+import os
 
 
-#import os, sys
+import os, sys
 
-## Directory of this script (cosmo_sims)
-#current_dir = os.path.dirname(os.path.abspath(__file__))
+# Directory of this script (cosmo_sims)
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
-## Go one level up 
-#parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+# Go one level up 
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
 
-## find modules in the parent directory
-#if parent_dir not in sys.path:
-#    sys.path.insert(0, parent_dir)
+# find modules in the parent directory
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
-## we stay inside cosmo_sims for outputs
-#os.chdir(current_dir)
+# we stay inside cosmo_sims for outputs
+os.chdir(current_dir)
 
 
 
@@ -81,7 +81,7 @@
 ####################################################################################
 
 ## Contraction test 
-## Contraction test (corrected)
+
 
 #import os, sys
 #import numpy as np
@@ -308,7 +308,7 @@
 import numpy as np
 import healpy as hp
 
-mask_filename = "des-data/desy3_gold_mask.npy" 
+mask_filename = os.path.join(parent_dir, "des-data", "desy3_gold_mask.npy")
 
 arr = np.load(mask_filename)
 
