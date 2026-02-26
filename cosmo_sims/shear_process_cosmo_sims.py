@@ -70,7 +70,27 @@ def find_ridge_files_by_percentile(home_dir, percentiles):
 
     return ridge_files
 
-
+def find_background_file(h5_file, base_sim_root):
+    """
+    This is the file structure for all cosmological simulations: 
+    Given a ridge file path like:
+        Cosmo_sim_ridges/S8/run_1/band_0.1/Ridges_final_p15/..._contracted.h5
+    Return the corresponding background catalog path:
+        lhc_cosmo_sims_zero_err/S8/run_1/source_catalog_cutzl04.h5
+    """
+    parts = h5_file.split(os.sep)
+    try:
+        cat_index = parts.index("Cosmo_sim2_ridges") + 1
+        category = parts[cat_index]
+        run_folder = parts[cat_index + 1]
+    except (ValueError, IndexError):
+        raise RuntimeError(f"Unexpected ridge file path structure: {h5_file}")
+        
+    # this is different wrt ridge_analysis_tools
+    bg_file = os.path.join(base_sim_root, category, run_folder, "source_catalog_cutzl0.40.h5")
+    if not os.path.exists(bg_file):
+        raise FileNotFoundError(f"Background file not found: {bg_file}")
+    return bg_file
 # ===============================================================
 # ========================== MAIN ===============================
 # ===============================================================
