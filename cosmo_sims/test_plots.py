@@ -132,7 +132,7 @@ ra_mask_deg  = np.degrees(phi)
 dec_mask_deg = np.degrees(0.5*np.pi - theta)
 
 # overlay plot: ridges (deg) + mask hit pixels (deg)
-overlay_png = os.path.join(ridge_dir, "mask_overlay_vs_ridges_TEST.png")
+overlay_png = os.path.join(ridge_file, "mask_overlay_vs_ridges_TEST.png")
 plt.figure(figsize=(8, 6))
 plt.scatter(np.degrees(ridge_ra_tmp), np.degrees(ridge_dec_tmp),
             s=1, alpha=0.05, label="Ridges (all)")
