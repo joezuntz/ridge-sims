@@ -116,6 +116,7 @@ def load_mask(mask_filename, nside):
     mask[hit_pix] = 1
     #mask = hp.reorder(mask, n2r=True)
     mask = hp.ud_grade(mask, nside_out=nside)
+    mask = (mask > 0.5).astype(np.float32)
     return mask
 
 def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_coverage=1.0):
