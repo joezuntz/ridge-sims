@@ -99,6 +99,11 @@ ridge_file = os.path.join(
 
 #####################################
 
+# ===============================
+# STATISTICAL MASK–RIDGE TEST
+# ===============================
+
+# --- infer native mask NSIDE ---
 hit_pix = np.load(mask_filename)
 maxpix = int(hit_pix.max())
 
@@ -108,139 +113,150 @@ for ns in [256, 512, 1024, 2048, 4096, 8192]:
         mask_nside = ns
         break
 
-print("hit_pix stats: min/max/len =", int(hit_pix.min()), int(hit_pix.max()), len(hit_pix))
-print("inferred mask_nside =", mask_nside)
+print("mask_nside (inferred):", mask_nside)
 if mask_nside is None:
-    raise ValueError("Could not infer mask NSIDE from hit_pix.max(); hit_pix may not be healpix indices.")
+    raise ValueError("Cannot infer NSIDE from hit_pix")
 
-# load ridges (just for plotting region)
-with h5py.File(ridge_file, "r") as f:
-    ridges_tmp = f["ridges"][:]
-ridge_ra_tmp  = ridges_tmp[:, 1]  # rad
-ridge_dec_tmp = ridges_tmp[:, 0]  # rad
+# --- build native-resolution binary mask ---
+mask_native = np.zeros(hp.nside2npix(mask_nside), dtype=np.float32)
+mask_native[hit_pix] = 1.0
 
-# sample mask pixels for plotting speed
-NMASK = 300_000
-if len(hit_pix) > NMASK:
-    samp = hit_pix[np.random.choice(len(hit_pix), size=NMASK, replace=False)]
-else:
-    samp = hit_pix
+# --- convert ridge coords to native mask pixels ---
+theta_r = (np.pi/2) - ridge_dec   # ridge_dec already radians
+phi_r   = ridge_ra
 
-theta, phi = hp.pix2ang(mask_nside, samp)  # theta colat, phi lon
-ra_mask_deg  = np.degrees(phi)
-dec_mask_deg = np.degrees(0.5*np.pi - theta)
+ridge_pix_native = hp.ang2pix(mask_nside, theta_r, phi_r)
 
-mask_overlay_png = os.path.join(os.path.dirname(ridge_file),
-                                "mask_overlay_vs_ridges_TEST.png")
-plt.figure(figsize=(8, 6))
-plt.scatter(np.degrees(ridge_ra_tmp), np.degrees(ridge_dec_tmp), s=1, alpha=0.05, label="Ridges (all)")
-plt.scatter(ra_mask_deg, dec_mask_deg, s=0.2, alpha=0.15, label=f"Mask hit pix (nside={mask_nside})")
-plt.xlabel("RA [deg]")
-plt.ylabel("Dec [deg]")
-plt.title("Mask hit-pixels overlay vs ridges")
-plt.legend(markerscale=10)
-plt.tight_layout()
-plt.savefig(mask_overlay_png, dpi=200)
-plt.close()
-print("saved:", mask_overlay_png)
+# --- 1) How many ridge centers fall inside footprint? ---
+inside_center = mask_native[ridge_pix_native] > 0.5
+frac_inside_center = np.mean(inside_center)
+
+print("Fraction of ridge centers inside mask:",
+      f"{frac_inside_center:.4f}",
+      f"({inside_center.sum()} / {len(ridge_pix_native)})")
+
+# --- 2) Estimate distance to boundary ---
+# A point is "near boundary" if at least one neighbour pixel is outside mask.
+
+neighbour_outside = np.zeros(len(ridge_pix_native), dtype=bool)
+
+for i, pix in enumerate(ridge_pix_native[:50000]):  # limit for speed
+    neigh = hp.get_all_neighbours(mask_nside, pix)
+    neigh = neigh[neigh >= 0]
+    if np.any(mask_native[neigh] == 0):
+        neighbour_outside[i] = True
+
+frac_near_boundary = np.mean(neighbour_outside[:50000])
+
+print("Approx fraction of ridges near mask boundary (~1 pixel scale):",
+      f"{frac_near_boundary:.4f}")
+
+# --- 3) Mask coverage over ridge RA/Dec bounding box ---
+ra_deg  = np.degrees(ridge_ra)
+dec_deg = np.degrees(ridge_dec)
+
+print("Ridge RA range (deg):", ra_deg.min(), ra_deg.max())
+print("Ridge Dec range (deg):", dec_deg.min(), dec_deg.max())
+
+print("Mask global mean coverage:", mask_native.mean())
 #####################################################
 
 
 
 
-# outputs next to the ridge file
-ridge_dir = os.path.dirname(ridge_file)
-out_h5    = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.h5")
-out_png   = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.png")
+## outputs next to the ridge file
+#ridge_dir = os.path.dirname(ridge_file)
+#out_h5    = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.h5")
+#out_png   = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.png")
 
-# contraction params
-nside = 1024
-radius_arcmin = 4.0
-min_coverage = 0.1
-
-
-# ----------------- FUNCTIONS -----------------
-def load_mask(mask_filename, nside):
-    input_mask_nside = 4096
-    hit_pix = np.load(mask_filename)
-    mask = np.zeros(hp.nside2npix(input_mask_nside))
-    mask[hit_pix] = 1
-    ##mask = hp.reorder(mask, n2r=True)
-    mask = hp.ud_grade(mask, nside_out=nside)
-    mask = (mask > 0.5).astype(np.float32)
-    return mask
-
-def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_coverage=1.0):
-    radius = np.radians(radius_arcmin / 60.0)
-    theta_ridges = (np.pi / 2.0) - ridge_dec
-    phi_ridges   = ridge_ra
-    vec_ridges   = hp.ang2vec(theta_ridges, phi_ridges)
-
-    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
-
-    # debug stats
-    fracs = np.empty(len(ridge_ra), dtype=float)
-    ndisk = np.empty(len(ridge_ra), dtype=int)
-
-    for i, v in enumerate(vec_ridges):
-        disk_pix = hp.query_disc(nside, v, radius, inclusive=True)
-        ndisk[i] = len(disk_pix)
-        if ndisk[i] == 0:
-            frac = 0.0
-        else:
-            frac = mask[disk_pix].sum() / ndisk[i]
-        fracs[i] = frac
-        keep_idx[i] = (frac >= min_coverage)
-
-    return keep_idx, fracs, ndisk
+## contraction params
+#nside = 1024
+#radius_arcmin = 4.0
+#min_coverage = 0.1
 
 
-# ----------------- RUN  -----------------
-if not os.path.isfile(ridge_file):
-    raise FileNotFoundError(ridge_file)
+## ----------------- FUNCTIONS -----------------
+#def load_mask(mask_filename, nside):
+#    input_mask_nside = 4096
+#    hit_pix = np.load(mask_filename)
+#    mask = np.zeros(hp.nside2npix(input_mask_nside))
+#    mask[hit_pix] = 1
+#    ##mask = hp.reorder(mask, n2r=True)
+#    mask = hp.ud_grade(mask, nside_out=nside)
+#    mask = (mask > 0.5).astype(np.float32)
+#    return mask
 
-mask = load_mask(mask_filename, nside)
-print("mask stats (min/max/mean):", float(mask.min()), float(mask.max()), float(mask.mean()))
+#def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_coverage=1.0):
+#    radius = np.radians(radius_arcmin / 60.0)
+#    theta_ridges = (np.pi / 2.0) - ridge_dec
+#    phi_ridges   = ridge_ra
+#    vec_ridges   = hp.ang2vec(theta_ridges, phi_ridges)
 
-with h5py.File(ridge_file, "r") as f:
-    ridges = f["ridges"][:]
+#    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
 
-ridge_dec = ridges[:, 0]   # radians
-ridge_ra  = ridges[:, 1]   # radians
+#    # debug stats
+#    fracs = np.empty(len(ridge_ra), dtype=float)
+#    ndisk = np.empty(len(ridge_ra), dtype=int)
 
-keep_idx, fracs, ndisk = ridge_edge_filter_disk(
-    ridge_ra, ridge_dec, mask, nside,
-    radius_arcmin=radius_arcmin, min_coverage=min_coverage
-)
+#    for i, v in enumerate(vec_ridges):
+#        disk_pix = hp.query_disc(nside, v, radius, inclusive=True)
+#        ndisk[i] = len(disk_pix)
+#        if ndisk[i] == 0:
+#            frac = 0.0
+#        else:
+#            frac = mask[disk_pix].sum() / ndisk[i]
+#        fracs[i] = frac
+#        keep_idx[i] = (frac >= min_coverage)
 
-ridges_clean = ridges[keep_idx]
+#    return keep_idx, fracs, ndisk
 
-print(f"ridge file: {os.path.basename(ridge_file)}")
-print(f"kept: {len(ridges_clean)}/{len(ridges)}")
-print("frac stats (min/median/max):",
-      float(np.min(fracs)), float(np.median(fracs)), float(np.max(fracs)))
-print("ndisk stats (min/median/max):",
-      int(np.min(ndisk)), int(np.median(ndisk)), int(np.max(ndisk)))
 
-# save contracted
-with h5py.File(out_h5, "w") as f:
-    f.create_dataset("ridges", data=ridges_clean)
-print("saved:", out_h5)
+## ----------------- RUN  -----------------
+#if not os.path.isfile(ridge_file):
+#    raise FileNotFoundError(ridge_file)
 
-# plot overlay (in degrees)
-plt.figure(figsize=(8, 6))
-plt.scatter(np.degrees(ridge_ra), np.degrees(ridge_dec), s=1, alpha=0.25, label="All ridges")
-if len(ridges_clean) > 0:
-    plt.scatter(np.degrees(ridges_clean[:, 1]), np.degrees(ridges_clean[:, 0]),
-                s=1, alpha=0.8, label="Kept (contracted)")
-plt.xlabel("RA [deg]")
-plt.ylabel("Dec [deg]")
-plt.title(f"Contraction test (radius={radius_arcmin} arcmin, min_cov={min_coverage})")
-plt.legend()
-plt.tight_layout()
-plt.savefig(out_png, dpi=200)
-plt.close()
-print("saved:", out_png)
+#mask = load_mask(mask_filename, nside)
+#print("mask stats (min/max/mean):", float(mask.min()), float(mask.max()), float(mask.mean()))
+
+#with h5py.File(ridge_file, "r") as f:
+#    ridges = f["ridges"][:]
+
+#ridge_dec = ridges[:, 0]   # radians
+#ridge_ra  = ridges[:, 1]   # radians
+
+#keep_idx, fracs, ndisk = ridge_edge_filter_disk(
+#    ridge_ra, ridge_dec, mask, nside,
+#    radius_arcmin=radius_arcmin, min_coverage=min_coverage
+#)
+
+#ridges_clean = ridges[keep_idx]
+
+#print(f"ridge file: {os.path.basename(ridge_file)}")
+#print(f"kept: {len(ridges_clean)}/{len(ridges)}")
+#print("frac stats (min/median/max):",
+#      float(np.min(fracs)), float(np.median(fracs)), float(np.max(fracs)))
+#print("ndisk stats (min/median/max):",
+#      int(np.min(ndisk)), int(np.median(ndisk)), int(np.max(ndisk)))
+
+## save contracted
+#with h5py.File(out_h5, "w") as f:
+#    f.create_dataset("ridges", data=ridges_clean)
+#print("saved:", out_h5)
+
+## plot overlay (in degrees)
+#plt.figure(figsize=(8, 6))
+#plt.scatter(np.degrees(ridge_ra), np.degrees(ridge_dec), s=1, alpha=0.25, label="All ridges")
+#if len(ridges_clean) > 0:
+#    plt.scatter(np.degrees(ridges_clean[:, 1]), np.degrees(ridges_clean[:, 0]),
+#                s=1, alpha=0.8, label="Kept (contracted)")
+#plt.xlabel("RA [deg]")
+#plt.ylabel("Dec [deg]")
+#plt.title(f"Contraction test (radius={radius_arcmin} arcmin, min_cov={min_coverage})")
+#plt.legend()
+#plt.tight_layout()
+#plt.savefig(out_png, dpi=200)
+#plt.close()
+#print("saved:", out_png)
 
 
 
