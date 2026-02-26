@@ -58,7 +58,7 @@ def find_ridge_files_by_percentile(home_dir, percentiles):
     for root, _, files in os.walk(home_dir):
         for f in files:
             if f.endswith("_contracted.h5"):
-                continue  # <-- excludes contracted files
+                continue  
 
             m = pat.search(f)
             if not m:
