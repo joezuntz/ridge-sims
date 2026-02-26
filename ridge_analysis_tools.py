@@ -764,7 +764,7 @@ def find_background_file(h5_file, base_sim_root):
     """
     parts = h5_file.split(os.sep)
     try:
-        cat_index = parts.index("Cosmo_sim_ridges") + 1
+        cat_index = parts.index("Cosmo_sim2_ridges") + 1
         category = parts[cat_index]
         run_folder = parts[cat_index + 1]
     except (ValueError, IndexError):
@@ -794,7 +794,7 @@ def find_background_npy(h5_file, base_sim_root):
     """
     parts = h5_file.split(os.sep)
     try:
-        cat_index = parts.index("Cosmo_sim_ridges") + 1
+        cat_index = parts.index("Cosmo_sim2_ridges") + 1
         category = parts[cat_index]
         run_folder = parts[cat_index + 1]
     except (ValueError, IndexError):
