@@ -70,8 +70,6 @@ def find_ridge_files_by_percentile(home_dir, percentiles):
 
     return ridge_files
 
-That guarantees:
-
 
 # ===============================================================
 # ========================== MAIN ===============================
