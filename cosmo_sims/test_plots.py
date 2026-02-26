@@ -103,9 +103,9 @@ out_h5    = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.h5")
 out_png   = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.png")
 
 # contraction params
-nside = 512
-radius_arcmin = 5.0
-min_coverage = 0.04
+nside = 1024
+radius_arcmin = 4.0
+min_coverage = 0.1
 
 
 # ----------------- FUNCTIONS -----------------
