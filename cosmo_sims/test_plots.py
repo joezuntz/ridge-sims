@@ -37,9 +37,9 @@ with h5py.File(bg_file, "r") as f:
     print("BG keys:", list(f.keys()))
     ra_bg  = f["RA"][:]
     dec_bg = f["DEC"][:]
-    ra_bg = (bg_ra + 180) % 360
     
     
+ra_bg = (ra_bg + 180) % 360    
 ra_bg  = np.radians(ra_bg)
 dec_bg = np.radians(dec_bg)
 # ---- LOAD RIDGES ----
