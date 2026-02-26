@@ -402,3 +402,16 @@ inside_nest = mask_nest_to_ring[pix_r].mean()
 
 print("Inside fraction assuming hit_pix is RING:", float(inside_ring))
 print("Inside fraction assuming hit_pix is NEST:", float(inside_nest))
+
+
+hit_pix = np.load(mask_filename).astype(np.int64)
+nside = 4096
+
+theta, phi = hp.pix2ang(nside, hit_pix)   # RING
+ra  = np.degrees(phi)
+dec = np.degrees(0.5*np.pi - theta)
+
+print("Mask RA min/max:", ra.min(), ra.max())
+print("Mask Dec min/max:", dec.min(), dec.max())
+print("Mask RA percentiles (1,5,50,95,99):", np.percentile(ra, [1,5,50,95,99]))
+print("Mask Dec percentiles (1,5,50,95,99):", np.percentile(dec, [1,5,50,95,99]))
