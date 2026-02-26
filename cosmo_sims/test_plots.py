@@ -114,7 +114,7 @@ def load_mask(mask_filename, nside):
     hit_pix = np.load(mask_filename)
     mask = np.zeros(hp.nside2npix(input_mask_nside))
     mask[hit_pix] = 1
-    mask = hp.reorder(mask, n2r=True)
+    #mask = hp.reorder(mask, n2r=True)
     mask = hp.ud_grade(mask, nside_out=nside)
     return mask
 
