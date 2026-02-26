@@ -111,7 +111,7 @@ def local_process_ridge_file(ridge_file, mask, nside, radius_arcmin, min_coverag
 # ======================================================
 
 mask_filename = os.path.join(parent_dir, "des-data", "desy3_gold_mask.npy")  # mask file
-base_root = "Cosmo_sim_ridges"  # main simulation folder
+base_root = "Cosmo_sim2_ridges"  # main simulation folder
 radius_arcmin = 4.0          # disk filter radius
 min_coverage = 0.9           # fraction of mask pixels required
 nside = 512                  # map resolution
@@ -125,13 +125,13 @@ nside = 512                  # map resolution
 
 def main():
     parser = argparse.ArgumentParser(description="Ridge contraction pipeline.")
-    parser.add_argument("--root", type=str, default="Cosmo_sim_ridges",
+    parser.add_argument("--root", type=str, default="Cosmo_sim2_ridges",
                         help="Root folder containing all categories (I set the default to zero noise cosmo sims).")
     parser.add_argument("--category", type=str, default=None,
                         help="list of categories to process (e.g. 'S8,S8_perp'). "
                              "If omitted, all categories under the root are processed.")
     parser.add_argument("--band", type=str, default=None,
-                        help="specific band folder to process (currently we only have bandwidth 0.1').")
+                        help="specific band folder to process (here we only have bandwidth 0.1').")
     parser.add_argument("--file", type=str, default=None,
                         help="specific ridge file to process.")
     args = parser.parse_args()
