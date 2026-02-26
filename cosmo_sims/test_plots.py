@@ -130,7 +130,8 @@ theta, phi = hp.pix2ang(mask_nside, samp)  # theta colat, phi lon
 ra_mask_deg  = np.degrees(phi)
 dec_mask_deg = np.degrees(0.5*np.pi - theta)
 
-mask_overlay_png = os.path.join(ridge_dir, "mask_overlay_vs_ridges_TEST.png")
+mask_overlay_png = os.path.join(os.path.dirname(ridge_file),
+                                "mask_overlay_vs_ridges_TEST.png")
 plt.figure(figsize=(8, 6))
 plt.scatter(np.degrees(ridge_ra_tmp), np.degrees(ridge_dec_tmp), s=1, alpha=0.05, label="Ridges (all)")
 plt.scatter(ra_mask_deg, dec_mask_deg, s=0.2, alpha=0.15, label=f"Mask hit pix (nside={mask_nside})")
