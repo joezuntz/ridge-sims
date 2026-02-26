@@ -47,15 +47,30 @@ Cosmo_sim_ridges/S8/run_1/band_0.1/shear/
     └── shear_p15_flipG1.csv  # If not None
 """
 
-# Temporary helper
-def find_contracted_files_update(home_dir):
-    """find all '_contracted.h5' ridge files in directory."""
-    contracted_files = []
+def find_ridge_files_by_percentile(home_dir, percentiles):
+    """
+    Find ridge files ending with _pXX.h5
+    """
+    wanted = {int(p) for p in percentiles}
+    ridge_files = []
+    pat = re.compile(r"_p(\d+)\.h5$")
+
     for root, _, files in os.walk(home_dir):
         for f in files:
-            if f.endswith("_contracted_update.h5"):
-                contracted_files.append(os.path.join(root, f))
-    return contracted_files
+            if f.endswith("_contracted.h5"):
+                continue  # <-- excludes contracted files
+
+            m = pat.search(f)
+            if not m:
+                continue
+
+            fp = int(m.group(1))
+            if fp in wanted:
+                ridge_files.append(os.path.join(root, f))
+
+    return ridge_files
+
+That guarantees:
 
 
 # ===============================================================
@@ -64,14 +79,15 @@ def find_contracted_files_update(home_dir):
 
 def main():
     # --- Root directories ---
-    home_dir = "Cosmo_sim_ridges"
-    base_sim_root = os.path.abspath(os.path.join(parent_dir, "lhc_cosmo_sims_zero_err")) 
+    home_dir = "Cosmo_sim2_ridges"
+    base_sim_root = os.path.abspath(os.path.join(parent_dir, "lhc_cosmo_sims2_zero_err")) 
     final_percentiles = [15]
 
     # --- Find contracted ridge files ---
-    contracted_files = find_contracted_files(home_dir)                         
+    contracted_files = find_ridge_files_by_percentile(home_dir, final_percentiles) #find_contracted_files(home_dir)                         
     if comm is None or COMM_WORLD.rank == 0:
-        print(f"Found {len(contracted_files)} contracted ridge files.\n")
+        #print(f"Found {len(contracted_files)} contracted ridge files.\n")
+        print(f"Found {len(contracted_files)} ridge files (_pXX.h5, excluding contracted).\n")
 
     # ===============================================================
     # SAFETY MECHANISM 
