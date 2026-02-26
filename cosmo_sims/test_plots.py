@@ -104,7 +104,7 @@ out_png   = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.png")
 
 # contraction params
 nside = 512
-radius_arcmin = 2.0
+radius_arcmin = 5.0
 min_coverage = 0.04
 
 
