@@ -309,7 +309,10 @@ import numpy as np
 import healpy as hp
 
 mask_filename = os.path.join(parent_dir, "des-data", "desy3_gold_mask.npy")
-
+ridge_file = os.path.join(
+    current_dir,
+    "Cosmo_sim2_ridges/S8/run_3/band_0.1/Ridges_final_p15/S8_run_3_ridges_p15.h5"
+)
 arr = np.load(mask_filename)
 
 print("\n===== RAW FILE INFO =====")
@@ -370,3 +373,32 @@ if arr.ndim == 1:
     else:
         print("No valid inferred_nside; skipping ring test.")
 
+
+
+
+# load ridges (radians)
+with h5py.File(ridge_file, "r") as f:
+    ridges = f["ridges"][:]
+ridge_dec = ridges[:,0]
+ridge_ra  = ridges[:,1]
+theta = (np.pi/2) - ridge_dec
+phi   = ridge_ra
+
+hit_pix = np.load(mask_filename).astype(np.int64)
+nside = 4096
+npix  = hp.nside2npix(nside)
+
+# Case 1: hit_pix are RING
+mask_ring = np.zeros(npix, dtype=np.uint8)
+mask_ring[hit_pix] = 1
+pix_r = hp.ang2pix(nside, theta, phi)  # assumes RING indexing for pix
+inside_ring = mask_ring[pix_r].mean()
+
+# Case 2: hit_pix are NEST -> convert to RING mask
+mask_nest = np.zeros(npix, dtype=np.uint8)
+mask_nest[hit_pix] = 1
+mask_nest_to_ring = hp.reorder(mask_nest, n2r=True)
+inside_nest = mask_nest_to_ring[pix_r].mean()
+
+print("Inside fraction assuming hit_pix is RING:", float(inside_ring))
+print("Inside fraction assuming hit_pix is NEST:", float(inside_nest))
