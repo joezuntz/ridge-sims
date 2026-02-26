@@ -99,6 +99,108 @@ ridge_file = os.path.join(
 
 #####################################
 
+
+#####################################################
+
+
+
+
+# outputs next to the ridge file
+ridge_dir = os.path.dirname(ridge_file)
+out_h5    = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.h5")
+out_png   = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.png")
+
+# contraction params
+nside = 1024
+radius_arcmin = 4.0
+min_coverage = 0.1
+
+
+# ----------------- FUNCTIONS -----------------
+def load_mask(mask_filename, nside):
+    input_mask_nside = 4096
+    hit_pix = np.load(mask_filename)
+    mask = np.zeros(hp.nside2npix(input_mask_nside))
+    mask[hit_pix] = 1
+    ##mask = hp.reorder(mask, n2r=True)
+    mask = hp.ud_grade(mask, nside_out=nside)
+    mask = (mask > 0.5).astype(np.float32)
+    return mask
+
+def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_coverage=1.0):
+    radius = np.radians(radius_arcmin / 60.0)
+    theta_ridges = (np.pi / 2.0) - ridge_dec
+    phi_ridges   = ridge_ra
+    vec_ridges   = hp.ang2vec(theta_ridges, phi_ridges)
+
+    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
+
+    # debug stats
+    fracs = np.empty(len(ridge_ra), dtype=float)
+    ndisk = np.empty(len(ridge_ra), dtype=int)
+
+    for i, v in enumerate(vec_ridges):
+        disk_pix = hp.query_disc(nside, v, radius, inclusive=True)
+        ndisk[i] = len(disk_pix)
+        if ndisk[i] == 0:
+            frac = 0.0
+        else:
+            frac = mask[disk_pix].sum() / ndisk[i]
+        fracs[i] = frac
+        keep_idx[i] = (frac >= min_coverage)
+
+    return keep_idx, fracs, ndisk
+
+
+# ----------------- RUN  -----------------
+if not os.path.isfile(ridge_file):
+    raise FileNotFoundError(ridge_file)
+
+mask = load_mask(mask_filename, nside)
+print("mask stats (min/max/mean):", float(mask.min()), float(mask.max()), float(mask.mean()))
+
+with h5py.File(ridge_file, "r") as f:
+    ridges = f["ridges"][:]
+
+ridge_dec = ridges[:, 0]   # radians
+ridge_ra  = ridges[:, 1]   # radians
+
+keep_idx, fracs, ndisk = ridge_edge_filter_disk(
+    ridge_ra, ridge_dec, mask, nside,
+    radius_arcmin=radius_arcmin, min_coverage=min_coverage
+)
+
+ridges_clean = ridges[keep_idx]
+
+print(f"ridge file: {os.path.basename(ridge_file)}")
+print(f"kept: {len(ridges_clean)}/{len(ridges)}")
+print("frac stats (min/median/max):",
+      float(np.min(fracs)), float(np.median(fracs)), float(np.max(fracs)))
+print("ndisk stats (min/median/max):",
+      int(np.min(ndisk)), int(np.median(ndisk)), int(np.max(ndisk)))
+
+# save contracted
+with h5py.File(out_h5, "w") as f:
+    f.create_dataset("ridges", data=ridges_clean)
+print("saved:", out_h5)
+
+# plot overlay (in degrees)
+plt.figure(figsize=(8, 6))
+plt.scatter(np.degrees(ridge_ra), np.degrees(ridge_dec), s=1, alpha=0.25, label="All ridges")
+if len(ridges_clean) > 0:
+    plt.scatter(np.degrees(ridges_clean[:, 1]), np.degrees(ridges_clean[:, 0]),
+                s=1, alpha=0.8, label="Kept (contracted)")
+plt.xlabel("RA [deg]")
+plt.ylabel("Dec [deg]")
+plt.title(f"Contraction test (radius={radius_arcmin} arcmin, min_cov={min_coverage})")
+plt.legend()
+plt.tight_layout()
+plt.savefig(out_png, dpi=200)
+plt.close()
+print("saved:", out_png)
+
+##########################################################################"
+
 # ===============================
 # STATISTICAL MASK–RIDGE TEST
 # ===============================
@@ -159,106 +261,6 @@ print("Ridge RA range (deg):", ra_deg.min(), ra_deg.max())
 print("Ridge Dec range (deg):", dec_deg.min(), dec_deg.max())
 
 print("Mask global mean coverage:", mask_native.mean())
-#####################################################
-
-
-
-
-## outputs next to the ridge file
-#ridge_dir = os.path.dirname(ridge_file)
-#out_h5    = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.h5")
-#out_png   = os.path.join(ridge_dir, "S8_run_3_ridges_p15_contracted_TEST.png")
-
-## contraction params
-#nside = 1024
-#radius_arcmin = 4.0
-#min_coverage = 0.1
-
-
-## ----------------- FUNCTIONS -----------------
-#def load_mask(mask_filename, nside):
-#    input_mask_nside = 4096
-#    hit_pix = np.load(mask_filename)
-#    mask = np.zeros(hp.nside2npix(input_mask_nside))
-#    mask[hit_pix] = 1
-#    ##mask = hp.reorder(mask, n2r=True)
-#    mask = hp.ud_grade(mask, nside_out=nside)
-#    mask = (mask > 0.5).astype(np.float32)
-#    return mask
-
-#def ridge_edge_filter_disk(ridge_ra, ridge_dec, mask, nside, radius_arcmin, min_coverage=1.0):
-#    radius = np.radians(radius_arcmin / 60.0)
-#    theta_ridges = (np.pi / 2.0) - ridge_dec
-#    phi_ridges   = ridge_ra
-#    vec_ridges   = hp.ang2vec(theta_ridges, phi_ridges)
-
-#    keep_idx = np.zeros(len(ridge_ra), dtype=bool)
-
-#    # debug stats
-#    fracs = np.empty(len(ridge_ra), dtype=float)
-#    ndisk = np.empty(len(ridge_ra), dtype=int)
-
-#    for i, v in enumerate(vec_ridges):
-#        disk_pix = hp.query_disc(nside, v, radius, inclusive=True)
-#        ndisk[i] = len(disk_pix)
-#        if ndisk[i] == 0:
-#            frac = 0.0
-#        else:
-#            frac = mask[disk_pix].sum() / ndisk[i]
-#        fracs[i] = frac
-#        keep_idx[i] = (frac >= min_coverage)
-
-#    return keep_idx, fracs, ndisk
-
-
-## ----------------- RUN  -----------------
-#if not os.path.isfile(ridge_file):
-#    raise FileNotFoundError(ridge_file)
-
-#mask = load_mask(mask_filename, nside)
-#print("mask stats (min/max/mean):", float(mask.min()), float(mask.max()), float(mask.mean()))
-
-#with h5py.File(ridge_file, "r") as f:
-#    ridges = f["ridges"][:]
-
-#ridge_dec = ridges[:, 0]   # radians
-#ridge_ra  = ridges[:, 1]   # radians
-
-#keep_idx, fracs, ndisk = ridge_edge_filter_disk(
-#    ridge_ra, ridge_dec, mask, nside,
-#    radius_arcmin=radius_arcmin, min_coverage=min_coverage
-#)
-
-#ridges_clean = ridges[keep_idx]
-
-#print(f"ridge file: {os.path.basename(ridge_file)}")
-#print(f"kept: {len(ridges_clean)}/{len(ridges)}")
-#print("frac stats (min/median/max):",
-#      float(np.min(fracs)), float(np.median(fracs)), float(np.max(fracs)))
-#print("ndisk stats (min/median/max):",
-#      int(np.min(ndisk)), int(np.median(ndisk)), int(np.max(ndisk)))
-
-## save contracted
-#with h5py.File(out_h5, "w") as f:
-#    f.create_dataset("ridges", data=ridges_clean)
-#print("saved:", out_h5)
-
-## plot overlay (in degrees)
-#plt.figure(figsize=(8, 6))
-#plt.scatter(np.degrees(ridge_ra), np.degrees(ridge_dec), s=1, alpha=0.25, label="All ridges")
-#if len(ridges_clean) > 0:
-#    plt.scatter(np.degrees(ridges_clean[:, 1]), np.degrees(ridges_clean[:, 0]),
-#                s=1, alpha=0.8, label="Kept (contracted)")
-#plt.xlabel("RA [deg]")
-#plt.ylabel("Dec [deg]")
-#plt.title(f"Contraction test (radius={radius_arcmin} arcmin, min_cov={min_coverage})")
-#plt.legend()
-#plt.tight_layout()
-#plt.savefig(out_png, dpi=200)
-#plt.close()
-#print("saved:", out_png)
-
-
 
 
 
