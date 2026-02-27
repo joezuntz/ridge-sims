@@ -51,12 +51,12 @@ plt.rcParams.update({
 # ------------------------------------------------------------
 # Directories
 # ------------------------------------------------------------
-ROOT = "Cosmo_sim_ridges"
+ROOT = "Cosmo_sim2_ridges"
 CATEGORIES = ["Om_fixed", "S8", "S8_perp", "sigma8_fixed"]
 RUNS = [f"run_{i}" for i in range(1, 11)]
 P = 15
 
-OUTPUT_ROOT = os.path.join(current_dir, "cosmo_plots") 
+OUTPUT_ROOT = os.path.join(current_dir, "cosmo_plots2") 
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
 print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
 
