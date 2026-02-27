@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 
 # ------------------------------------------------------------
-# Publication-style parameters
+# parameters
 # ------------------------------------------------------------
 plt.rcParams.update({
     "font.size": 14,
@@ -18,19 +18,19 @@ plt.rcParams.update({
     "axes.linewidth": 1.5,
     "xtick.direction": "in",
     "ytick.direction": "in",
-    "xtick.major.size": 7,   # slightly longer ticks
+    "xtick.major.size": 7,   
     "ytick.major.size": 7,
 })
 
 # ------------------------------------------------------------
 # Directories + config
 # ------------------------------------------------------------
-ROOT = "Cosmo_sim_ridges"
+ROOT = "Cosmo_sim2_ridges"
 CATEGORIES = ["Om_fixed", "S8", "S8_perp", "sigma8_fixed"]
 RUNS = [f"run_{i}" for i in range(1, 11)]
 P = 15
 
-OUTPUT_ROOT = os.path.abspath("plots_pdf")
+OUTPUT_ROOT = os.path.abspath("plots_pdf2")
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
 print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
 
