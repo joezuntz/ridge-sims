@@ -1,4 +1,15 @@
 import os
+import sys
+
+# Path setup --------------------------------------------------
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
+
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+import ridge_sims.config
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,19 +17,8 @@ import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
 import yaml
-import sys
-import ridge_sims.config
 
-# Path setup --------------------------------------------------
-current_dir = os.path.dirname(os.path.abspath(__file__))      
-parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))  
-
-os.chdir(os.path.join(parent_dir, "cosmo_sims"))
-
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
-#-------------------------------------------------------------
-import ridge_sims.config
+os.chdir(os.path.join(parent_dir, "all_plots"))
 
 # parameters --------------------------------------------------
 
