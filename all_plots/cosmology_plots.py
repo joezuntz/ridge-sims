@@ -18,7 +18,7 @@ from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
 import yaml
 
-os.chdir(os.path.join(parent_dir, "all_plots"))
+os.chdir(os.path.join(parent_dir, "cosmo_sims"))
 
 # parameters --------------------------------------------------
 
