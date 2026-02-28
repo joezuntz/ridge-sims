@@ -149,10 +149,7 @@ def get_param_value(category, run):
 def load_shear_file(path):
     if not os.path.exists(path):
         return None
-    try:
-        return pd.read_csv(path)
-    except Exception:
-        return None
+    return pd.read_csv(path)
 
 # --- fiducial values --------------
 Omega_m_fid = 0.3
