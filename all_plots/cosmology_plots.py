@@ -101,7 +101,8 @@ def load_mapping_from_yaml(root, categories, runs):
     return mapping
 
 mapping = load_mapping_from_yaml(ROOT, CATEGORIES, RUNS)
-
+print("mapping entries:", len(mapping))
+print("example keys:", list(mapping.keys())[:5])
 
 def get_param_label(category, run):
     row = mapping.get((category, run))
