@@ -78,7 +78,7 @@ def load_mapping_from_yaml(root, categories, runs):
     mapping = {}  # mapping[(cat, run)] = dict(...)
     for cat in categories:
         for run in runs:
-            yml_path = os.path.join(root, cat, run, "config.yaml")
+            yml_path = os.path.join(parent_dir, "lhc_cosmo_sims2_zero_err", cat, run, "config.yaml")
             if not os.path.exists(yml_path):
                 continue
             with open(yml_path, "r") as f:
