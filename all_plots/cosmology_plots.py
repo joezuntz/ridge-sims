@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
+import yaml
+import sys
+import ridge_sims.config
 
 # Path setup --------------------------------------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))      
@@ -12,7 +15,14 @@ parent_dir  = os.path.abspath(os.path.join(current_dir, ".."))
 
 os.chdir(os.path.join(parent_dir, "cosmo_sims"))
 
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+#-------------------------------------------------------------
+import ridge_sims.config
+
 # parameters --------------------------------------------------
+
+
 
 plt.rcParams.update({
     "figure.figsize": (8, 6.8),
@@ -62,20 +72,41 @@ print(f"\nAll plots will be saved to: {OUTPUT_ROOT}\n")
 
 
 # ------------------------------------------------------------
-# Load cosmology mapping
+# Load cosmology mapping from config.yaml 
 # ------------------------------------------------------------
+def load_mapping_from_yaml(root, categories, runs):
+    mapping = {}  # mapping[(cat, run)] = dict(...)
+    for cat in categories:
+        for run in runs:
+            yml_path = os.path.join(root, cat, run, "config.yaml")
+            if not os.path.exists(yml_path):
+                continue
+            with open(yml_path, "r") as f:
+                c = yaml.unsafe_load(f)
 
-mapping_path = "cosmo_run_mapping.csv"
-mapping_df = pd.read_csv(mapping_path)
+            Omega_m = float(getattr(c, "Omega_m"))
+            sigma8  = float(getattr(c, "sigma8"))
+
+            # --- definitions  ---
+            S8      = sigma8 * (Omega_m / 0.3) ** 0.5
+            S8perp  = sigma8 * (Omega_m / 0.3) ** (-2.0)
+
+            mapping[(cat, run)] = {
+                "Omega_m": Omega_m,
+                "sigma8": sigma8,
+                "S8": S8,
+                "S8perp": S8perp,
+            }
+
+    return mapping
+
+mapping = load_mapping_from_yaml(ROOT, CATEGORIES, RUNS)
+
 
 def get_param_label(category, run):
-    row = mapping_df[(mapping_df.category == category) &
-                     (mapping_df.run == run)]
-
-    if len(row) == 0:
+    row = mapping.get((category, run))
+    if row is None:
         return run
-
-    row = row.iloc[0]
 
     if category == "Om_fixed":
         return rf"$\Omega_m = {row['Omega_m']:.3f}$"
@@ -84,7 +115,7 @@ def get_param_label(category, run):
         return rf"$S_8 = {row['S8']:.3f}$"
 
     elif category == "S8_perp":
-        return rf"$S_8^\perp: \Omega_m = {row['Omega_m']:.3f}$"
+        return rf"$S_8^\perp = {row['S8perp']:.3f}$"
 
     elif category == "sigma8_fixed":
         return rf"$\sigma_8 = {row['sigma8']:.3f}$"
@@ -92,33 +123,27 @@ def get_param_label(category, run):
     else:
         return ""
 
-def get_param_value(category, run):
-    """Numeric value used for colorbar (depends on what varies)."""
-    row = mapping_df[(mapping_df.category == category) &
-                     (mapping_df.run == run)]
 
-    if len(row) == 0:
+def get_param_value(category, run):
+    """Numeric value used for colorbar."""
+    row = mapping.get((category, run))
+    if row is None:
         return None
 
-    row = row.iloc[0]
-
     if category == "sigma8_fixed":
-        
         return row["Omega_m"]
 
     elif category == "Om_fixed":
-        
         return row["sigma8"]
 
     elif category == "S8":
         return row["S8"]
 
     elif category == "S8_perp":
-        return row["Omega_m"]
+        return row["S8perp"]
 
     else:
         return None
-
 
 
 def load_shear_file(path):
@@ -130,20 +155,21 @@ def load_shear_file(path):
         return None
 
 # --- fiducial values --------------
-Omega_m_fid = 0.32
-S8_fid = 0.78
+Omega_m_fid = 0.3
+S8_fid = 0.8
 sigma8_fid = S8_fid / np.sqrt(Omega_m_fid / 0.3)
+S8perp_fid = sigma8_fid * (Omega_m_fid / 0.3)**(-2.0)
 
 def get_fiducial_value_for_category(category):
     # returns the fiducial "val" in the same variable used for colorbar 
     if category == "sigma8_fixed":
-        return Omega_m_fid         
+        return Omega_m_fid
     elif category == "Om_fixed":
-        return sigma8_fid           
+        return sigma8_fid
     elif category == "S8":
-        return S8_fid               
+        return S8_fid
     elif category == "S8_perp":
-        return Omega_m_fid          
+        return S8perp_fid
     else:
         return None
 
