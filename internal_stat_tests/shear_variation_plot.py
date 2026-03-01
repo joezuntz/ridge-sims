@@ -185,14 +185,15 @@ def run_internal_scatter_test(case_label, signal_csv, ensemble_csvs, xmove=1.0):
 # ==============================================================
 if __name__ == "__main__":
 
-    repeats_dir = os.path.join("shear_stat_test", "shear_repeats")
+    repeats_dir = "ridge_variation_shear" # os.path.join("shear_stat_test", "shear_repeats")
 
-    signal_csv = os.path.join(repeats_dir, "shear_00.csv")
-    ensemble_csvs = [os.path.join(repeats_dir, f"shear_{i:02d}.csv") for i in range(1, 50)]
+    #signal_csv =  os.path.join(repeats_dir, "shear_00.csv")
+    signal_csv =  os.path.join(repeats_dir, "signal_shear_p15_00")
+    ensemble_csvs = [os.path.join(repeats_dir, f"signal_shear_p15_{i:02d}.csv") for i in range(1, 50)]
 
     outdir = os.path.join(repeats_dir, "plots_internal_scatter")
     os.makedirs(outdir, exist_ok=True)
-    outpath = os.path.join(outdir, "internal_scatter_gplus.pdf")
+    outpath = os.path.join(outdir, "ridge_construction_scatter_gplus.pdf")
 
     plt.figure(figsize=(6, 4.5))
 
