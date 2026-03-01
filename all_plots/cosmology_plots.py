@@ -282,8 +282,7 @@ def plot_shear_all_categories():
         # g+
                 
         ax_gplus.set_xscale("log")
-        ax_gplus.set_ylim(-2, 2.2)
-        #ax_gplus.set_ylim(-2, 1.5)
+        ax_gplus.set_ylim(-2.2, 1.5)
         # ax_gplus.set_xscale("log")
         # ax_gplus.set_title(title_cat + r": $\gamma_{+}$")
         ax_gplus.set_xlabel(r"$\theta [arcmin]$")
