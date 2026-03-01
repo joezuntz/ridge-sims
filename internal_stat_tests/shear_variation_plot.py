@@ -152,19 +152,44 @@ def run_internal_scatter_test(case_label, signal_csv, ensemble_csvs, xmove=1.0):
     print(f"[diag] used ensemble files = {used}")
     print(f"[diag] max |std/mean| for g_plus (ignoring mean=0 bins) = {rel_scatter:.3e}")
 
-    # --- Plot: run00 with std error bars, plus ensemble mean curve ---
-    plot_1d(
-        arcmin * xmove,
-        gplus_sig / 1e-3,
-        gplus_std / 1e-3,
-        ylabel=r"$\gamma_+$ / $10^{-3}$",
-        marker="o"
+        # --- Plot: ensemble mean with ±1σ band; overlay run00 as points ---
+    x = arcmin * xmove
+    ymean = gplus_mean / 1e-3
+    ystd  = gplus_std  / 1e-3
+    ysig  = gplus_sig  / 1e-3
+
+    # 1) internal variance band (±1σ)
+    plt.fill_between(
+        x,
+        ymean - ystd,
+        ymean + ystd,
+        alpha=0.25,
+        linewidth=0.0,
+        label=r"internal scatter ($\pm 1\sigma$)"
     )
+
+    # 2) ensemble mean
     plt.plot(
-        arcmin * xmove,
-        gplus_mean / 1e-3,
-        lw=1.6
+        x,
+        ymean,
+        lw=1.8,
+        label="ensemble mean"
     )
+
+    # 3) one realization (run00)
+    plt.plot(
+        x,
+        ysig,
+        marker="o",
+        markersize=4,
+        lw=1.2,
+        label="run 00"
+    )
+
+    plt.xscale("log")
+    plt.xlabel("Separation [arcmin]")
+    plt.ylabel(r"$\gamma_+$ / $10^{-3}$")
+    plt.xlim(1, 60)
 
     return {
         "used": used,
