@@ -307,7 +307,8 @@ def plot_shear_all_categories():
         #plt.tight_layout()
         fig_gplus.savefig(
             os.path.join(OUTPUT_ROOT, f"{cat}_gplus_all_runs.pdf"),
-            bbox_inches="tight"
+            bbox_inches="tight",
+            pad_inches=0.08,
         )
         # fig_gx.savefig(
         #     os.path.join(OUTPUT_ROOT, f"{cat}_gcross_all_runs.pdf"),
