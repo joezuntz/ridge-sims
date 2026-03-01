@@ -188,7 +188,7 @@ if __name__ == "__main__":
     repeats_dir = "ridge_variation_shear" # os.path.join("shear_stat_test", "shear_repeats")
 
     #signal_csv =  os.path.join(repeats_dir, "shear_00.csv")
-    signal_csv =  os.path.join(repeats_dir, "signal_shear_p15_00")
+    signal_csv =  os.path.join(repeats_dir, "signal_shear_p15_00.csv")
     ensemble_csvs = [os.path.join(repeats_dir, f"signal_shear_p15_{i:02d}.csv") for i in range(1, 50)]
 
     outdir = os.path.join(repeats_dir, "plots_internal_scatter")
