@@ -304,7 +304,7 @@ def plot_shear_all_categories():
         ax_gplus.legend(handles=legend_elements, loc='best')
 
         # Save 
-        plt.tight_layout()
+        #plt.tight_layout()
         fig_gplus.savefig(
             os.path.join(OUTPUT_ROOT, f"{cat}_gplus_all_runs.pdf"),
             bbox_inches="tight"
