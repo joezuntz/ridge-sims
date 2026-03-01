@@ -282,7 +282,8 @@ def plot_shear_all_categories():
         # g+
                 
         ax_gplus.set_xscale("log")
-        ax_gplus.set_ylim(-2, 1.5)
+        ax_gplus.set_ylim(-2, 2.2)
+        #ax_gplus.set_ylim(-2, 1.5)
         # ax_gplus.set_xscale("log")
         # ax_gplus.set_title(title_cat + r": $\gamma_{+}$")
         ax_gplus.set_xlabel(r"$\theta [arcmin]$")
@@ -307,8 +308,7 @@ def plot_shear_all_categories():
         #plt.tight_layout()
         fig_gplus.savefig(
             os.path.join(OUTPUT_ROOT, f"{cat}_gplus_all_runs.pdf"),
-            bbox_inches="tight",
-            pad_inches=0.08,
+            bbox_inches="tight"
         )
         # fig_gx.savefig(
         #     os.path.join(OUTPUT_ROOT, f"{cat}_gcross_all_runs.pdf"),
