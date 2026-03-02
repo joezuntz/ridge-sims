@@ -112,7 +112,15 @@ def run_internal_scatter_test(case_label, signal_csv, ensemble_csvs, xmove=1.0):
 
     gplus_std = np.std(gplus_arr, axis=0, ddof=1)
     gcross_std = np.std(gcross_arr, axis=0, ddof=1)
-
+    
+    # --- Fractional internal scatter ---
+    frac = np.abs(gplus_std / np.where(gplus_mean != 0, gplus_mean, np.nan))
+    
+    print(f"[diag] mean |std/mean| for g_plus = {np.nanmean(frac):.3e}")
+    print(f"[diag] median |std/mean| for g_plus = {np.nanmedian(frac):.3e}")
+    print(f"[diag] max |std/mean| for g_plus = {np.nanmax(frac):.3e}")
+        
+    
     # --- Covariance from ensemble ---
     cov_plus = np.cov(gplus_arr, rowvar=False, ddof=1)
     cov_cross = np.cov(gcross_arr, rowvar=False, ddof=1)
